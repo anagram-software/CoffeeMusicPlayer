@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Main Activity -->
+    <dimen name="mini_player_height">64dp</dimen>
+
+    <dimen name="lyrics_text_small">8sp</dimen>
+    <dimen name="lyrics_text_medium">10sp</dimen>
+    <dimen name="lyrics_text_large">12sp</dimen>
+
+    <!-- Recycler View -->
+    <dimen name="grid_spacing">1dp</dimen>
+    <dimen name="mini_grid_spacing">8dp</dimen>
+    <dimen name="home_grid_spacing">8dp</dimen>
+
+    <!-- Status Bar Height -->
+    <dimen name="status_bar_height">0dp</dimen>
+    <dimen name="activity_horizontal_margin">16dp</dimen>
+    <dimen name="item_subtitle_size">12sp</dimen>
+    <dimen name="item_title_size">14sp</dimen>
+
+    <!-- Notification template -->
+    <dimen name="notification_big_icon_height">64.0dip</dimen>
+    <dimen name="notification_big_icon_width">64.0dip</dimen>
+    <dimen name="notification_info_container_padding_left">8.0dip</dimen>
+    <dimen name="notification_info_container_padding_bottom">4.0dip</dimen>
+    <dimen name="notification_action_padding">8.0dip</dimen>
+    <dimen name="notification_action_height">48.0dip</dimen>
+    <dimen name="notification_action_width">48.0dip</dimen>
+
+    <!-- Notification template expanded -->
+    <dimen name="notification_expanded_height">128.0dip</dimen>
+    <dimen name="notification_expanded_buttons_divider_padding">12.0dip</dimen>
+    <dimen name="notification_expanded_button_height">48.0dip</dimen>
+    <dimen name="notification_expanded_button_padding">10.0dip</dimen>
+    <dimen name="notification_expanded_content_padding_top">8.0dip</dimen>
+    <dimen name="notification_expanded_collapse_padding">8.0dip</dimen>
+
+</resources>

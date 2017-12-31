@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
+    android:id="@+id/queue_layout">
+
+    <android.support.v7.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:fitsSystemWindows="true"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#44000000"
+        android:minHeight="?attr/actionBarSize"
+        android:translationZ="4dp"/>
+
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/queue_recyclerview"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#33000000"
+        android:layout_below="@+id/toolbar"/>
+</RelativeLayout>

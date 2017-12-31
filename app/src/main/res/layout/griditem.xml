@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <com.udeshcoffee.android.views.GridViewItem
+        android:id="@+id/grid_art"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:background="@color/artBackground"/>
+
+    <FrameLayout
+        android:id="@+id/grid_title_holder"
+        android:layout_width="match_parent"
+        android:layout_height="128dp"
+        android:background="@drawable/gradient_overlay"
+        android:layout_alignBottom="@+id/grid_art" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingLeft="8dp"
+        android:paddingRight="8dp"
+        android:paddingBottom="8dp"
+        android:orientation="vertical"
+        android:layout_alignBottom="@+id/grid_art">
+
+        <TextView
+            android:id="@+id/grid_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:textAppearance="@style/TextAppearance.AppCompat.Subhead"
+            android:textColor="#fff"
+            tools:text="Artist" />
+
+        <TextView
+            android:id="@+id/grid_subtitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:textAppearance="@style/TextAppearance.AppCompat.Small"
+            tools:text="1 Song" />
+
+    </LinearLayout>
+
+</RelativeLayout>

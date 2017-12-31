@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item android:id="@+id/action_add_to_this_playlist"
+        android:icon="@drawable/ic_playlist_add_white_24dp"
+        android:title="@string/action_add_to_playlist"
+        app:showAsAction="always"/>
+    <item
+        android:id="@+id/more"
+        android:icon="@drawable/ic_more_vert_white"
+        android:title="@string/action_sort"
+        app:showAsAction="ifRoom">
+        <menu>
+            <item
+                android:id="@+id/action_play"
+                android:title="@string/action_play"/>
+            <item
+                android:id="@+id/action_play_next"
+                android:title="@string/action_play_next"/>
+            <item
+                android:id="@+id/action_queue"
+                android:title="@string/action_queue"/>
+            <item
+                android:id="@+id/action_add_to_playlist"
+                android:title="@string/action_add_to_playlist"/>
+            <item
+                android:id="@+id/action_add_to_favorites"
+                android:title="@string/action_add_to_favorites"/>
+            <item
+                android:id="@+id/action_rename"
+                android:title="@string/action_rename"/>
+            <item
+                android:id="@+id/action_delete"
+                android:title="@string/action_delete"/>
+        </menu>
+    </item>
+</menu>

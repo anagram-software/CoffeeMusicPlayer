@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.udeshcoffee.android.views.FadableLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="@dimen/mini_player_height"
+    android:background="@color/colorPrimary"
+    app:backgroundType="solid"
+    android:id="@+id/mini_player_layout">
+
+    <ImageView
+        android:id="@+id/mini_player_art"
+        android:layout_width="@dimen/mini_player_height"
+        android:layout_height="@dimen/mini_player_height"
+        android:scaleType="centerCrop"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginStart="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_marginBottom="0dp"
+        android:layout_marginLeft="0dp"
+        android:background="@color/artBackground"/>
+
+    <ProgressBar
+        android:id="@+id/mini_player_progress"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="0dp"
+        android:layout_height="3dp"
+        android:maxHeight="3dp"
+        android:minHeight="3dp"
+        android:layout_marginEnd="0dp"
+        android:layout_marginStart="0dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/mini_player_art"
+        tools:layout_editor_absoluteY="0dp"
+        app:layout_constraintTop_toTopOf="parent"
+        android:layout_marginTop="0dp"
+        android:progressDrawable="@drawable/progress_bar_drawable"/>
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintStart_toEndOf="@+id/mini_player_art"
+        android:layout_marginStart="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_marginBottom="0dp"
+        app:layout_constraintTop_toTopOf="parent"
+        android:layout_marginTop="0dp"
+        app:layout_constraintEnd_toStartOf="@+id/mini_player_playpause"
+        android:layout_marginEnd="16dp">
+
+        <TextView
+            android:id="@+id/mini_player_subtitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="@dimen/item_subtitle_size"
+            android:maxLines="1"
+            tools:text="Artist" />
+
+        <TextView
+            android:id="@+id/mini_player_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            tools:text="Title"
+            android:textColor="?android:textColorPrimary"
+            android:textSize="@dimen/item_title_size"/>
+    </LinearLayout>
+
+    <ImageButton
+        android:id="@+id/mini_player_playpause"
+        style="@style/Widget.AppCompat.ImageButton"
+        android:layout_width="@dimen/mini_player_height"
+        android:layout_height="@dimen/mini_player_height"
+        android:layout_marginBottom="0dp"
+        android:layout_marginEnd="0dp"
+        android:layout_marginTop="0dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/action_play"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:src="@drawable/ic_play"
+        tools:layout_editor_absoluteX="248dp"
+        tools:layout_editor_absoluteY="12dp"
+        android:layout_marginRight="0dp" />
+
+
+</com.udeshcoffee.android.views.FadableLayout>

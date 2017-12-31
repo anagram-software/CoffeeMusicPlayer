@@ -1,0 +1,81 @@
+<android.support.v7.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <android.support.v7.preference.PreferenceCategory android:title="INTERFACE">
+
+        <ListPreference
+            android:defaultValue="0"
+            android:entries="@array/pref_app_start_list_titles"
+            android:entryValues="@array/pref_app_start_list_values"
+            android:key="pref_app_start"
+            android:negativeButtonText="@null"
+            android:positiveButtonText="@null"
+            android:title="Start App with" />
+
+        <ListPreference
+            android:defaultValue="0"
+            android:entries="@array/pref_lib_start_list_titles"
+            android:entryValues="@array/pref_lib_start_list_values"
+            android:key="pref_lib_start"
+            android:negativeButtonText="@null"
+            android:positiveButtonText="@null"
+            android:title="Start Library with" />
+
+    </android.support.v7.preference.PreferenceCategory>
+
+    <android.support.v7.preference.PreferenceCategory android:title="PLAYBACK">
+
+        <CheckBoxPreference
+            android:key="pref_call"
+            android:title="On Call"
+            android:enabled="false"
+            android:summary="Pause instead of restart playing after a call"
+            android:defaultValue="false" />
+
+        <CheckBoxPreference
+            android:key="pref_fade"
+            android:title="Fade on play/pause"
+            android:summary="Smooth audio play and pause"
+            android:defaultValue="true" />
+
+    </android.support.v7.preference.PreferenceCategory>
+
+    <android.support.v7.preference.PreferenceCategory android:title="META DATA">
+
+        <CheckBoxPreference
+            android:key="pref_collect_content"
+            android:title="Collect Internet Content"
+            android:summary="Collect artist images and bios from LastFM."
+            android:defaultValue="true" />
+
+        <CheckBoxPreference
+            android:key="pref_wifi_only"
+            android:title="WiFi Only"
+            android:summary="Download artist images only on WIFI."
+            android:defaultValue="true" />
+
+        <Preference
+            android:key="pref_collect_lyrics"
+            android:title="Collect Lyrics"
+            android:summary="Collect missing lyrics" />
+
+    </android.support.v7.preference.PreferenceCategory>
+
+    <android.support.v7.preference.PreferenceCategory android:title="ABOUT">
+
+        <Preference
+            android:key="pref_open_source"
+            android:title="Open source licences" />
+
+        <Preference
+            android:key="pref_version"
+            android:title="Version"
+            android:summary="2.0.2" />
+
+        <Preference
+            android:key="pref_dev"
+            android:title="Developer"
+            android:summary="Udesh Kumarasinghe" />
+
+    </android.support.v7.preference.PreferenceCategory>
+
+</android.support.v7.preference.PreferenceScreen>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <attr name="artBackground" format="reference" />
+    <declare-styleable name="FadableLayout">
+        <attr name="backgroundType" format="enum">
+            <enum name="solid" value="0"/>
+            <enum name="gradient" value="1"/>
+        </attr>
+    </declare-styleable>
+</resources>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/action_lyrics_size"
+        android:icon="@drawable/ic_format_size_white_24dp"
+        android:title="@string/action_size"
+        app:showAsAction="ifRoom">
+    </item>
+
+    <item
+        android:id="@+id/more"
+        android:icon="@drawable/ic_more_vert_white"
+        android:title="@string/action_more"
+        app:showAsAction="ifRoom">
+        <menu>
+            <item
+                android:id="@+id/action_search"
+                android:title="@string/action_search"/>
+        </menu>
+    </item>
+
+</menu>

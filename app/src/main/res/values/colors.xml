@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#111</color>
+    <color name="colorPrimaryDark">#000000</color>
+    <color name="colorAccent">#FF4081</color>
+    <color name="colorBackground">#181818</color>
+    <color name="artBackground">#444</color>
+
+    <color name="homeInfoCard">#448AFF</color>
+
+    <!-- Fragment Colors -->
+    <color name="favAccent">#FF4081</color>
+    <color name="libAccent">#448AFF</color>
+    <color name="playlistAccent">#FFC400</color>
+    <color name="eqAccent">#7C4DFF</color>
+    <color name="homeAccent">#FF5252</color>
+    <color name="settingsAccent">#FF6E40</color>
+    <color name="editAccent">#1DE9B6</color>
+</resources>

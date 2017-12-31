@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/sort"
+        android:icon="@drawable/ic_sort_white"
+        android:title="@string/action_sort"
+        app:showAsAction="ifRoom">
+        <menu>
+            <group android:id="@+id/sort_group" android:checkableBehavior="single">
+                <item
+                    android:id="@+id/action_sort_default"
+                    android:title="@string/action_sort_default"/>
+                <item
+                    android:id="@+id/action_sort_title"
+                    android:title="@string/action_sort_title"/>
+                <item
+                    android:id="@+id/action_sort_track"
+                    android:title="@string/action_sort_track"/>
+                <item
+                    android:id="@+id/action_sort_duration"
+                    android:title="@string/action_sort_duration"/>
+                <item
+                    android:id="@+id/action_sort_date"
+                    android:title="@string/action_sort_date_added"/>
+                <item
+                    android:id="@+id/action_sort_year"
+                    android:title="@string/action_sort_year"/>
+                <item
+                    android:id="@+id/action_sort_artist_name"
+                    android:title="@string/action_sort_artist_name"/>
+                <item
+                    android:id="@+id/action_sort_ascending"
+                    android:checkable="true"
+                    android:checked="true"
+                    android:title="@string/action_sort_ascending"/>
+            </group>
+        </menu>
+    </item>
+
+    <item
+        android:id="@+id/more"
+        android:icon="@drawable/ic_more_vert_white"
+        android:title="@string/action_sort"
+        app:showAsAction="ifRoom">
+        <menu>
+            <item
+                android:id="@+id/action_play"
+                android:title="@string/action_play"/>
+            <item
+                android:id="@+id/action_play_next"
+                android:title="@string/action_play_next"/>
+            <item
+                android:id="@+id/action_queue"
+                android:title="@string/action_queue"/>
+        </menu>
+    </item>
+</menu>

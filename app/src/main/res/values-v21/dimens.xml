@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Status Bar Height -->
+    <dimen name="status_bar_height">24dp</dimen>
+
+</resources>

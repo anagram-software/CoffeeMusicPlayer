@@ -1,0 +1,188 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/main_layout"
+    android:fitsSystemWindows="true"
+    android:layout_height="match_parent"
+    android:layout_width="match_parent"
+    android:background="?android:colorBackground"
+    android:theme="@style/EqTheme">
+
+    <android.support.design.widget.AppBarLayout
+        android:id="@+id/appbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" >
+        <android.support.v7.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="?attr/colorPrimary"
+            android:minHeight="?attr/actionBarSize"
+            android:theme="?attr/actionBarTheme"
+            app:navigationIcon="@drawable/ic_menu_white_24dp">
+
+            <TextView
+                android:id="@+id/title_view"
+                android:paddingTop="4dp"
+                android:paddingBottom="3dp"
+                android:paddingLeft="8dp"
+                android:paddingRight="8dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/title_back"
+                android:textColor="?android:colorBackground"
+                android:textSize="16sp"
+                android:textAllCaps="true"
+                android:text="@string/info_equalizer"/>
+
+        </android.support.v7.widget.Toolbar>
+    </android.support.design.widget.AppBarLayout>
+
+    <ScrollView
+        android:id="@+id/equalizerScrollView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@+id/appbar">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <Spinner
+                android:id="@+id/eq_preset_spinner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:layout_marginLeft="@dimen/activity_horizontal_margin"
+                android:layout_marginStart="@dimen/activity_horizontal_margin"
+                android:layout_marginRight="8dp"
+                android:layout_marginEnd="8dp"
+                android:layout_toLeftOf="@+id/action_save"
+                android:layout_toStartOf="@+id/action_save"/>
+
+            <ImageButton
+                android:id="@+id/action_save"
+                style="@style/Widget.AppCompat.ImageButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentRight="true"
+                android:layout_marginTop="8dp"
+                android:layout_marginRight="8dp"
+                android:layout_marginEnd="8dp"
+                android:padding="8dp"
+                android:background="?selectableItemBackgroundBorderless"
+                app:srcCompat="@drawable/ic_save_white_24dp" />
+
+            <LinearLayout
+                android:id="@+id/equalizerLinearLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_centerHorizontal="true"
+                android:layout_below="@+id/eq_preset_spinner"
+                android:layout_marginTop="@dimen/activity_horizontal_margin"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+                android:orientation="horizontal" >
+
+            </LinearLayout>
+
+            <RelativeLayout
+                android:id="@+id/audio_fx_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/equalizerLinearLayout">
+
+                <TextView
+                    android:id="@+id/virtualizer_title_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentTop="true"
+                    android:layout_marginTop="@dimen/activity_horizontal_margin"
+                    android:layout_marginStart="@dimen/activity_horizontal_margin"
+                    android:layout_marginLeft="@dimen/activity_horizontal_margin"
+                    android:text="@string/info_virtualizer"
+                    android:textColor="?android:textColorSecondary"
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
+
+                <SeekBar
+                    android:id="@+id/virtualizer_seekbar"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingStart="24dp"
+                    android:paddingEnd="24dp"
+                    android:layout_marginTop="8dp"
+                    android:layout_toLeftOf="@+id/virtualizer_switch"
+                    android:layout_toStartOf="@+id/virtualizer_switch"
+                    android:layout_below="@+id/virtualizer_title_text" />
+
+                <Switch
+                    android:id="@+id/virtualizer_switch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentRight="true"
+                    android:layout_alignParentEnd="true"
+                    android:layout_marginRight="@dimen/activity_horizontal_margin"
+                    android:layout_marginEnd="@dimen/activity_horizontal_margin"
+                    android:layout_alignBottom="@+id/virtualizer_seekbar"/>
+
+                <TextView
+                    android:id="@+id/bass_boost_title_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/virtualizer_seekbar"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginStart="@dimen/activity_horizontal_margin"
+                    android:layout_marginLeft="@dimen/activity_horizontal_margin"
+                    android:text="@string/info_bass_boost"
+                    android:textColor="?android:textColorSecondary"
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
+
+                <SeekBar
+                    android:id="@+id/bass_boost_seekbar"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingStart="24dp"
+                    android:paddingEnd="24dp"
+                    android:layout_marginTop="8dp"
+                    android:layout_toLeftOf="@+id/bass_boost_switch"
+                    android:layout_toStartOf="@+id/bass_boost_switch"
+                    android:layout_below="@+id/bass_boost_title_text" />
+
+                <Switch
+                    android:id="@+id/bass_boost_switch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentRight="true"
+                    android:layout_alignParentEnd="true"
+                    android:layout_marginRight="@dimen/activity_horizontal_margin"
+                    android:layout_marginEnd="@dimen/activity_horizontal_margin"
+                    android:layout_alignBottom="@+id/bass_boost_seekbar"/>
+
+                <TextView
+                    android:id="@+id/reverb_title_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/bass_boost_seekbar"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginLeft="@dimen/activity_horizontal_margin"
+                    android:layout_marginStart="@dimen/activity_horizontal_margin"
+                    android:text="@string/info_reverb"
+                    android:textColor="?android:textColorSecondary"
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
+
+                <Spinner
+                    android:id="@+id/reverb_spinner"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/reverb_title_text"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginLeft="@dimen/activity_horizontal_margin"
+                    android:layout_marginRight="@dimen/activity_horizontal_margin"/>
+
+            </RelativeLayout>
+
+        </RelativeLayout>
+
+    </ScrollView>
+
+</RelativeLayout>
