@@ -1,0 +1,103 @@
+apply plugin: 'com.android.application'
+
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-kapt'
+
+apply plugin: 'org.jetbrains.kotlin.android.extensions'
+androidExtensions {
+    experimental = true
+}
+
+android {
+    compileSdkVersion 27
+    defaultConfig {
+        applicationId "com.udeshcoffee.android"
+        minSdkVersion 16
+        targetSdkVersion 27
+        versionCode 23
+        versionName '2.0.3'
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        vectorDrawables.useSupportLibrary = true
+        multiDexEnabled = true
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    lintOptions {
+
+        checkReleaseBuilds false
+
+    }
+    productFlavors {
+    }
+}
+
+dependencies {
+    compile fileTree(include: ['*.jar'], dir: 'libs')
+    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
+        exclude group: 'com.android.support', module: 'support-annotations'
+    })
+    compile "org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
+
+    // Glide
+    compile 'com.github.bumptech.glide:glide:4.4.0'
+    compile "com.android.support:palette-v7:$support_version"
+
+    // Permissions
+    compile 'com.greysonparrelli.permiso:permiso:0.3.0'
+
+    // Support Libraries
+    compile "com.android.support:support-v4:$support_version"
+    compile "com.android.support:appcompat-v7:$support_version"
+    compile 'com.android.support.constraint:constraint-layout:1.0.2'
+    compile "com.android.support:design:$support_version"
+    compile "com.android.support:gridlayout-v7:$support_version"
+    compile "com.android.support:transition:$support_version"
+    compile "com.android.support:cardview-v7:$support_version"
+    compile "com.android.support:preference-v14:$support_version"
+    compile 'com.android.support:multidex:1.0.2'
+
+    // Room
+    implementation 'android.arch.persistence.room:runtime:1.0.0'
+    implementation 'android.arch.persistence.room:rxjava2:1.0.0'
+    kapt "android.arch.persistence.room:compiler:1.0.0"
+
+    // Rx
+    compile 'io.reactivex.rxjava2:rxandroid:2.0.1'
+    compile 'io.reactivex.rxjava2:rxjava:2.1.7'
+    compile 'io.reactivex.rxjava2:rxkotlin:2.2.0'
+    compile 'com.squareup.sqlbrite2:sqlbrite:2.0.0'
+    compile 'com.annimon:stream:1.1.7'
+    compile 'com.jakewharton.rxbinding2:rxbinding-appcompat-v7-kotlin:2.0.0'
+    compile 'com.cantrowitz:rxbroadcast:2.0.0'
+
+    // Retrofit
+    compile 'com.squareup.retrofit2:retrofit:2.3.0'
+    compile 'com.squareup.retrofit2:adapter-rxjava2:2.3.0'
+
+    // Jsoup
+    compile 'org.jsoup:jsoup:1.10.2'
+
+    // GSON
+    compile 'com.google.code.gson:gson:2.8.1'
+    compile 'com.squareup.retrofit2:converter-gson:2.3.0'
+
+    // OkHttp
+    compile 'com.squareup.okhttp3:okhttp:3.9.0'
+
+    // JAudioTagger
+    compile files('libs/jaudiotagger-2.0.4-SNAPSHOT.jar')
+
+    // ExoPlayer
+    compile 'com.google.android.exoplayer:exoplayer-core:2.6.0'
+    compile 'com.google.android.exoplayer:extension-mediasession:2.6.0'
+
+    // Other
+    compile 'com.simplecityapps:recyclerview-fastscroll:1.0.16'
+    compile 'com.sothree.slidinguppanel:library:3.3.1'
+    compile 'com.h6ah4i.android.widget.verticalseekbar:verticalseekbar:0.7.1'
+    testCompile 'junit:junit:4.12'
+}
