@@ -48,7 +48,7 @@ class CollectionLongDialog: DialogFragment() {
 
         val builder = AlertDialog.Builder(context!!)
         builder.setTitle(title)
-                .setItems(if (editablePlaylist == null) collectionLongItems else playlistLongItems) { dialog, which ->
+                .setItems(if (editablePlaylist == null) collectionLongItems else playlistLongItems) { _, which ->
                     when (which) {
                         0 -> if (songs.size > 0) {
                             playSong(0, songs, true)

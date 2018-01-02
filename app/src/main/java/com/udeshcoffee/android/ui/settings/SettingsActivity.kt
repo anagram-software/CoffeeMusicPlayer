@@ -62,6 +62,8 @@ class SettingsActivity: AppCompatActivity() {
         override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
 
             val pref_app_start = findPreference(PreferenceUtil.PREF_APP_START) as ListPreference
+            //TODO Home - Remove isEnabled(false) from pref_app_start
+            pref_app_start.isEnabled = false
             pref_app_start.summary = pref_app_start.entry
 
             val pref_lib_start = findPreference(PreferenceUtil.PREF_LIB_START) as ListPreference

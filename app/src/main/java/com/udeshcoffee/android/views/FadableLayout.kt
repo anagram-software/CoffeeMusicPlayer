@@ -46,7 +46,7 @@ class FadableLayout: ConstraintLayout {
             1 -> {val colors = IntArray(2)
 
                 colors[0] = color.getColorWithAlpha(200)
-                colors[1] = color.getColorWithAlpha(50)
+                colors[1] = color.getColorWithAlpha(75)
 
 
                 val gradient = GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP, colors)

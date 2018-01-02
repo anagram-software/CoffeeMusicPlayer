@@ -2,8 +2,9 @@
 
     <android.support.v7.preference.PreferenceCategory android:title="INTERFACE">
 
+        <!--TODO Home - Change default value to 0 -->
         <ListPreference
-            android:defaultValue="0"
+            android:defaultValue="1"
             android:entries="@array/pref_app_start_list_titles"
             android:entryValues="@array/pref_app_start_list_values"
             android:key="pref_app_start"

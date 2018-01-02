@@ -10,6 +10,7 @@ import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentActivity
 import android.support.v4.app.FragmentTransaction
+import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
 import android.transition.Fade
 import android.util.LongSparseArray
@@ -225,7 +226,7 @@ fun String.toLastFMArtistQuery(): String {
 /* TextView */
 fun TextView.setRoundColor(color: Int) {
     val bgShape = this.background as GradientDrawable
-    bgShape.setColor(resources.getColor(color))
+    bgShape.setColor(ContextCompat.getColor(context, color))
 }
 
 fun TextView.setTextWithMilliSecondsToTimer(milliseconds: Long) {

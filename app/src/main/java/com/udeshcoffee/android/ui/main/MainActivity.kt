@@ -21,8 +21,6 @@ import com.udeshcoffee.android.ui.main.equalizer.EqualizerFragment
 import com.udeshcoffee.android.ui.main.equalizer.EqualizerPresenter
 import com.udeshcoffee.android.ui.main.favorites.FavoritesFragment
 import com.udeshcoffee.android.ui.main.favorites.FavoritesPresenter
-import com.udeshcoffee.android.ui.main.home.HomeFragment
-import com.udeshcoffee.android.ui.main.home.HomePresenter
 import com.udeshcoffee.android.ui.main.library.LibraryFragment
 import com.udeshcoffee.android.ui.main.playlist.PlaylistFragment
 import com.udeshcoffee.android.ui.main.search.SearchFragment
@@ -67,26 +65,28 @@ class MainActivity : MiniPlayerActivity(), NavigationView.OnNavigationItemSelect
     private var mainContentItem : Int? = null
 
     // Pref
-    private var prefAppStart: Int = 1
+    //TODO Home - Change this to PreferenceUtil.APP_START_HOME
+    private var prefAppStart: Int = PreferenceUtil.APP_START_LIB
 
     override fun onCreate(savedInstanceState: Bundle?) {
         setContentView(R.layout.activity_main)
         super.onCreate(savedInstanceState)
 
         drawer.setNavigationItemSelectedListener(this)
-        prefAppStart = sharedPreferences.getString(PreferenceUtil.PREF_APP_START, "${PreferenceUtil.APP_START_HOME}").toInt()
+        prefAppStart = sharedPreferences.getString(PreferenceUtil.PREF_APP_START, "${PreferenceUtil.APP_START_LIB}").toInt()
 
         // Mini Player Fragment
         when (prefAppStart) {
-            PreferenceUtil.APP_START_HOME -> {
-                val homeFragment = supportFragmentManager.findFragmentByTag(Fragments.HOME)
-                        as HomeFragment? ?: HomeFragment().also {
-                    addFragmentToActivity(it, R.id.main_container, Fragments.HOME)
-                }
-                HomePresenter(homeFragment, Injection.provideMediaRepository(applicationContext))
-                drawer.setCheckedItem(R.id.navigation_home)
-                mainContentItem = R.id.navigation_home
-            }
+        //TODO Home - Uncomment
+//            PreferenceUtil.APP_START_HOME -> {
+//                val homeFragment = supportFragmentManager.findFragmentByTag(Fragments.HOME)
+//                        as HomeFragment? ?: HomeFragment().also {
+//                    addFragmentToActivity(it, R.id.main_container, Fragments.HOME)
+//                }
+//                HomePresenter(homeFragment, Injection.provideMediaRepository(applicationContext))
+//                drawer.setCheckedItem(R.id.navigation_home)
+//                mainContentItem = R.id.navigation_home
+//            }
             PreferenceUtil.APP_START_LIB -> {
                 supportFragmentManager.findFragmentByTag(Fragments.LIBRARY)
                         as LibraryFragment? ?: LibraryFragment().also {
@@ -175,21 +175,24 @@ class MainActivity : MiniPlayerActivity(), NavigationView.OnNavigationItemSelect
                 closeDrawerLayout()
                 openNowPlay()
             }
-            R.id.navigation_home -> {
-                if (prefAppStart == PreferenceUtil.APP_START_HOME) {
-                    supportFragmentManager.popBackStack()
-                    mainContentItem = R.id.navigation_home
-                    closeDrawerLayout()
-                } else {
-                    supportFragmentManager.popBackStack()
-                    val homeFragment = supportFragmentManager.findFragmentByTag(Fragments.HOME)
-                            as HomeFragment? ?: HomeFragment()
-                    HomePresenter(homeFragment, Injection.provideMediaRepository(applicationContext))
-                    doTransaction(R.id.main_container, homeFragment, MainActivity.Fragments.HOME)
-                    mainContentItem = R.id.navigation_home
-                    closeDrawerLayout()
-                }
-            }
+            //TODO Home - Uncomment
+//            R.id.navigation_home -> {
+//
+//                if (prefAppStart == PreferenceUtil.APP_START_HOME) {
+//                    supportFragmentManager.popBackStack()
+//                    mainContentItem = R.id.navigation_home
+//                    closeDrawerLayout()
+//                } else {
+//
+//                    supportFragmentManager.popBackStack()
+//                    val homeFragment = supportFragmentManager.findFragmentByTag(Fragments.HOME)
+//                            as HomeFragment? ?: HomeFragment()
+//                    HomePresenter(homeFragment, Injection.provideMediaRepository(applicationContext))
+//                    doTransaction(R.id.main_container, homeFragment, MainActivity.Fragments.HOME)
+//                    mainContentItem = R.id.navigation_home
+//                    closeDrawerLayout()
+//                }
+//            }
             R.id.navigation_library -> {
                 if (prefAppStart == PreferenceUtil.APP_START_LIB) {
                     supportFragmentManager.popBackStack()
@@ -244,10 +247,11 @@ class MainActivity : MiniPlayerActivity(), NavigationView.OnNavigationItemSelect
             0 -> {
                 drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED)
                 when (prefAppStart) {
-                    PreferenceUtil.APP_START_HOME -> {
-                        drawer.setCheckedItem(R.id.navigation_home)
-                        mainContentItem = R . id . navigation_home
-                    }
+                    //TODO Home - Uncomment
+//                    PreferenceUtil.APP_START_HOME -> {
+//                        drawer.setCheckedItem(R.id.navigation_home)
+//                        mainContentItem = R . id . navigation_home
+//                    }
                     PreferenceUtil.APP_START_LIB -> {
                         drawer.setCheckedItem(R.id.navigation_library)
                         mainContentItem = R . id . navigation_library

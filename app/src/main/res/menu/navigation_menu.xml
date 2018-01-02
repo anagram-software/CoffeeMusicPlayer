@@ -11,11 +11,12 @@
             android:icon="@drawable/ic_favorite_white_24dp"
             android:title="@string/action_favorites"
             android:checkable="true"/>
-        <item
-            android:id="@+id/navigation_home"
-            android:icon="@drawable/ic_home_white_24dp"
-            android:title="@string/action_home"
-            android:checkable="true"/>
+        <!-- TODO Home - Uncomment -->
+        <!--<item-->
+            <!--android:id="@+id/navigation_home"-->
+            <!--android:icon="@drawable/ic_home_white_24dp"-->
+            <!--android:title="@string/action_home"-->
+            <!--android:checkable="true"/>-->
         <item
             android:id="@+id/navigation_library"
             android:icon="@drawable/ic_library_music_white_24dp"
