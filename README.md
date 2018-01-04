@@ -1,5 +1,8 @@
 # CoffeeMusicPlayer
 
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![License](https://img.shields.io/badge/API-16%2B-green.svg)](https://android-arsenal.com/api?level=16)
+
 ![](static/github_logo.png)
 
 Coffee Music Player a simple yet powerful music player for a special music experience.
@@ -33,5 +36,5 @@ Feedback
 --------
 Any support, hugs and bugs to improve this music experience is warmly appreciated. Email to [this][2]
 
-[1]: https://github.com/UdeshUK/CoffeeMusicPlayer/blob/master/LICENSE
+[1]: https://github.com/UdeshUK/CoffeeMusicPlayer/blob/master/LICENSE.txt
 [2]: mailto:udesh.upalanka@live.com
