@@ -5,7 +5,7 @@
 
 ![](static/github_logo.png)
 
-Coffee Music Player a simple yet powerful music player for a special music experience.
+Coffee Music Player a simple yet powerful music player for a special music experience. Available on [PlayStore][5]
 
 Special features
 ----------------
@@ -40,3 +40,4 @@ Any support, hugs and bugs to improve this music experience is warmly appreciate
 [2]: https://twitter.com/TheUdeshUK
 [3]: https://github.com/UdeshUK/CoffeeMusicPlayer/blob/master/LICENSE.txt
 [4]: mailto:udesh.upalanka@live.com
+[5]: https://play.google.com/store/apps/details?id=com.udeshcoffee.android
