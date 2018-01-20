@@ -20,6 +20,14 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical">
+
+            <android.support.v7.widget.Toolbar
+                android:id="@+id/toolbar_tracks"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:theme="@style/PlayableActionToolbarTheme"
+                app:title="@string/info_tracks"/>
+
             <com.udeshcoffee.android.recyclerview.EmptyRecyclerView
                 android:id="@+id/album_detail_recycler_view"
                 android:layout_width="match_parent"

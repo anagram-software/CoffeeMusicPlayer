@@ -38,6 +38,13 @@
             app:layout_constraintBottom_toBottomOf="parent"
             android:layout_marginBottom="0dp">
 
+            <android.support.v7.widget.Toolbar
+                android:id="@+id/toolbar_tracks"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:theme="@style/PlayableActionToolbarTheme"
+                app:title="@string/info_tracks"/>
+
             <com.udeshcoffee.android.recyclerview.EmptyRecyclerView
                 android:id="@+id/list"
                 android:layout_width="match_parent"

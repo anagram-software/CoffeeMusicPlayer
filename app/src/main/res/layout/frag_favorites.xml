@@ -43,18 +43,30 @@
 
     </android.support.design.widget.AppBarLayout>
 
+    <android.support.v4.widget.NestedScrollView
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintTop_toBottomOf="@+id/appBarLayout"
+        tools:layout_editor_absoluteX="0dp"
+        android:layout_marginEnd="0dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginStart="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_marginBottom="0dp"
+        android:fillViewport="true">
+
         <LinearLayout
-            android:orientation="vertical"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            app:layout_constraintTop_toBottomOf="@+id/appBarLayout"
-            tools:layout_editor_absoluteX="0dp"
-            android:layout_marginEnd="0dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            android:layout_marginStart="0dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            android:layout_marginBottom="0dp">
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <android.support.v7.widget.Toolbar
+                android:id="@+id/toolbar_songs"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:theme="@style/PlayableActionToolbarTheme"
+                app:title="@string/info_songs" />
 
             <com.udeshcoffee.android.recyclerview.EmptyRecyclerView
                 android:id="@+id/list"
@@ -66,7 +78,11 @@
                 app:fastScrollThumbColor="?attr/colorAccent"
                 tools:ignore="UnusedAttribute" />
 
-            <include layout="@layout/empty_view" />
+            <include
+                layout="@layout/empty_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
 
         </LinearLayout>
+    </android.support.v4.widget.NestedScrollView>
 </android.support.constraint.ConstraintLayout>
