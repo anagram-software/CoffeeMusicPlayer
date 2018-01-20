@@ -10,8 +10,8 @@ import android.preference.PreferenceManager
 import android.support.v7.widget.Toolbar
 import android.widget.*
 import com.udeshcoffee.android.R
-import com.udeshcoffee.android.getColorWithAlpha
-import com.udeshcoffee.android.getService
+import com.udeshcoffee.android.extensions.getColorWithAlpha
+import com.udeshcoffee.android.extensions.getService
 import com.udeshcoffee.android.service.MusicService
 import com.udeshcoffee.android.ui.BaseActivity
 

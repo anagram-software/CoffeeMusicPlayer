@@ -4,29 +4,30 @@ import android.content.IntentFilter
 import com.cantrowitz.rxbroadcast.RxBroadcast
 import com.udeshcoffee.android.App
 import com.udeshcoffee.android.data.MediaRepository
-import com.udeshcoffee.android.getService
+import com.udeshcoffee.android.extensions.getService
+import com.udeshcoffee.android.extensions.playSong
+import com.udeshcoffee.android.extensions.shuffle
 import com.udeshcoffee.android.model.Song
-import com.udeshcoffee.android.playSong
 import com.udeshcoffee.android.service.MusicService
-import com.udeshcoffee.android.shuffle
 import com.udeshcoffee.android.utils.SortManager
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
+import org.koin.standalone.KoinComponent
 import java.util.*
 
 /**
- * Created by Udathari on 9/5/2017.
- */
-class TrackPresenter(val view: TrackContract.View, private val mediaRepository: MediaRepository): TrackContract.Presenter{
+* Created by Udathari on 9/5/2017.
+*/
+class TrackPresenter(
+        private val mediaRepository: MediaRepository
+): TrackContract.Presenter, KoinComponent {
 
     val TAG = "TrackPresenter"
 
+    override lateinit var view: TrackContract.View
+
     private var disposable: Disposable? = null
     private var broadcastDisposable: Disposable? = null
-
-    init {
-        view.presenter = this
-    }
 
     override fun start() {
         fetchData()

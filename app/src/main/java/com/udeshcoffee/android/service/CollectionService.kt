@@ -14,10 +14,10 @@ import android.widget.Toast
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.data.DataRepository
 import com.udeshcoffee.android.data.MediaRepository
-import com.udeshcoffee.android.utils.Injection
 import com.udeshcoffee.android.utils.isNetworkAvailable
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
+import org.koin.android.ext.android.inject
 
 
 /**
@@ -27,8 +27,9 @@ class CollectionService : Service() {
 
     val TAG = "CollectionService"
 
-    lateinit var dataRepository: DataRepository
-    lateinit var mediaRepository: MediaRepository
+    val dataRepository: DataRepository by inject()
+    val mediaRepository: MediaRepository by inject()
+
     lateinit var mBuilder: NotificationCompat.Builder
     private var channel: NotificationChannel? = null
     private var collectedCount = 0
@@ -44,9 +45,6 @@ class CollectionService : Service() {
     override fun onCreate() {
         super.onCreate()
         Log.d(TAG, "onCreate")
-
-        dataRepository = Injection.provideDataRepository(this.applicationContext)
-        mediaRepository = Injection.provideMediaRepository(this.applicationContext)
 
         channel = createNotificationChannel()
 

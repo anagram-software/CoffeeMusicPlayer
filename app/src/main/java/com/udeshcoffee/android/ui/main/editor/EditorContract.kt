@@ -6,8 +6,8 @@ import com.udeshcoffee.android.ui.BasePresenter
 import com.udeshcoffee.android.ui.BaseView
 
 /**
- * Created by Udathari on 9/28/2017.
- */
+* Created by Udathari on 9/28/2017.
+*/
 interface EditorContract {
 
     interface View: BaseView<Presenter> {
@@ -39,7 +39,7 @@ interface EditorContract {
 
     }
 
-    interface Presenter: BasePresenter {
+    interface Presenter: BasePresenter<View> {
 
         fun imageSelected(uri: Uri)
 
@@ -54,6 +54,8 @@ interface EditorContract {
         fun search(title: String, artist: String)
 
         fun disposeCollectionDisposable()
+
+        var song: Song
 
     }
 }

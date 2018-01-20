@@ -4,7 +4,7 @@ import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.ui.BasePresenter
 import java.util.*
 
-interface SongContainingPresenter: BasePresenter {
+interface SongContainingPresenter<T>: BasePresenter<T> {
     fun playClick(songs: ArrayList<Song>)
 
     fun playNextClick(songs: ArrayList<Song>)

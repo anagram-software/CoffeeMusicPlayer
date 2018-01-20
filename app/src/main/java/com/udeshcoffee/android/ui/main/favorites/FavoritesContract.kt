@@ -4,15 +4,13 @@ import com.udeshcoffee.android.ui.main.ShufflableSongContainingPresenter
 import com.udeshcoffee.android.ui.main.SongContainingView
 
 /**
- * Created by Udathari on 9/29/2017.
- */
+* Created by Udathari on 9/29/2017.
+*/
 interface FavoritesContract {
 
-    interface View : SongContainingView<Presenter> {
+    interface View : SongContainingView<Presenter>
 
-    }
-
-    interface Presenter : ShufflableSongContainingPresenter {
+    interface Presenter : ShufflableSongContainingPresenter<View> {
 
         fun fetchData()
 

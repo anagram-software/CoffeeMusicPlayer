@@ -14,7 +14,11 @@ import android.view.*
 import android.widget.Button
 import android.widget.TextView
 import com.bumptech.glide.Glide
-import com.udeshcoffee.android.*
+import com.udeshcoffee.android.R
+import com.udeshcoffee.android.extensions.navigateToDetail
+import com.udeshcoffee.android.extensions.openCollectionLongDialog
+import com.udeshcoffee.android.extensions.openDrawer
+import com.udeshcoffee.android.extensions.openSongLongDialog
 import com.udeshcoffee.android.interfaces.OnGridItemClickListener
 import com.udeshcoffee.android.interfaces.OnSongItemClickListener
 import com.udeshcoffee.android.model.Album
@@ -24,12 +28,7 @@ import com.udeshcoffee.android.recyclerview.MiniGridItemDecor
 import com.udeshcoffee.android.ui.adapters.AlbumAdapter
 import com.udeshcoffee.android.ui.adapters.ArtistAdapter
 import com.udeshcoffee.android.ui.adapters.SongAdapter
-import com.udeshcoffee.android.ui.main.detail.artistdetail.ArtistDetailFragment
-import com.udeshcoffee.android.ui.detail.albumdetail.ArtistDetailPresenter
 import com.udeshcoffee.android.ui.main.MainActivity
-import com.udeshcoffee.android.ui.main.detail.albumdetail.AlbumDetailFragment
-import com.udeshcoffee.android.ui.main.detail.albumdetail.AlbumDetailPresenter
-import com.udeshcoffee.android.utils.Injection
 import com.udeshcoffee.android.utils.PreferenceUtil
 import com.udeshcoffee.android.utils.loadCoolCardView
 import com.udeshcoffee.android.views.FadableLayout
@@ -37,13 +36,14 @@ import com.udeshcoffee.android.views.NonClickableToolbar
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
+import org.koin.android.ext.android.inject
 
 /**
- * Created by Udathari on 12/1/2017.
- */
+* Created by Udathari on 12/1/2017.
+*/
 class HomeFragment: Fragment(), HomeContract.View {
 
-    override var presenter: HomeContract.Presenter? = null
+    override val presenter: HomeContract.Presenter by inject()
 
     private var actionBar: ActionBar? = null
     private lateinit var appBar: AppBarLayout
@@ -128,11 +128,11 @@ class HomeFragment: Fragment(), HomeContract.View {
             topSongsAdapter = SongAdapter(SongAdapter.ITEM_TYPE_NORMAL, false)
             topSongsAdapter.listener = object : OnSongItemClickListener {
                 override fun onItemClick(position: Int) {
-                    presenter?.itemClicked(position, topSongsAdapter.songList)
+                    presenter.itemClicked(position, topSongsAdapter.songList)
                 }
 
                 override fun onItemLongClick(position: Int) {
-                    presenter?.itemLongClicked(topSongsAdapter.getItem(position))
+                    presenter.itemLongClicked(topSongsAdapter.getItem(position))
 
                 }
 
@@ -149,11 +149,11 @@ class HomeFragment: Fragment(), HomeContract.View {
             topAlbumsAdapter = AlbumAdapter(AlbumAdapter.ITEM_TYPE_MINI)
             topAlbumsAdapter.listener = object : OnGridItemClickListener {
                 override fun onItemClick(position: Int, shareElement: View) {
-                    presenter?.albumItemClicked(position)
+                    presenter.albumItemClicked(position)
                 }
 
                 override fun onItemLongClick(position: Int) {
-                    presenter?.albumItemLongClicked(topAlbumsAdapter.getItem(position))
+                    presenter.albumItemLongClicked(topAlbumsAdapter.getItem(position))
                 }
 
                 override fun onItemOptionClick() {}
@@ -171,11 +171,11 @@ class HomeFragment: Fragment(), HomeContract.View {
             topArtistsAdapter = ArtistAdapter(AlbumAdapter.ITEM_TYPE_MINI, Glide.with(context), true)
             topArtistsAdapter.listener = object : OnGridItemClickListener {
                 override fun onItemClick(position: Int, shareElement: View) {
-                    presenter?.artistItemClicked(position)
+                    presenter.artistItemClicked(position)
                 }
 
                 override fun onItemLongClick(position: Int) {
-                    presenter?.artistItemLongClicked(topArtistsAdapter.getItem(position))
+                    presenter.artistItemLongClicked(topArtistsAdapter.getItem(position))
                 }
 
                 override fun onItemOptionClick() {}
@@ -192,11 +192,11 @@ class HomeFragment: Fragment(), HomeContract.View {
             recentlyAddedAdapter = SongAdapter(SongAdapter.ITEM_TYPE_NORMAL, false)
             recentlyAddedAdapter.listener = object : OnSongItemClickListener {
                 override fun onItemClick(position: Int) {
-                    presenter?.itemClicked(position, recentlyAddedAdapter.songList)
+                    presenter.itemClicked(position, recentlyAddedAdapter.songList)
                 }
 
                 override fun onItemLongClick(position: Int) {
-                    presenter?.itemLongClicked(recentlyAddedAdapter.getItem(position))
+                    presenter.itemLongClicked(recentlyAddedAdapter.getItem(position))
 
                 }
 
@@ -223,12 +223,12 @@ class HomeFragment: Fragment(), HomeContract.View {
 
     override fun onStart() {
         super.onStart()
-        presenter?.start()
+        presenter.start()
     }
 
     override fun onStop() {
         super.onStop()
-        presenter?.stop()
+        presenter.stop()
     }
 
     override fun setLibraryStats(songs: Int?, albums: Int?, artists: Int?, playlists: Int?) {
@@ -293,20 +293,16 @@ class HomeFragment: Fragment(), HomeContract.View {
 
     override fun showAlbum(position: Int) {
         val detail = topAlbumsAdapter.getItem(position)
-        val detailFragment = activity!!.supportFragmentManager.findFragmentByTag(MainActivity.Fragments.ALBUM_DETAIL)
-                as AlbumDetailFragment? ?: AlbumDetailFragment()
-        AlbumDetailPresenter(detail, detailFragment, Injection.provideMediaRepository(context!!.applicationContext),
-                Injection.provideDataRepository(context!!.applicationContext))
-        doSharedTransaction(R.id.main_container, detailFragment, MainActivity.Fragments.ALBUM_DETAIL, detail)
+        fragmentManager?.navigateToDetail(detail)
     }
 
     override fun showArtist(position: Int) {
         val detail = topArtistsAdapter.getItem(position)
-        val detailFragment = activity!!.supportFragmentManager.findFragmentByTag(MainActivity.Fragments.ARTIST_DETAIL)
-                as ArtistDetailFragment? ?: ArtistDetailFragment()
-        ArtistDetailPresenter(detail, detailFragment, Injection.provideMediaRepository(context!!.applicationContext),
-                Injection.provideDataRepository(context!!.applicationContext))
-        doSharedTransaction(R.id.main_container, detailFragment, MainActivity.Fragments.ARTIST_DETAIL, detail)
+        fragmentManager?.navigateToDetail(detail)
+    }
+
+    companion object {
+        fun create(): HomeFragment = HomeFragment()
     }
 
 }

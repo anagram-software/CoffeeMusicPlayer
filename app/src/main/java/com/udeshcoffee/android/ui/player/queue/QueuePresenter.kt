@@ -4,25 +4,25 @@ import android.content.IntentFilter
 import android.util.Log
 import com.cantrowitz.rxbroadcast.RxBroadcast
 import com.udeshcoffee.android.App
-import com.udeshcoffee.android.getService
+import com.udeshcoffee.android.extensions.getService
 import com.udeshcoffee.android.service.MusicService
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
+import org.koin.standalone.KoinComponent
 
 /**
  * Created by Udathari on 9/16/2017.
  */
-class QueuePresenter(val view: QueueContract.View): QueueContract.Presenter {
+class QueuePresenter(): QueueContract.Presenter, KoinComponent {
 
     val TAG = "QueuePresenter"
+
+    override lateinit var view: QueueContract.View
+
     private var queueDisposable: Disposable? = null
     private var broadcastDisposable: Disposable? = null
     private var loadFirstTime = true
-
-    init {
-        view.presenter = this
-    }
 
     override fun start() {
         loadFirstTime = true

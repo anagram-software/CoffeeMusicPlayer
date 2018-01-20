@@ -8,7 +8,7 @@ import android.widget.Toast
 import com.udeshcoffee.android.data.MediaRepository
 import com.udeshcoffee.android.model.Playlist
 import com.udeshcoffee.android.model.Song
-import com.udeshcoffee.android.utils.Injection
+import org.koin.android.ext.android.inject
 import java.util.*
 
 /**
@@ -16,15 +16,9 @@ import java.util.*
  */
 class AddToPlaylistDialog: DialogFragment() {
 
-    companion object {
-        val ARGUMENT_SONGS = "ARGUMENT_SONGS"
-        val ARGUMENT_THIS_PLAYLIST_ID = "ARGUMENT_THIS_PLAYLIST_ID"
-    }
-
-    lateinit var mediaRepository: MediaRepository
+    val mediaRepository: MediaRepository by inject()
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        mediaRepository = Injection.provideMediaRepository(context!!.applicationContext)
 
         val songs = this.arguments!!.getParcelableArrayList<Song>(ARGUMENT_SONGS)
         if (songs == null) {
@@ -61,5 +55,19 @@ class AddToPlaylistDialog: DialogFragment() {
     private fun addToPlaylist(playlistId: Long, songs: ArrayList<Song>) {
         mediaRepository.addToPlaylist(playlistId, songs)
         Toast.makeText(context, "Added " + songs.size + " to playlist", Toast.LENGTH_SHORT).show()
+    }
+
+    companion object {
+        val ARGUMENT_SONGS = "ARGUMENT_SONGS"
+        val ARGUMENT_THIS_PLAYLIST_ID = "ARGUMENT_THIS_PLAYLIST_ID"
+
+        fun create(songs: ArrayList<Song>, thisPlaylistId: Long? = null): AddToPlaylistDialog {
+            val addToPlaylistDialog = AddToPlaylistDialog()
+            val bundle = Bundle()
+            bundle.putParcelableArrayList(AddToPlaylistDialog.ARGUMENT_SONGS, songs)
+            thisPlaylistId?.let { bundle.putLong(AddToPlaylistDialog.ARGUMENT_THIS_PLAYLIST_ID, it) }
+            addToPlaylistDialog.arguments = bundle
+            return addToPlaylistDialog
+        }
     }
 }

@@ -6,8 +6,8 @@ import com.udeshcoffee.android.ui.BasePresenter
 import com.udeshcoffee.android.ui.BaseView
 
 /**
- * Created by Udathari on 9/28/2017.
- */
+* Created by Udathari on 9/28/2017.
+*/
 interface EqualizerContract {
 
     interface View: BaseView<Presenter> {
@@ -42,7 +42,7 @@ interface EqualizerContract {
 
     }
 
-    interface Presenter: BasePresenter {
+    interface Presenter: BasePresenter<View> {
 
         fun actionEnable(enable: Boolean)
 

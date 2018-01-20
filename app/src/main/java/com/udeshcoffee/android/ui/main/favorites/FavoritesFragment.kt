@@ -8,26 +8,31 @@ import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.Toolbar
 import android.view.*
 import android.widget.TextView
-import com.udeshcoffee.android.*
+import com.udeshcoffee.android.R
+import com.udeshcoffee.android.extensions.openAddToPlaylistDialog
+import com.udeshcoffee.android.extensions.openDrawer
+import com.udeshcoffee.android.extensions.openSongLongDialog
+import com.udeshcoffee.android.extensions.setRoundColor
 import com.udeshcoffee.android.interfaces.OnSongItemClickListener
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.recyclerview.EmptyRecyclerView
 import com.udeshcoffee.android.ui.adapters.SongAdapter
 import com.udeshcoffee.android.utils.SortManager
+import org.koin.android.ext.android.inject
 
 /**
- * Created by Udathari on 9/29/2017.
- */
+* Created by Udathari on 9/29/2017.
+*/
 class FavoritesFragment: Fragment(), FavoritesContract.View {
 
-    override var presenter: FavoritesContract.Presenter? = null
+    override val presenter: FavoritesContract.Presenter by inject()
 
-    lateinit var songAdapter: SongAdapter
+    private lateinit var songAdapter: SongAdapter
+    private lateinit var toolbarSongs: Toolbar
     private var actionBar: ActionBar? = null
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        return inflater.inflate(R.layout.frag_favorites, container, false)
-    }
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
+            inflater.inflate(R.layout.frag_favorites, container, false)
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -47,6 +52,22 @@ class FavoritesFragment: Fragment(), FavoritesContract.View {
             titleView.text = getString(R.string.info_favorites).toUpperCase()
             titleView.setRoundColor(R.color.favAccent)
 
+            toolbarSongs = findViewById(R.id.toolbar_songs)
+            toolbarSongs.inflateMenu(R.menu.song_containing_menu)
+            toolbarSongs.setOnMenuItemClickListener {
+                when (it.itemId) {
+                    R.id.action_play -> {
+                        presenter.playClick(songAdapter.songList)
+                        true
+                    }
+                    R.id.action_queue -> {
+                        presenter.queueClick(songAdapter.songList)
+                        true
+                    }
+                    else -> false
+                }
+            }
+
             val songView = findViewById<EmptyRecyclerView>(R.id.list)
             songView.setEmptyView(findViewById(R.id.empty_view))
             songView.hasFixedSize()
@@ -55,15 +76,15 @@ class FavoritesFragment: Fragment(), FavoritesContract.View {
             songView.layoutManager = LinearLayoutManager(context)
             songAdapter.listener = object : OnSongItemClickListener {
                 override fun onItemClick(position: Int) {
-                    songAdapter.songList.let { presenter?.itemClicked(position, it) }
+                    songAdapter.songList.let { presenter.itemClicked(position, it) }
                 }
 
                 override fun onItemLongClick(position: Int) {
-                    songAdapter.getItem(position).let { presenter?.itemLongClicked(it) }
+                    songAdapter.getItem(position).let { presenter.itemLongClicked(it) }
                 }
 
                 override fun onShuffleClick() {
-                    songAdapter.songList.let { presenter?.shuffleClicked(it) }
+                    songAdapter.songList.let { presenter.shuffleClicked(it) }
                 }
             }
         }
@@ -76,7 +97,7 @@ class FavoritesFragment: Fragment(), FavoritesContract.View {
 
     override fun onPrepareOptionsMenu(menu: Menu?) {
         if (menu != null) {
-            when (presenter?.sortOrder) {
+            when (presenter.sortOrder) {
                 SortManager.SongSort.DEFAULT -> menu.findItem(R.id.action_sort_default).isChecked = true
                 SortManager.SongSort.NAME -> menu.findItem(R.id.action_sort_title).isChecked = true
                 SortManager.SongSort.TRACK_NUMBER -> menu.findItem(R.id.action_sort_track).isChecked = true
@@ -85,7 +106,7 @@ class FavoritesFragment: Fragment(), FavoritesContract.View {
                 SortManager.SongSort.YEAR -> menu.findItem(R.id.action_sort_year).isChecked = true
                 SortManager.SongSort.ARTIST_NAME -> menu.findItem(R.id.action_sort_artist_name).isChecked = true
             }
-            presenter?.let { menu.findItem(R.id.action_sort_ascending).isChecked = it.sortAscending }
+            presenter.let { menu.findItem(R.id.action_sort_ascending).isChecked = it.sortAscending }
         }
         super.onPrepareOptionsMenu(menu)
     }
@@ -95,28 +116,28 @@ class FavoritesFragment: Fragment(), FavoritesContract.View {
 
         if (item?.groupId == R.id.sort_group) {
             when (item.itemId) {
-                R.id.action_sort_default -> presenter?.sortOrder = SortManager.SongSort.DEFAULT
-                R.id.action_sort_title -> presenter?.sortOrder = SortManager.SongSort.NAME
-                R.id.action_sort_track -> presenter?.sortOrder = SortManager.SongSort.TRACK_NUMBER
-                R.id.action_sort_duration -> presenter?.sortOrder = SortManager.SongSort.DURATION
-                R.id.action_sort_year -> presenter?.sortOrder = SortManager.SongSort.YEAR
-                R.id.action_sort_date -> presenter?.sortOrder = SortManager.SongSort.DATE
-                R.id.action_sort_artist_name -> presenter?.sortOrder = SortManager.SongSort.ARTIST_NAME
-                R.id.action_sort_ascending -> presenter?.sortAscending = !item.isChecked
+                R.id.action_sort_default -> presenter.sortOrder = SortManager.SongSort.DEFAULT
+                R.id.action_sort_title -> presenter.sortOrder = SortManager.SongSort.NAME
+                R.id.action_sort_track -> presenter.sortOrder = SortManager.SongSort.TRACK_NUMBER
+                R.id.action_sort_duration -> presenter.sortOrder = SortManager.SongSort.DURATION
+                R.id.action_sort_year -> presenter.sortOrder = SortManager.SongSort.YEAR
+                R.id.action_sort_date -> presenter.sortOrder = SortManager.SongSort.DATE
+                R.id.action_sort_artist_name -> presenter.sortOrder = SortManager.SongSort.ARTIST_NAME
+                R.id.action_sort_ascending -> presenter.sortAscending = !item.isChecked
             }
         } else sortChanged = false
 
         when (item?.itemId) {
             android.R.id.home -> activity?.openDrawer()
-            R.id.action_play -> presenter?.playClick(songAdapter.songList)
-            R.id.action_play_next -> presenter?.playNextClick(songAdapter.songList)
-            R.id.action_queue -> presenter?.queueClick(songAdapter.songList)
-            R.id.action_add_to_playlist -> presenter?.addToPlaylistClick(songAdapter.songList)
+            R.id.action_play -> presenter.playClick(songAdapter.songList)
+            R.id.action_play_next -> presenter.playNextClick(songAdapter.songList)
+            R.id.action_queue -> presenter.queueClick(songAdapter.songList)
+            R.id.action_add_to_playlist -> presenter.addToPlaylistClick(songAdapter.songList)
         }
 
         if (sortChanged) {
-            presenter?.fetchData()
-            activity?.supportInvalidateOptionsMenu()
+            presenter.fetchData()
+            activity?.invalidateOptionsMenu()
         }
 
         return super.onOptionsItemSelected(item)
@@ -124,12 +145,13 @@ class FavoritesFragment: Fragment(), FavoritesContract.View {
 
     override fun onResume() {
         super.onResume()
-        presenter?.start()
+        presenter.view = this
+        presenter.start()
     }
 
     override fun onPause() {
         super.onPause()
-        presenter?.stop()
+        presenter.stop()
     }
 
     override fun populateItems(items: List<Song>) {
@@ -150,6 +172,10 @@ class FavoritesFragment: Fragment(), FavoritesContract.View {
 
     override fun setCurrentSong(id: Long) {
         songAdapter.currentId = id
+    }
+
+    companion object {
+        fun create(): FavoritesFragment = FavoritesFragment()
     }
 
 }

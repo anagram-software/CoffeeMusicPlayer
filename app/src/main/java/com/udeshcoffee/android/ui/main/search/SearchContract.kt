@@ -22,7 +22,7 @@ interface SearchContract {
 
     }
 
-    interface Presenter : SongContainingPresenter {
+    interface Presenter : SongContainingPresenter<View> {
 
         fun search(query: String)
 

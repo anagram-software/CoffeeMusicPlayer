@@ -10,40 +10,35 @@ import android.view.*
 import android.widget.TextView
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.data.MediaRepository
-import com.udeshcoffee.android.doSharedTransaction
+import com.udeshcoffee.android.extensions.navigateToDetail
+import com.udeshcoffee.android.extensions.openDrawer
+import com.udeshcoffee.android.extensions.setRoundColor
 import com.udeshcoffee.android.interfaces.OnItemClickListener
 import com.udeshcoffee.android.model.Playlist
 import com.udeshcoffee.android.model.Song
-import com.udeshcoffee.android.openDrawer
 import com.udeshcoffee.android.recyclerview.EmptyRecyclerView
-import com.udeshcoffee.android.setRoundColor
 import com.udeshcoffee.android.ui.adapters.PlaylistAdapter
 import com.udeshcoffee.android.ui.dialogs.CollectionLongDialog
 import com.udeshcoffee.android.ui.dialogs.NewPlaylistDialog
-import com.udeshcoffee.android.ui.main.MainActivity
-import com.udeshcoffee.android.ui.main.detail.playlistdetail.PlaylistDetailFragment
-import com.udeshcoffee.android.ui.main.detail.playlistdetail.PlaylistDetailPresenter
-import com.udeshcoffee.android.utils.Injection
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
+import org.koin.android.ext.android.inject
 
 /**
- * Created by Udathari on 9/28/2017.
- */
+* Created by Udathari on 9/28/2017.
+*/
 class PlaylistFragment: Fragment() {
 
-    private lateinit var mediaRepository: MediaRepository
+    private val mediaRepository: MediaRepository by inject()
 
     // Lists
     lateinit var playlistAdapter: PlaylistAdapter
     private var disposable: Disposable? = null
     private var actionBar: ActionBar? = null
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        mediaRepository = Injection.provideMediaRepository(context!!.applicationContext)
-        return inflater.inflate(R.layout.frag_playlist, container, false)
-    }
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
+            inflater.inflate(R.layout.frag_playlist, container, false)
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -132,10 +127,10 @@ class PlaylistFragment: Fragment() {
     }
 
     fun showDetailUI(detail: Playlist) {
-        val detailFragment = activity!!.supportFragmentManager.findFragmentByTag(MainActivity.Fragments.PLAYLIST_DETAIL)
-                as PlaylistDetailFragment? ?: PlaylistDetailFragment()
-        PlaylistDetailPresenter(detail, detailFragment, Injection.provideMediaRepository(context!!.applicationContext),
-                Injection.provideDataRepository(context!!.applicationContext))
-        doSharedTransaction(R.id.main_container, detailFragment, MainActivity.Fragments.PLAYLIST_DETAIL, detail)
+        fragmentManager?.navigateToDetail(detail)
+    }
+
+    companion object {
+        fun create() = PlaylistFragment()
     }
 }

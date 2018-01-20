@@ -5,15 +5,13 @@ import com.udeshcoffee.android.ui.BasePresenter
 import com.udeshcoffee.android.ui.main.SongContainingView
 
 /**
- * Created by Udathari on 9/5/2017.
- */
+* Created by Udathari on 9/5/2017.
+*/
 interface TrackContract {
 
-    interface View: SongContainingView<Presenter> {
+    interface View: SongContainingView<Presenter>
 
-    }
-
-    interface Presenter: BasePresenter {
+    interface Presenter: BasePresenter<View> {
 
         fun fetchData()
 

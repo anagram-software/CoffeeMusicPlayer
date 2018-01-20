@@ -8,17 +8,10 @@ import android.provider.MediaStore
 import android.support.v4.app.DialogFragment
 import android.support.v7.app.AlertDialog
 import com.udeshcoffee.android.R
-import com.udeshcoffee.android.doSharedTransaction
+import com.udeshcoffee.android.extensions.navigateToDetail
+import com.udeshcoffee.android.extensions.navigateToEditor
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.ui.MiniPlayerActivity
-import com.udeshcoffee.android.ui.main.detail.artistdetail.ArtistDetailFragment
-import com.udeshcoffee.android.ui.detail.albumdetail.ArtistDetailPresenter
-import com.udeshcoffee.android.ui.main.MainActivity
-import com.udeshcoffee.android.ui.main.detail.albumdetail.AlbumDetailFragment
-import com.udeshcoffee.android.ui.main.detail.albumdetail.AlbumDetailPresenter
-import com.udeshcoffee.android.ui.main.editor.EditorFragment
-import com.udeshcoffee.android.ui.main.editor.EditorPresenter
-import com.udeshcoffee.android.utils.Injection
 
 /**
  * Created by Udathari on 9/27/2017.
@@ -77,31 +70,19 @@ class PlayerMoreDialog : DialogFragment() {
     private fun showAlbum(song: Song){
         dismiss()
         (activity as MiniPlayerActivity).closeNowPlay()
-        val detailFragment = activity!!.supportFragmentManager.findFragmentByTag(MainActivity.Fragments.ALBUM_DETAIL)
-                as AlbumDetailFragment? ?: AlbumDetailFragment()
-        AlbumDetailPresenter(song.getAlbum(), detailFragment, Injection.provideMediaRepository(context!!.applicationContext),
-                Injection.provideDataRepository(context!!.applicationContext))
-        doSharedTransaction(R.id.main_container, detailFragment, MainActivity.Fragments.ALBUM_DETAIL, song.getAlbum())
+        fragmentManager?.navigateToDetail(song.getAlbum())
     }
 
     private fun showEditor(song: Song){
         dismiss()
         (activity as MiniPlayerActivity).closeNowPlay()
-        val detailFragment = activity!!.supportFragmentManager.findFragmentByTag(MainActivity.Fragments.EDITOR)
-                as EditorFragment? ?: EditorFragment()
-        EditorPresenter(detailFragment, song, Injection.provideMediaRepository(context!!.applicationContext),
-                Injection.provideDataRepository(context!!.applicationContext))
-        doSharedTransaction(R.id.main_container, detailFragment, MainActivity.Fragments.EDITOR, song)
+        activity?.supportFragmentManager?.navigateToEditor(song)
     }
 
     private fun showArtist(song: Song){
         dismiss()
         (activity as MiniPlayerActivity).closeNowPlay()
-        val detailFragment = activity!!.supportFragmentManager.findFragmentByTag(MainActivity.Fragments.ARTIST_DETAIL)
-                as ArtistDetailFragment? ?: ArtistDetailFragment()
-        ArtistDetailPresenter(song.getArtist(), detailFragment, Injection.provideMediaRepository(context!!.applicationContext),
-                Injection.provideDataRepository(context!!.applicationContext))
-        doSharedTransaction(R.id.main_container, detailFragment, MainActivity.Fragments.ARTIST_DETAIL, song.getArtist())
+        fragmentManager?.navigateToDetail(song.getArtist())
     }
 
 

@@ -16,42 +16,43 @@ import android.view.*
 import android.view.inputmethod.InputMethodManager
 import android.widget.*
 import com.udeshcoffee.android.R
-import com.udeshcoffee.android.loadArtwork
+import com.udeshcoffee.android.extensions.loadArtwork
+import com.udeshcoffee.android.extensions.setRoundColor
 import com.udeshcoffee.android.model.Song
-import com.udeshcoffee.android.setRoundColor
 import com.udeshcoffee.android.ui.dialogs.PermissionToSdCardDialog
 import com.udeshcoffee.android.ui.dialogs.SearchSongDialog
 import com.udeshcoffee.android.ui.player.lyrics.LyricsFragment
 import com.udeshcoffee.android.utils.isNetworkAvailable
 import com.udeshcoffee.android.utils.loadAlbumArtworkFromUri
+import org.koin.android.ext.android.inject
 
 
 /**
- * Created by Udathari on 9/28/2017.
- */
+* Created by Udathari on 9/28/2017.
+*/
 class EditorFragment : Fragment(), EditorContract.View {
 
     val TAG = "EditorFragment"
 
-    val SELECT_IMAGE = 17775
+    private val SELECT_IMAGE = 17775
 
-    override var presenter: EditorContract.Presenter? = null
+    override val presenter: EditorContract.Presenter by inject()
     lateinit var dialog: ProgressDialog
 
     var actionBar: ActionBar? = null
 
     // Fields
-    lateinit var albumArt: ImageView
-    lateinit var selectFromGallery: Button
-    lateinit var reset: Button
-    lateinit var title: EditText
-    lateinit var album: EditText
-    lateinit var artist: EditText
-    lateinit var genre: EditText
-    lateinit var year: EditText
-    lateinit var trackno: EditText
-    lateinit var discno: EditText
-    lateinit var path: EditText
+    private lateinit var albumArt: ImageView
+    private lateinit var selectFromGallery: Button
+    private lateinit var reset: Button
+    private lateinit var title: EditText
+    private lateinit var album: EditText
+    private lateinit var artist: EditText
+    private lateinit var genre: EditText
+    private lateinit var year: EditText
+    private lateinit var trackno: EditText
+    private lateinit var discno: EditText
+    private lateinit var path: EditText
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
             inflater.inflate(R.layout.frag_edit_song, container, false)
@@ -61,9 +62,11 @@ class EditorFragment : Fragment(), EditorContract.View {
 
         setHasOptionsMenu(true)
 
+        val song = arguments!!.getParcelable<Song>(ARGUMENT_SONG)
+
         dialog = ProgressDialog(context)
         dialog.setOnDismissListener{
-            presenter?.disposeCollectionDisposable()
+            presenter.disposeCollectionDisposable()
         }
         view.apply {
             val toolbar = findViewById<Toolbar>(R.id.toolbar)
@@ -84,12 +87,12 @@ class EditorFragment : Fragment(), EditorContract.View {
 
             selectFromGallery = findViewById(R.id.action_select_image)
             selectFromGallery.setOnClickListener{
-                presenter?.actionSelectImage()
+                presenter.actionSelectImage()
             }
 
             reset = findViewById(R.id.action_reset)
             reset.setOnClickListener{
-                presenter?.actionReset()
+                presenter.actionReset()
             }
 
             title = findViewById(R.id.editsongtitle)
@@ -101,7 +104,10 @@ class EditorFragment : Fragment(), EditorContract.View {
             discno = findViewById(R.id.editsongdiscno)
             path = findViewById(R.id.editsongpath)
         }
-        presenter?.start()
+
+        presenter.song = song
+        presenter.view = this
+        presenter.start()
     }
 
     override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
@@ -116,10 +122,10 @@ class EditorFragment : Fragment(), EditorContract.View {
                 hideKeyboard()
             }
             R.id.action_collect_metadata -> {
-                presenter?.actionSearch()
+                presenter.actionSearch()
             }
             R.id.action_save -> {
-                presenter?.save(
+                presenter.save(
                         title.text.toString(),
                         album.text.toString(),
                         artist.text.toString(),
@@ -136,7 +142,7 @@ class EditorFragment : Fragment(), EditorContract.View {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        presenter?.stop()
+        presenter.stop()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -157,7 +163,7 @@ class EditorFragment : Fragment(), EditorContract.View {
                 Log.d(TAG, "onResult")
                 if (resultCode == RESULT_OK) {
                     Log.d(TAG, "onResult Ok")
-                    data?.data?.let { presenter?.imageSelected(it) }
+                    data?.data?.let { presenter.imageSelected(it) }
                 }
             }
         }
@@ -166,7 +172,7 @@ class EditorFragment : Fragment(), EditorContract.View {
     fun onSearchRequest(id: Long, title: String, artist: String) {
         Log.d(TAG, "onSearchRequest id:$id, title:$title, artist:$artist")
         if (isNetworkAvailable(context!!, false))
-            presenter?.search(title, artist)
+            presenter.search(title, artist)
         else
             Toast.makeText(context, "No Connection", Toast.LENGTH_SHORT).show()
     }
@@ -210,14 +216,11 @@ class EditorFragment : Fragment(), EditorContract.View {
             Toast.makeText(context, "No Connection", Toast.LENGTH_SHORT).show()
             return
         }
-        val mDialog = SearchSongDialog()
-        mDialog.setTargetFragment(this, LyricsFragment.SEARCH_LYRICS)
-        val bundle = Bundle()
-        bundle.putLong(SearchSongDialog.ARGUMENT_ID, id)
-        bundle.putString(SearchSongDialog.ARGUMENT_TITLE, title)
-        bundle.putString(SearchSongDialog.ARGUMENT_ARTIST, artist)
-        mDialog.arguments = bundle
-        mDialog.show(fragmentManager, "SearchLyricDialog")
+
+        SearchSongDialog.create(id, title, artist).also {
+            setTargetFragment(this, LyricsFragment.SEARCH_LYRICS)
+            it.show(fragmentManager, "SearchLyricDialog")
+        }
     }
 
     override fun showToast(message: String) {
@@ -254,5 +257,16 @@ class EditorFragment : Fragment(), EditorContract.View {
         imm.hideSoftInputFromWindow(view?.windowToken, InputMethodManager.HIDE_NOT_ALWAYS)
     }
 
+    companion object {
+        private val ARGUMENT_SONG = "ARGUMENT_SONG"
+
+        fun create(song: Song): EditorFragment {
+            val fragment = EditorFragment()
+            val bundle = Bundle()
+            bundle.putParcelable(ARGUMENT_SONG, song)
+            fragment.arguments = bundle
+            return fragment
+        }
+    }
 
 }

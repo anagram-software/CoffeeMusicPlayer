@@ -1,24 +1,25 @@
 package com.udeshcoffee.android.ui.main.home
 
 import com.udeshcoffee.android.data.MediaRepository
+import com.udeshcoffee.android.extensions.playSong
 import com.udeshcoffee.android.model.Album
 import com.udeshcoffee.android.model.Artist
 import com.udeshcoffee.android.model.Song
-import com.udeshcoffee.android.playSong
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
+import org.koin.standalone.KoinComponent
 
 /**
- * Created by Udathari on 12/17/2017.
- */
-class HomePresenter(val view: HomeContract.View, private val mediaRepository: MediaRepository): HomeContract.Presenter {
+* Created by Udathari on 12/17/2017.
+*/
+class HomePresenter(
+        private val mediaRepository: MediaRepository
+): HomeContract.Presenter, KoinComponent {
+
+    override lateinit var view: HomeContract.View
 
     private var compositeDisposable: CompositeDisposable? = null
-
-    init {
-        view.presenter = this
-    }
 
     override fun start() {
         compositeDisposable = CompositeDisposable()

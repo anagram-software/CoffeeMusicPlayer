@@ -1,4 +1,4 @@
-package com.udeshcoffee.android.ui.detail.albumdetail
+package com.udeshcoffee.android.ui.main.detail.genredetail
 
 import com.udeshcoffee.android.model.Album
 import com.udeshcoffee.android.model.Song
@@ -6,8 +6,8 @@ import com.udeshcoffee.android.ui.main.ShufflableSongContainingPresenter
 import com.udeshcoffee.android.ui.main.SongContainingView
 
 /**
- * Created by Udathari on 9/12/2017.
- */
+* Created by Udathari on 9/12/2017.
+*/
 interface GenreDetailContract {
 
     interface View : SongContainingView<Presenter> {
@@ -20,7 +20,7 @@ interface GenreDetailContract {
 
     }
 
-    interface Presenter : ShufflableSongContainingPresenter {
+    interface Presenter : ShufflableSongContainingPresenter<View> {
 
         fun fetchSongs()
 
@@ -29,6 +29,8 @@ interface GenreDetailContract {
         fun albumItemClicked(position: Int)
 
         fun albumItemLongClicked(album: Album)
+
+        var genreId: Long
 
         var albumSortOrder: Int
 

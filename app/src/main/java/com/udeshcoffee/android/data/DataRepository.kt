@@ -1,6 +1,5 @@
 package com.udeshcoffee.android.data
 
-import android.support.annotation.VisibleForTesting
 import android.util.Log
 import com.udeshcoffee.android.api.itunes.SearchResponse
 import com.udeshcoffee.android.api.lastfm.ArtistResponse
@@ -9,7 +8,6 @@ import com.udeshcoffee.android.data.model.EQPreset
 import com.udeshcoffee.android.data.model.Favorite
 import com.udeshcoffee.android.data.model.Lyric
 import com.udeshcoffee.android.data.remote.RemoteDataSource
-import com.udeshcoffee.android.model.Artist
 import com.udeshcoffee.android.model.Song
 import io.reactivex.Observable
 import io.reactivex.Single
@@ -17,9 +15,12 @@ import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
 
 /**
- * Created by Udathari on 12/19/2017.
- */
-class DataRepository(private val localDataSource: LocalDataSource, private val remoteDataSource: RemoteDataSource) {
+* Created by Udathari on 12/19/2017.
+*/
+class DataRepository(
+        private val localDataSource: LocalDataSource,
+        private val remoteDataSource: RemoteDataSource
+) {
 
     private val NULL_ID: Long = -256
 
@@ -31,14 +32,16 @@ class DataRepository(private val localDataSource: LocalDataSource, private val r
                 .take(1)
     }
 
-    fun searchLyrics(title: String, artist: String, shouldCheckEqual: Boolean): Observable<com.udeshcoffee.android.api.genius.SearchResponse> =
+    fun searchLyrics(title: String, artist: String, shouldCheckEqual: Boolean): Single<com.udeshcoffee.android.api.genius.SearchResponse> =
             remoteDataSource.searchGenius(title, artist, shouldCheckEqual)
+                    .singleOrError()
 
-    fun loadLyrics(songId: Long, path: String): Observable<String?> {
+    fun loadLyrics(songId: Long, path: String): Single<String?> {
         return remoteDataSource.loadGenius(path)
                 .doOnNext { it?.let { localDataSource.setLyrics(Lyric(songId, it)) } }
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
+                .firstOrError()
     }
 
     fun downloadLyricsIfMissing(song: Song): Boolean {
@@ -117,10 +120,10 @@ class DataRepository(private val localDataSource: LocalDataSource, private val r
     private fun deleteFavorite(favorite: Favorite) = localDataSource.deleteFavorite(favorite)
 
     // Bio
-    fun getBio(artist: Artist): Single<Pair<String, Array<String>?>> {
-        return localDataSource.getBio(artist.id)
+    fun getBio(artistId: Long, artistName: String): Single<Pair<String, Array<String>?>> {
+        return localDataSource.getBio(artistId)
                 .onErrorResumeNext{
-                        return@onErrorResumeNext remoteDataSource.searchLastFMArtist(artist.name)
+                        return@onErrorResumeNext remoteDataSource.searchLastFMArtist(artistName)
                                 .map {
                                     val bio = it.artist?.bio?.summary ?: "No Bio Found :("
                                     val tags = it.artist?.tags?.tag
@@ -134,7 +137,7 @@ class DataRepository(private val localDataSource: LocalDataSource, private val r
                                     return@map Pair(bio, tagsArray)
                                 }
                                 .doAfterSuccess{
-                                    localDataSource.insertBio(artist.id, it.first, it.second)
+                                    localDataSource.insertBio(artistId, it.first, it.second)
                                 }
 
                 }
@@ -152,22 +155,4 @@ class DataRepository(private val localDataSource: LocalDataSource, private val r
     fun searchLastFMArtist(artist: String): Single<ArtistResponse> =
             remoteDataSource.searchLastFMArtist(artist)
 
-    companion object {
-        private var INSTANCE: DataRepository? = null
-
-        @JvmStatic
-        fun getInstance(localDataSource: LocalDataSource, remoteDataSource: RemoteDataSource): DataRepository {
-            if (INSTANCE == null) {
-                synchronized(MediaRepository::javaClass) {
-                    INSTANCE = DataRepository(localDataSource, remoteDataSource)
-                }
-            }
-            return INSTANCE!!
-        }
-
-        @VisibleForTesting
-        fun clearInstance() {
-            INSTANCE = null
-        }
-    }
 }

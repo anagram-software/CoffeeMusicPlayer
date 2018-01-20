@@ -22,28 +22,34 @@ import io.reactivex.schedulers.Schedulers
 import org.jaudiotagger.audio.AudioFileIO
 import org.jaudiotagger.tag.FieldKey
 import org.jaudiotagger.tag.datatype.Artwork
+import org.koin.standalone.KoinComponent
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
 
 /**
- * Created by Udathari on 9/28/2017.
- */
-class EditorPresenter(val view: EditorContract.View, val song: Song, private val mediaRepository: MediaRepository,
-                      private val dataRepository: DataRepository):
-        EditorContract.Presenter {
+* Created by Udathari on 9/28/2017.
+*/
+class EditorPresenter(
+        private val mediaRepository: MediaRepository,
+                      private val dataRepository: DataRepository
+): EditorContract.Presenter, KoinComponent {
 
     val TAG = "EditorPresenter"
+
+    override lateinit var song: Song
+    override lateinit var view: EditorContract.View
+
     var file: File? = null
     var genre: Genre? = null
-    var albumArtUri: Uri? = null
+    private var albumArtUri: Uri? = null
         set(value) {
             if (value != null)
                 albumArtUrl = null
             view.enableDisableReset(value != null)
             field = value
         }
-    var albumArtUrl: String? = null
+    private var albumArtUrl: String? = null
         set(value) {
             if (value != null)
                 albumArtUri = null
@@ -52,12 +58,8 @@ class EditorPresenter(val view: EditorContract.View, val song: Song, private val
         }
 
 
-    var collectionDisposable: Disposable? = null
-    var saveDisposable: Disposable? = null
-
-    init {
-        view.presenter = this
-    }
+    private var collectionDisposable: Disposable? = null
+    private var saveDisposable: Disposable? = null
 
     override fun start() {
         fetchFile()
@@ -233,7 +235,7 @@ class EditorPresenter(val view: EditorContract.View, val song: Song, private val
             }
 
             artworkBitmap?.let {
-                val scaledBitmap = Bitmap.createScaledBitmap(it, 500, 500, false);
+                val scaledBitmap = Bitmap.createScaledBitmap(it, 500, 500, false)
 
                 val stream = ByteArrayOutputStream()
                 scaledBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
@@ -243,7 +245,7 @@ class EditorPresenter(val view: EditorContract.View, val song: Song, private val
                 val artworkFile = File("${Environment.getExternalStorageDirectory()}/artwork.jpg")
 
                 if (!artworkFile.exists())
-                    artworkFile.createNewFile();
+                    artworkFile.createNewFile()
 
                 val out = FileOutputStream(artworkFile)
                 scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)

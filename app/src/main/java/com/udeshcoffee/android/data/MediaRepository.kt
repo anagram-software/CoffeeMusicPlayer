@@ -6,14 +6,15 @@ import android.content.Context
 import android.database.Cursor
 import android.net.Uri
 import android.provider.MediaStore
-import android.support.annotation.VisibleForTesting
 import com.annimon.stream.Collectors
 import com.annimon.stream.Stream
 import com.udeshcoffee.android.data.local.LocalDataSource
 import com.udeshcoffee.android.data.media.*
 import com.udeshcoffee.android.model.*
-import com.udeshcoffee.android.toBrite
+import com.udeshcoffee.android.extensions.toBrite
 import com.udeshcoffee.android.utils.DopeUtil
+import io.reactivex.BackpressureStrategy
+import io.reactivex.Flowable
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import java.util.*
@@ -21,8 +22,10 @@ import java.util.*
 /**
  * Created by Udathari on 12/19/2017.
  */
-class MediaRepository private constructor (context: Context,
-                                           private val localDataSource: LocalDataSource){
+class MediaRepository constructor (
+        context: Context,
+        private val localDataSource: LocalDataSource
+){
 
     private val contentResolver = context.contentResolver
     private val briteContentResolver = contentResolver.toBrite()
@@ -325,7 +328,7 @@ class MediaRepository private constructor (context: Context,
     }
 
     // Favorites
-    fun getFavorites(): Observable<List<Song>> {
+    fun getFavorites(): Flowable<List<Song>> {
         return localDataSource.getFavorites()
                 .flatMap{favorites ->
                     val songsQuery = songQuery.copy(
@@ -339,6 +342,7 @@ class MediaRepository private constructor (context: Context,
                             .createQuery(songsQuery.uri, songsQuery.projection, songsQuery.selection, songsQuery.args,
                                     songsQuery.sort, false)
                             .mapToList{Song(it)}
+                            .toFlowable(BackpressureStrategy.BUFFER)
                 }
     }
 
@@ -395,25 +399,6 @@ class MediaRepository private constructor (context: Context,
                 .flatMap {
                     getArtists().map { it1 -> statsToArtists(it, it1) }
                 }
-    }
-
-    companion object {
-        private var INSTANCE: MediaRepository? = null
-
-        @JvmStatic
-        fun getInstance(context: Context, localDataSource: LocalDataSource): MediaRepository {
-            if (INSTANCE == null) {
-                synchronized(MediaRepository::javaClass) {
-                    INSTANCE = MediaRepository(context, localDataSource)
-                }
-            }
-            return INSTANCE!!
-        }
-
-        @VisibleForTesting
-        fun clearInstance() {
-            INSTANCE = null
-        }
     }
 
 }

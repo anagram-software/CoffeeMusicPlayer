@@ -6,31 +6,28 @@ import android.support.v7.widget.GridLayoutManager
 import android.view.*
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.data.MediaRepository
-import com.udeshcoffee.android.doSharedTransaction
+import com.udeshcoffee.android.extensions.navigateToDetail
+import com.udeshcoffee.android.extensions.openCollectionLongDialog
 import com.udeshcoffee.android.interfaces.OnGridItemClickListener
 import com.udeshcoffee.android.model.Album
-import com.udeshcoffee.android.openCollectionLongDialog
 import com.udeshcoffee.android.recyclerview.EmptyRecyclerView
 import com.udeshcoffee.android.recyclerview.GridItemDecor
 import com.udeshcoffee.android.ui.adapters.AlbumAdapter
-import com.udeshcoffee.android.ui.main.MainActivity
-import com.udeshcoffee.android.ui.main.detail.albumdetail.AlbumDetailFragment
-import com.udeshcoffee.android.ui.main.detail.albumdetail.AlbumDetailPresenter
-import com.udeshcoffee.android.utils.Injection
 import com.udeshcoffee.android.utils.SortManager
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
+import org.koin.android.ext.android.inject
 import java.util.*
 
 /**
- * Created by Udathari on 8/27/2017.
- */
+* Created by Udathari on 8/27/2017.
+*/
 
 class AlbumFragment : Fragment(){
 
     val TAG = "AlbumFragment"
 
-    private lateinit var mediaRepository: MediaRepository
+    private val mediaRepository: MediaRepository by inject()
 
     private var disposable: Disposable? = null
     private var albumAdpt: AlbumAdapter? = null
@@ -48,8 +45,6 @@ class AlbumFragment : Fragment(){
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        mediaRepository = Injection.provideMediaRepository(context!!.applicationContext)
-
         val albumView = view.findViewById<EmptyRecyclerView>(R.id.linear_list)
         // specify an adapter (see also next example)
         albumAdpt = AlbumAdapter(AlbumAdapter.ITEM_TYPE_NORMAL)
@@ -64,7 +59,7 @@ class AlbumFragment : Fragment(){
 
         albumAdpt?.listener = object : OnGridItemClickListener {
             override fun onItemClick(position: Int, shareElement: View) {
-                albumAdpt?.getItem(position)?.let { showDetailUI(it, shareElement) }
+                albumAdpt?.getItem(position)?.let { showDetailUI(it) }
             }
 
             override fun onItemLongClick(position: Int) {
@@ -118,7 +113,7 @@ class AlbumFragment : Fragment(){
 
         if (sortChanged) {
             fetchData()
-            activity?.supportInvalidateOptionsMenu()
+            activity?.invalidateOptionsMenu()
         }
 
         return super.onOptionsItemSelected(item)
@@ -158,11 +153,11 @@ class AlbumFragment : Fragment(){
         }
     }
 
-    fun showDetailUI(detail: Album, shareElement: View) {
-        val detailFragment = activity!!.supportFragmentManager.findFragmentByTag(MainActivity.Fragments.ALBUM_DETAIL)
-                as AlbumDetailFragment? ?: AlbumDetailFragment()
-        AlbumDetailPresenter(detail, detailFragment, Injection.provideMediaRepository(context!!.applicationContext),
-                Injection.provideDataRepository(context!!.applicationContext))
-        doSharedTransaction(R.id.main_container, detailFragment, MainActivity.Fragments.ALBUM_DETAIL, detail)
+    fun showDetailUI(detail: Album) {
+        activity?.supportFragmentManager?.navigateToDetail(detail)
+    }
+
+    companion object {
+        fun create(): AlbumFragment = AlbumFragment()
     }
 }

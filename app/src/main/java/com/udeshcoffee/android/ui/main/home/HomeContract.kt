@@ -7,8 +7,8 @@ import com.udeshcoffee.android.ui.BasePresenter
 import com.udeshcoffee.android.ui.BaseView
 
 /**
- * Created by Udathari on 12/17/2017.
- */
+* Created by Udathari on 12/17/2017.
+*/
 interface HomeContract {
 
     interface View: BaseView<Presenter> {
@@ -35,7 +35,7 @@ interface HomeContract {
         fun showArtist(position: Int)
     }
 
-    interface Presenter: BasePresenter {
+    interface Presenter: BasePresenter<View> {
 
         fun itemClicked(position: Int, allItems: List<Song>)
 

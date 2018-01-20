@@ -12,35 +12,42 @@ import android.support.v7.widget.helper.ItemTouchHelper
 import android.view.*
 import android.widget.Toast
 import com.udeshcoffee.android.R
+import com.udeshcoffee.android.extensions.openAddToPlaylistDialog
+import com.udeshcoffee.android.extensions.openSongLongDialog
 import com.udeshcoffee.android.interfaces.OnDragableItemListener
 import com.udeshcoffee.android.model.Playlist
 import com.udeshcoffee.android.model.Song
-import com.udeshcoffee.android.openAddToPlaylistDialog
-import com.udeshcoffee.android.openSongLongDialog
 import com.udeshcoffee.android.recyclerview.EmptyRecyclerView
 import com.udeshcoffee.android.recyclerview.ItemTouchHelperCallback
 import com.udeshcoffee.android.ui.adapters.DragableAdapter
 import com.udeshcoffee.android.ui.dialogs.DeletePlaylistDialog
 import com.udeshcoffee.android.ui.dialogs.RenamePlaylistDialog
-import com.udeshcoffee.android.ui.main.MainActivity
+import org.koin.android.ext.android.inject
 
 /**
- * Created by Udathari on 9/12/2017.
- */
+* Created by Udathari on 9/12/2017.
+*/
+
 class PlaylistDetailFragment : Fragment(), PlaylistDetailContract.View {
 
-    override var presenter: PlaylistDetailContract.Presenter? = null
+    override val presenter: PlaylistDetailContract.Presenter by inject()
+
+    private var  playlistId: Long = -1
+    private var  playlistType: Int = -1
+    private var  playlistTitle: String? = null
 
     lateinit var songAdpt: DragableAdapter
     lateinit var songView: EmptyRecyclerView
-    var itemHelper: ItemTouchHelper? = null
-    var actionBar: ActionBar? = null
-    var isAddToPlaylistVisible = true
+    private var itemHelper: ItemTouchHelper? = null
+    private var actionBar: ActionBar? = null
+    private var isAddToPlaylistVisible = true
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val root = inflater.inflate(R.layout.frag_playlist_detail, container, false)
 
-        val name = arguments!!.getString(MainActivity.DetailFragments.ARGUMENT_NAME)
+        playlistId = arguments!!.getLong(ARGUMENT_ID)
+        playlistType = arguments!!.getInt(ARGUMENT_TYPE)
+        playlistTitle = arguments!!.getString(ARGUMENT_NAME)
 
         with(root) {
             val toolbar = findViewById<Toolbar>(R.id.toolbar)
@@ -51,9 +58,25 @@ class PlaylistDetailFragment : Fragment(), PlaylistDetailContract.View {
 
             actionBar?.apply {
                 setDisplayHomeAsUpEnabled(true)
-                title = name
+                title = playlistTitle
             }
             setHasOptionsMenu(true)
+
+            val toolbarTracks = findViewById<Toolbar>(R.id.toolbar_tracks)
+            toolbarTracks.inflateMenu(R.menu.song_containing_menu)
+            toolbarTracks.setOnMenuItemClickListener {
+                when (it.itemId) {
+                    R.id.action_play -> {
+                        presenter.playClick(songAdpt.dataset)
+                        true
+                    }
+                    R.id.action_queue -> {
+                        presenter.queueClick(songAdpt.dataset)
+                        true
+                    }
+                    else -> false
+                }
+            }
 
             songView = findViewById(R.id.list)
             songView.layoutManager = LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false)
@@ -69,11 +92,11 @@ class PlaylistDetailFragment : Fragment(), PlaylistDetailContract.View {
 
             songAdpt.listener = object : OnDragableItemListener {
                 override fun onItemClick(position: Int) {
-                    presenter?.itemClicked(position, songAdpt.dataset)
+                    presenter.itemClicked(position, songAdpt.dataset)
                 }
 
                 override fun onItemLongClick(position: Int) {
-                    presenter?.itemLongClicked(songAdpt.dataset[position])
+                    presenter.itemLongClicked(songAdpt.dataset[position])
                 }
 
                 override fun onItemDrag(holder: RecyclerView.ViewHolder) {
@@ -99,26 +122,30 @@ class PlaylistDetailFragment : Fragment(), PlaylistDetailContract.View {
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
         when (item?.itemId) {
             android.R.id.home -> activity?.onBackPressed()
-            R.id.action_play -> presenter?.playClick(songAdpt.dataset)
-            R.id.action_play_next -> presenter?.playNextClick(songAdpt.dataset)
-            R.id.action_queue -> presenter?.queueClick(songAdpt.dataset)
-            R.id.action_add_to_playlist -> presenter?.addToPlaylistClick(songAdpt.dataset)
-            R.id.action_add_to_favorites -> presenter?.addToFavoritesClick(songAdpt.dataset)
-            R.id.action_rename -> presenter?.rename()
-            R.id.action_delete -> presenter?.delete()
-            R.id.action_add_to_this_playlist -> presenter?.addToPlaylist()
+            R.id.action_play -> presenter.playClick(songAdpt.dataset)
+            R.id.action_play_next -> presenter.playNextClick(songAdpt.dataset)
+            R.id.action_queue -> presenter.queueClick(songAdpt.dataset)
+            R.id.action_add_to_playlist -> presenter.addToPlaylistClick(songAdpt.dataset)
+            R.id.action_add_to_favorites -> presenter.addToFavoritesClick(songAdpt.dataset)
+            R.id.action_rename -> presenter.rename()
+            R.id.action_delete -> presenter.delete()
+            R.id.action_add_to_this_playlist -> presenter.addToPlaylist()
         }
         return super.onOptionsItemSelected(item)
     }
 
     override fun onResume() {
         super.onResume()
-        presenter?.start()
+        presenter.playlistId = playlistId
+        presenter.playlistType = playlistType
+        presenter.playlistTitle = playlistTitle!!
+        presenter.view = this
+        presenter.start()
     }
 
     override fun onPause() {
         super.onPause()
-        presenter?.stop()
+        presenter.stop()
     }
 
     override fun populateItems(items: List<Song>) {
@@ -134,19 +161,19 @@ class PlaylistDetailFragment : Fragment(), PlaylistDetailContract.View {
             itemHelper = ItemTouchHelper(ItemTouchHelperCallback(
                     { fromPosition, toPosition -> songAdpt.onItemMove(fromPosition, toPosition) },
                     { fromPosition, toPosition ->
-                        if (fromPosition != toPosition) { presenter?.itemMoved(fromPosition, toPosition) }
+                        if (fromPosition != toPosition) { presenter.itemMoved(fromPosition, toPosition) }
                     },
-                    { presenter?.itemRemoved(songAdpt.dataset[it].playlistSongId, it) })
+                    { presenter.itemRemoved(songAdpt.dataset[it].playlistSongId, it) })
             )
             itemHelper?.attachToRecyclerView(songView)
         } else {
             isAddToPlaylistVisible = false
-            activity?.supportInvalidateOptionsMenu()
+            activity?.invalidateOptionsMenu()
             songAdpt.dragable = false
         }
     }
 
-    // Redundent
+    // Redundant
     override fun showAddToPlaylistDialog(songs: ArrayList<Song>) {}
 
     override fun showAddToPlaylistDialog(songs: ArrayList<Song>, thisPlaylistId: Long?) {
@@ -160,21 +187,12 @@ class PlaylistDetailFragment : Fragment(), PlaylistDetailContract.View {
             Toast.makeText(context, "No songs available", Toast.LENGTH_SHORT).show()
     }
 
-    override fun showRenameUI(title: String, id: Long) {
-        val mDialog = RenamePlaylistDialog()
-        val bundle1 = Bundle()
-        bundle1.putString(RenamePlaylistDialog.ARGUMENT_TITLE, title)
-        bundle1.putLong(RenamePlaylistDialog.ARGUMENT_ID, id)
-        mDialog.arguments = bundle1
-        mDialog.show(fragmentManager, "RenameDialog")
+    override fun showRenameUI(playlistId: Long, playlistTitle: String) {
+        RenamePlaylistDialog.create(playlistId, playlistTitle).show(fragmentManager, "RenameDialog")
     }
 
-    override fun showDeleteUI(playlist: Playlist) {
-        val mDialog = DeletePlaylistDialog()
-        val bundle1 = Bundle()
-        bundle1.putParcelable(DeletePlaylistDialog.ARGUMENT_PLAYLIST, playlist)
-        mDialog.arguments = bundle1
-        mDialog.show(fragmentManager, "DeletePlaylistDialog")
+    override fun showDeleteUI(playlistId: Long, playlistTitle: String) {
+        DeletePlaylistDialog.create(playlistId, playlistTitle).show(fragmentManager, "DeletePlaylistDialog")
     }
 
     override fun showSongLongDialog(song: Song) {
@@ -186,6 +204,22 @@ class PlaylistDetailFragment : Fragment(), PlaylistDetailContract.View {
         intent.putExtra("title", title)
         intent.putExtra("id", id)
         startActivity(intent)
+    }
+
+    companion object {
+        private val ARGUMENT_ID = "ARGUMENT_ID"
+        private val ARGUMENT_NAME = "ARGUMENT_NAME"
+        private val ARGUMENT_TYPE = "ARGUMENT_TYPE"
+
+        fun create(playlist: Playlist): PlaylistDetailFragment {
+            val fragment = PlaylistDetailFragment()
+            val bundle = Bundle()
+            bundle.putLong(ARGUMENT_ID, playlist.id)
+            bundle.putInt(ARGUMENT_TYPE, playlist.type)
+            bundle.putString(ARGUMENT_NAME, playlist.title)
+            fragment.arguments = bundle
+            return fragment
+        }
     }
 
 }

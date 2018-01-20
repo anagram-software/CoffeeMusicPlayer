@@ -16,29 +16,31 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import com.bumptech.glide.Glide
-import com.udeshcoffee.android.*
+import com.udeshcoffee.android.R
+import com.udeshcoffee.android.extensions.*
 import com.udeshcoffee.android.interfaces.OnGridItemClickListener
 import com.udeshcoffee.android.interfaces.OnSongItemClickListener
 import com.udeshcoffee.android.model.Album
+import com.udeshcoffee.android.model.Artist
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.recyclerview.EmptyRecyclerView
 import com.udeshcoffee.android.recyclerview.MiniGridItemDecor
 import com.udeshcoffee.android.ui.adapters.AlbumAdapter
 import com.udeshcoffee.android.ui.adapters.SongAdapter
-import com.udeshcoffee.android.ui.detail.albumdetail.ArtistDetailContract
 import com.udeshcoffee.android.ui.main.MainActivity
-import com.udeshcoffee.android.ui.main.detail.albumdetail.AlbumDetailFragment
-import com.udeshcoffee.android.ui.main.detail.albumdetail.AlbumDetailPresenter
-import com.udeshcoffee.android.utils.Injection
 import com.udeshcoffee.android.utils.SortManager
 import com.udeshcoffee.android.utils.loadArtistArtwork
+import org.koin.android.ext.android.inject
 
 
 /**
 * Created by Udathari on 9/12/2017.
 */
 class ArtistDetailFragment: Fragment(), ArtistDetailContract.View, AppBarLayout.OnOffsetChangedListener {
-    val TAG = "ArtistDetailFragment"
+
+    val TAG = this.javaClass.simpleName
+
+    override val presenter: ArtistDetailContract.Presenter by inject()
 
     private var mIsTheTitleVisible = false
     private var mIsTheTitleContainerVisible = true
@@ -50,20 +52,22 @@ class ArtistDetailFragment: Fragment(), ArtistDetailContract.View, AppBarLayout.
     private lateinit var tagLayout: View
     private lateinit var biotext: TextView
 
-    override var presenter: ArtistDetailContract.Presenter? = null
+    var artistId: Long = -1
+    lateinit var artistName: String
 
     lateinit var songAdpt: SongAdapter
     lateinit var albumAdpt: AlbumAdapter
 
-    lateinit var detailImage: ImageView
-    lateinit var albums: TextView
+    private lateinit var detailImage: ImageView
+    private lateinit var toolbarAlbums: Toolbar
+    private lateinit var toolbarSongs: Toolbar
     var actionBar: ActionBar? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val root = inflater.inflate(R.layout.frag_artist_detail, container, false)
 
-        val id = arguments!!.getLong(MainActivity.DetailFragments.ARGUMENT_ID)
-        val name = arguments!!.getString(MainActivity.DetailFragments.ARGUMENT_NAME)
+        artistId = arguments!!.getLong(ARGUMENT_ID)
+        artistName = arguments!!.getString(ARGUMENT_NAME)
 
         // Set up player view
         with(root) {
@@ -79,19 +83,17 @@ class ArtistDetailFragment: Fragment(), ArtistDetailContract.View, AppBarLayout.
 
             expandedLayout = findViewById(R.id.expanded_layout)
             expandedTitle = findViewById(R.id.expanded_title)
-            expandedTitle.text = name
+            expandedTitle.text = artistName
             tagLayout = findViewById(R.id.expanded_tags)
             tagLayout.visibility = View.VISIBLE
             this@ArtistDetailFragment.tag[0] = findViewById(R.id.expanded_tag1)
             this@ArtistDetailFragment.tag[1] = findViewById(R.id.expanded_tag2)
             collapsedTitle = findViewById(R.id.collapsed_title)
-            collapsedTitle.text = name
+            collapsedTitle.text = artistName
             collapsedTitle.fadeOut(0)
 
             detailImage = findViewById(R.id.detail_image)
-            loadArtistArtwork(context, Glide.with(context), id, name, detailImage, true)
-
-            albums = findViewById(R.id.textView_album)
+            loadArtistArtwork(context, Glide.with(context), artistId, artistName, detailImage, true)
 
             actionBar?.apply {
                 setDisplayHomeAsUpEnabled(true)
@@ -100,6 +102,8 @@ class ArtistDetailFragment: Fragment(), ArtistDetailContract.View, AppBarLayout.
             setHasOptionsMenu(true)
 
             // Album View
+            toolbarAlbums = findViewById(R.id.toolbar_albums)
+
             val albumView = findViewById<RecyclerView>(R.id.artist_album_recycler_view)
             albumView.layoutManager = LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
             albumView.addItemDecoration(MiniGridItemDecor(resources.getDimensionPixelSize(R.dimen.activity_horizontal_margin),
@@ -108,19 +112,35 @@ class ArtistDetailFragment: Fragment(), ArtistDetailContract.View, AppBarLayout.
             albumAdpt = AlbumAdapter(AlbumAdapter.ITEM_TYPE_MINI)
             albumAdpt.listener = object : OnGridItemClickListener {
                 override fun onItemClick(position: Int, shareElement: View) {
-                    presenter?.albumItemClicked(position)
+                    presenter.albumItemClicked(position)
                 }
 
                 override fun onItemOptionClick() {
                 }
 
                 override fun onItemLongClick(position: Int) {
-                    presenter?.albumItemLongClicked(albumAdpt.getItem(position))
+                    presenter.albumItemLongClicked(albumAdpt.getItem(position))
                 }
             }
             albumView.adapter = albumAdpt
 
             // Song View
+            toolbarSongs = findViewById(R.id.toolbar_songs)
+            toolbarSongs.inflateMenu(R.menu.song_containing_menu)
+            toolbarSongs.setOnMenuItemClickListener {
+                when (it.itemId) {
+                    R.id.action_play -> {
+                        presenter.playClick(songAdpt.songList)
+                        true
+                    }
+                    R.id.action_queue -> {
+                        presenter.queueClick(songAdpt.songList)
+                        true
+                    }
+                    else -> false
+                }
+            }
+
             val songView = findViewById<EmptyRecyclerView>(R.id.artist_song_recycler_view)
             songView.layoutManager = LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false)
             songView.setEmptyView(findViewById(R.id.empty_view))
@@ -133,15 +153,15 @@ class ArtistDetailFragment: Fragment(), ArtistDetailContract.View, AppBarLayout.
             songAdpt = SongAdapter(SongAdapter.ITEM_TYPE_NORMAL, true)
             songAdpt.listener = object : OnSongItemClickListener {
                 override fun onItemClick(position: Int) {
-                    presenter?.itemClicked(position, songAdpt.songList)
+                    presenter.itemClicked(position, songAdpt.songList)
                 }
 
                 override fun onItemLongClick(position: Int) {
-                    presenter?.itemLongClicked(songAdpt.songList[position])
+                    presenter.itemLongClicked(songAdpt.songList[position])
                 }
 
                 override fun onShuffleClick() {
-                    presenter?.shuffleClicked(songAdpt.songList)
+                    presenter.shuffleClicked(songAdpt.songList)
                 }
             }
             songView.adapter = songAdpt
@@ -170,7 +190,7 @@ class ArtistDetailFragment: Fragment(), ArtistDetailContract.View, AppBarLayout.
 
     override fun onPrepareOptionsMenu(menu: Menu?) {
         if (menu != null) {
-            when (presenter?.sortOrder) {
+            when (presenter.sortOrder) {
                 SortManager.SongSort.DEFAULT -> menu.findItem(R.id.action_sort_default).isChecked = true
                 SortManager.SongSort.NAME -> menu.findItem(R.id.action_sort_title).isChecked = true
                 SortManager.SongSort.TRACK_NUMBER -> menu.findItem(R.id.action_sort_track).isChecked = true
@@ -179,13 +199,13 @@ class ArtistDetailFragment: Fragment(), ArtistDetailContract.View, AppBarLayout.
                 SortManager.SongSort.YEAR -> menu.findItem(R.id.action_sort_year).isChecked = true
                 SortManager.SongSort.ALBUM_NAME -> menu.findItem(R.id.action_sort_album_name).isChecked = true
             }
-            when (presenter?.albumSortOrder) {
+            when (presenter.albumSortOrder) {
                 SortManager.AlbumSort.DEFAULT -> menu.findItem(R.id.action_sort_album_default).isChecked = true
                 SortManager.AlbumSort.NAME -> menu.findItem(R.id.action_sort_album_title).isChecked = true
                 SortManager.AlbumSort.YEAR -> menu.findItem(R.id.action_sort_album_year).isChecked = true
             }
-            presenter?.let { menu.findItem(R.id.action_sort_ascending).isChecked = it.sortAscending
-                menu.findItem(R.id.action_sort_album_ascending).isChecked = it.albumSortAscending }
+            menu.findItem(R.id.action_sort_ascending).isChecked = presenter.sortAscending
+            menu.findItem(R.id.action_sort_album_ascending).isChecked = presenter.albumSortAscending
         }
         super.onPrepareOptionsMenu(menu)
     }
@@ -196,45 +216,44 @@ class ArtistDetailFragment: Fragment(), ArtistDetailContract.View, AppBarLayout.
 
         if (item?.groupId == R.id.sort_album) {
             when (item.itemId) {
-                R.id.action_sort_album_default -> presenter?.albumSortOrder = SortManager.AlbumSort.DEFAULT
-                R.id.action_sort_album_title -> presenter?.albumSortOrder = SortManager.AlbumSort.NAME
-                R.id.action_sort_album_year -> presenter?.albumSortOrder = SortManager.AlbumSort.YEAR
-                R.id.action_sort_album_ascending -> presenter?.albumSortAscending = !item.isChecked
+                R.id.action_sort_album_default -> presenter.albumSortOrder = SortManager.AlbumSort.DEFAULT
+                R.id.action_sort_album_title -> presenter.albumSortOrder = SortManager.AlbumSort.NAME
+                R.id.action_sort_album_year -> presenter.albumSortOrder = SortManager.AlbumSort.YEAR
+                R.id.action_sort_album_ascending -> presenter.albumSortAscending = !item.isChecked
             }
         } else albumSortChanged = false
 
         if (item?.groupId == R.id.sort_song) {
             when (item.itemId) {
-                R.id.action_sort_default -> presenter?.sortOrder = SortManager.SongSort.DEFAULT
-                R.id.action_sort_title -> presenter?.sortOrder = SortManager.SongSort.NAME
-                R.id.action_sort_track -> presenter?.sortOrder = SortManager.SongSort.TRACK_NUMBER
-                R.id.action_sort_duration -> presenter?.sortOrder = SortManager.SongSort.DURATION
-                R.id.action_sort_year -> presenter?.sortOrder = SortManager.SongSort.YEAR
-                R.id.action_sort_date -> presenter?.sortOrder = SortManager.SongSort.DATE
-                R.id.action_sort_album_name -> presenter?.sortOrder = SortManager.SongSort.ALBUM_NAME
-                R.id.action_sort_ascending -> presenter?.sortAscending = !item.isChecked
+                R.id.action_sort_default -> presenter.sortOrder = SortManager.SongSort.DEFAULT
+                R.id.action_sort_title -> presenter.sortOrder = SortManager.SongSort.NAME
+                R.id.action_sort_track -> presenter.sortOrder = SortManager.SongSort.TRACK_NUMBER
+                R.id.action_sort_duration -> presenter.sortOrder = SortManager.SongSort.DURATION
+                R.id.action_sort_year -> presenter.sortOrder = SortManager.SongSort.YEAR
+                R.id.action_sort_date -> presenter.sortOrder = SortManager.SongSort.DATE
+                R.id.action_sort_album_name -> presenter.sortOrder = SortManager.SongSort.ALBUM_NAME
+                R.id.action_sort_ascending -> presenter.sortAscending = !item.isChecked
             }
         } else sortChanged = false
 
         when (item?.itemId) {
             android.R.id.home -> activity?.onBackPressed()
-            R.id.action_play -> presenter?.playClick(songAdpt.songList)
-            R.id.action_play_next -> presenter?.playNextClick(songAdpt.songList)
-            R.id.action_queue -> presenter?.queueClick(songAdpt.songList)
-            R.id.action_add_to_favorites -> presenter?.addToFavoritesClick(songAdpt.songList)
-            R.id.action_add_to_playlist -> presenter?.addToPlaylistClick(songAdpt.songList)
-//            R.id.action_delete_image -> presenter?.deleteImage()
-            R.id.action_select_image -> presenter?.selectImage()
+            R.id.action_play -> presenter.playClick(songAdpt.songList)
+            R.id.action_play_next -> presenter.playNextClick(songAdpt.songList)
+            R.id.action_queue -> presenter.queueClick(songAdpt.songList)
+            R.id.action_add_to_favorites -> presenter.addToFavoritesClick(songAdpt.songList)
+            R.id.action_add_to_playlist -> presenter.addToPlaylistClick(songAdpt.songList)
+            R.id.action_select_image -> presenter.selectImage()
         }
 
         if (albumSortChanged) {
-            presenter?.fetchAlbums()
-            activity?.supportInvalidateOptionsMenu()
+            presenter.fetchAlbums()
+            activity?.invalidateOptionsMenu()
         }
 
         if (sortChanged) {
-            presenter?.fetchSongs()
-            activity?.supportInvalidateOptionsMenu()
+            presenter.fetchSongs()
+            activity?.invalidateOptionsMenu()
         }
 
         return super.onOptionsItemSelected(item)
@@ -243,17 +262,20 @@ class ArtistDetailFragment: Fragment(), ArtistDetailContract.View, AppBarLayout.
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         Log.d(TAG, "onActivityResult")
-        presenter?.result(requestCode, resultCode, data)
+        presenter.result(requestCode, resultCode, data)
     }
 
     override fun onResume() {
         super.onResume()
-        presenter?.start()
+        presenter.artistId = artistId
+        presenter.artistName = artistName
+        presenter.view = this
+        presenter.start()
     }
 
     override fun onPause() {
         super.onPause()
-        presenter?.stop()
+        presenter.stop()
     }
 
     override fun populateItems(items: List<Song>) {
@@ -263,7 +285,7 @@ class ArtistDetailFragment: Fragment(), ArtistDetailContract.View, AppBarLayout.
     override fun populateAlbumItems(items: List<Album>) {
         albumAdpt.accept(items)
         if (items.isEmpty()) {
-            albums.visibility = View.GONE
+            toolbarSongs.visibility = View.GONE
         }
     }
 
@@ -292,11 +314,7 @@ class ArtistDetailFragment: Fragment(), ArtistDetailContract.View, AppBarLayout.
 
     override fun showAlbum(position: Int) {
         val detail = albumAdpt.getItem(position)
-        val detailFragment = activity!!.supportFragmentManager.findFragmentByTag(MainActivity.Fragments.ALBUM_DETAIL)
-                as AlbumDetailFragment? ?: AlbumDetailFragment()
-        AlbumDetailPresenter(detail, detailFragment, Injection.provideMediaRepository(context!!.applicationContext),
-                Injection.provideDataRepository(context!!.applicationContext))
-        doSharedTransaction(R.id.main_container, detailFragment, MainActivity.Fragments.ALBUM_DETAIL, detail)
+        fragmentManager?.navigateToDetail(detail)
     }
 
     override fun artistArtChanged(id: Long, name: String) {
@@ -358,7 +376,6 @@ class ArtistDetailFragment: Fragment(), ArtistDetailContract.View, AppBarLayout.
             }
 
         } else {
-
             if (!mIsTheTitleContainerVisible) {
                 expandedTitle.fadeIn(MainActivity.DetailFragments.ALPHA_ANIMATIONS_DURATION.toLong())
                 tagLayout.fadeIn(MainActivity.DetailFragments.ALPHA_ANIMATIONS_DURATION.toLong()*2)
@@ -369,5 +386,17 @@ class ArtistDetailFragment: Fragment(), ArtistDetailContract.View, AppBarLayout.
 
     companion object {
         val SELECT_PHOTO = 0
+
+        private val ARGUMENT_ID = "ARGUMENT_ID"
+        private val ARGUMENT_NAME = "ARGUMENT_ARTIST"
+
+        fun create(artist: Artist): ArtistDetailFragment {
+            val fragment = ArtistDetailFragment()
+            val bundle = Bundle()
+            bundle.putLong(ARGUMENT_ID, artist.id)
+            bundle.putString(ARGUMENT_NAME, artist.name)
+            fragment.arguments = bundle
+            return fragment
+        }
     }
 }

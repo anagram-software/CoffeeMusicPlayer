@@ -6,28 +6,27 @@ import com.annimon.stream.Stream
 import com.cantrowitz.rxbroadcast.RxBroadcast
 import com.udeshcoffee.android.App
 import com.udeshcoffee.android.data.MediaRepository
-import com.udeshcoffee.android.getService
+import com.udeshcoffee.android.extensions.getService
+import com.udeshcoffee.android.extensions.playSong
 import com.udeshcoffee.android.model.Song
-import com.udeshcoffee.android.playSong
 import com.udeshcoffee.android.service.MusicService
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
+import org.koin.standalone.KoinComponent
 
 /**
- * Created by Udathari on 9/12/2017.
- */
-class SearchPresenter(val view: SearchContract.View,
-                      private val mediaRepository: MediaRepository): SearchContract.Presenter {
+* Created by Udathari on 9/12/2017.
+*/
+class SearchPresenter(
+                      private val mediaRepository: MediaRepository
+): SearchContract.Presenter, KoinComponent {
 
     val TAG = "SearchPresenter"
 
-    private var broadcastDisposable: Disposable? = null
-    private lateinit var disposable: Disposable
+    override lateinit var view: SearchContract.View
 
-    init {
-        view.presenter = this
-    }
+    private var broadcastDisposable: Disposable? = null
 
     override fun start() {
         val filter = IntentFilter()
@@ -68,12 +67,12 @@ class SearchPresenter(val view: SearchContract.View,
                 .map { songs ->
                     Stream.of(songs).filter { it.title.contains(query, true) }.collect(Collectors.toList())
                 }
-                .take(1)
+                .firstOrError()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe{
+                .subscribe({
                     songs -> view.populateItems(songs)
-                }
+                }, {})
         getService()?.currentSong()?.id?.let { view.setCurrentSong(it) }
     }
 

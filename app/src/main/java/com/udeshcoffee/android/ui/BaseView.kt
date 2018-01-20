@@ -17,6 +17,6 @@ package com.udeshcoffee.android.ui
 
 interface BaseView<T> {
 
-    var presenter: T?
+    val presenter: T
 
 }

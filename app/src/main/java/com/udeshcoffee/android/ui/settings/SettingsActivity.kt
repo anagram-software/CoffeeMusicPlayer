@@ -20,7 +20,7 @@ import android.webkit.WebView
 import android.widget.TextView
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.service.CollectionService
-import com.udeshcoffee.android.setRoundColor
+import com.udeshcoffee.android.extensions.setRoundColor
 import com.udeshcoffee.android.utils.PreferenceUtil
 
 /**

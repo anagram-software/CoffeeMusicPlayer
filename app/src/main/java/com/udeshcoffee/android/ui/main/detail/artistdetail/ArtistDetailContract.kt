@@ -1,4 +1,4 @@
-package com.udeshcoffee.android.ui.detail.albumdetail
+package com.udeshcoffee.android.ui.main.detail.artistdetail
 
 import android.content.Intent
 import com.udeshcoffee.android.model.Album
@@ -7,8 +7,8 @@ import com.udeshcoffee.android.ui.main.ShufflableSongContainingPresenter
 import com.udeshcoffee.android.ui.main.SongContainingView
 
 /**
- * Created by Udathari on 9/12/2017.
- */
+* Created by Udathari on 9/12/2017.
+*/
 interface ArtistDetailContract {
 
     interface View : SongContainingView<Presenter> {
@@ -31,7 +31,7 @@ interface ArtistDetailContract {
 
     }
 
-    interface Presenter : ShufflableSongContainingPresenter {
+    interface Presenter : ShufflableSongContainingPresenter<View> {
 
         fun result(requestCode: Int, resultCode: Int, data: Intent?)
 
@@ -46,6 +46,10 @@ interface ArtistDetailContract {
         fun selectImage()
 
         fun deleteImage()
+
+        var artistId: Long
+
+        var artistName: String
 
         var albumSortOrder: Int
 

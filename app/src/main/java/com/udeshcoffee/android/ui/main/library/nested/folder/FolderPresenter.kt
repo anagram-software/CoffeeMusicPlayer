@@ -7,27 +7,32 @@ import com.cantrowitz.rxbroadcast.RxBroadcast
 import com.udeshcoffee.android.App
 import com.udeshcoffee.android.data.DataRepository
 import com.udeshcoffee.android.data.MediaRepository
-import com.udeshcoffee.android.getService
+import com.udeshcoffee.android.extensions.getService
+import com.udeshcoffee.android.extensions.playSong
+import com.udeshcoffee.android.extensions.queueSong
 import com.udeshcoffee.android.model.Folder
 import com.udeshcoffee.android.model.HistoryEntry
 import com.udeshcoffee.android.model.Song
-import com.udeshcoffee.android.playSong
-import com.udeshcoffee.android.queueSong
 import com.udeshcoffee.android.service.MusicService
 import com.udeshcoffee.android.utils.SortManager
 import com.udeshcoffee.android.utils.getExtSdCardFiles
 import io.reactivex.disposables.Disposable
+import org.koin.standalone.KoinComponent
 import java.io.File
 import java.util.*
 import kotlin.collections.ArrayList
 
 /**
- * Created by Udathari on 9/5/2017.
- */
-class FolderPresenter(val view: FolderContract.View, private val mediaRepository: MediaRepository,
-                      private val dataRepository: DataRepository): FolderContract.Presenter {
+* Created by Udathari on 9/5/2017.
+*/
+class FolderPresenter(
+        private val mediaRepository: MediaRepository,
+                      private val dataRepository: DataRepository
+): FolderContract.Presenter, KoinComponent {
 
     val TAG = "FolderPresenter"
+
+    override lateinit var view: FolderContract.View
 
     private var disposable: Disposable? = null
     private var broadcastDisposable: Disposable? = null
@@ -35,12 +40,8 @@ class FolderPresenter(val view: FolderContract.View, private val mediaRepository
     override val history: ArrayList<HistoryEntry> = ArrayList()
     override var currentDir: File? = null
 
-    var internal: String? = null
-    var sdCard: String? = null
-
-    init {
-        view.presenter = this
-    }
+    private var internal: String? = null
+    private var sdCard: String? = null
 
     override fun start() {
         val filter = IntentFilter()
@@ -159,7 +160,7 @@ class FolderPresenter(val view: FolderContract.View, private val mediaRepository
         view.showHideLoading(true)
         val prev = history.removeAt(history.size - 1)
         currentDir = prev.directory
-        setPath(currentDir!!.getPath())
+        setPath(currentDir!!.path)
         fetchFolders(currentDir!!)
         dispose()
         disposable = mediaRepository.getFolderSongs(currentDir!!.path + "/").subscribe { view.populateItems(it) }

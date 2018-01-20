@@ -17,12 +17,6 @@ import com.udeshcoffee.android.ui.player.lyrics.LyricsFragment
  */
 class SearchSongDialog: DialogFragment() {
 
-    companion object {
-        val ARGUMENT_ID = "ARGUMENT_ID"
-        val ARGUMENT_TITLE = "ARGUMENT_TITLE"
-        val ARGUMENT_ARTIST = "ARGUMENT_ARTIST"
-    }
-
     private var id: Long = 0
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
@@ -69,5 +63,21 @@ class SearchSongDialog: DialogFragment() {
             is EditorFragment -> fragment.onSearchRequest(id, title, artist)
         }
         dismiss()
+    }
+
+    companion object {
+        val ARGUMENT_ID = "ARGUMENT_ID"
+        val ARGUMENT_TITLE = "ARGUMENT_TITLE"
+        val ARGUMENT_ARTIST = "ARGUMENT_ARTIST"
+
+        fun create(id: Long, title: String, artist: String): SearchSongDialog {
+            val mDialog = SearchSongDialog()
+            val bundle = Bundle()
+            bundle.putLong(SearchSongDialog.ARGUMENT_ID, id)
+            bundle.putString(SearchSongDialog.ARGUMENT_TITLE, title)
+            bundle.putString(SearchSongDialog.ARGUMENT_ARTIST, artist)
+            mDialog.arguments = bundle
+            return mDialog
+        }
     }
 }

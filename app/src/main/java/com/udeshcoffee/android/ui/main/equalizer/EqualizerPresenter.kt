@@ -1,24 +1,27 @@
 package com.udeshcoffee.android.ui.main.equalizer
 
 import android.util.Log
-import com.udeshcoffee.android.getService
+import com.udeshcoffee.android.extensions.getService
 import com.udeshcoffee.android.service.AudioFXHelper
+import org.koin.standalone.KoinComponent
 import java.util.*
 
 /**
- * Created by Udathari on 9/28/2017.
- */
-class EqualizerPresenter(val view: EqualizerContract.View): EqualizerContract.Presenter {
+* Created by Udathari on 9/28/2017.
+*/
+class EqualizerPresenter: EqualizerContract.Presenter, KoinComponent {
 
     val TAG = "EqualizerPresenter"
+
+    override lateinit var view: EqualizerContract.View
 
     override val helper: AudioFXHelper? = getService()?.audioFXHelper
 
     override val enabled: Boolean?
         get() = helper?.equalizerEnabled
 
-    var presetCount = 0
-    var userCount = 0
+    private var presetCount = 0
+    private var userCount = 0
 
 //    companion object {
 
@@ -30,9 +33,6 @@ class EqualizerPresenter(val view: EqualizerContract.View): EqualizerContract.Pr
 
 //    }
 
-    init {
-        view.presenter = this
-    }
 
     override fun start() {
         helper?.apply {
@@ -164,7 +164,7 @@ class EqualizerPresenter(val view: EqualizerContract.View): EqualizerContract.Pr
         helper?.presetReverbPreset = reverb.toShort()
     }
 
-    fun loadPresets(helper: AudioFXHelper) {
+    private fun loadPresets(helper: AudioFXHelper) {
         helper.apply {
             val eqPresets = (0 until presetCount).mapTo(ArrayList<String>()) { equalizer!!.getPresetName(it.toShort()) }
             (0 until userCount).mapTo(eqPresets) { getUserPresetName(it) }

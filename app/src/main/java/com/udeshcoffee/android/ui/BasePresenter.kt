@@ -15,7 +15,9 @@
  */
 package com.udeshcoffee.android.ui
 
-interface BasePresenter {
+interface BasePresenter<T> {
+
+    var view: T
 
     fun start()
 

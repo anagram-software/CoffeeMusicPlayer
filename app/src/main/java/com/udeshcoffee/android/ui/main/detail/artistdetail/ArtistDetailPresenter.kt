@@ -1,43 +1,46 @@
-package com.udeshcoffee.android.ui.detail.albumdetail
+package com.udeshcoffee.android.ui.main.detail.artistdetail
 
 import android.app.Activity.RESULT_OK
 import android.content.Intent
 import android.content.IntentFilter
 import android.util.Log
 import com.cantrowitz.rxbroadcast.RxBroadcast
-import com.udeshcoffee.android.*
+import com.udeshcoffee.android.App
 import com.udeshcoffee.android.data.DataRepository
 import com.udeshcoffee.android.data.MediaRepository
+import com.udeshcoffee.android.extensions.getService
+import com.udeshcoffee.android.extensions.playSong
+import com.udeshcoffee.android.extensions.queueSong
+import com.udeshcoffee.android.extensions.shuffle
 import com.udeshcoffee.android.model.Album
-import com.udeshcoffee.android.model.Artist
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.service.MusicService
-import com.udeshcoffee.android.ui.main.detail.artistdetail.ArtistDetailFragment
 import com.udeshcoffee.android.utils.SortManager
 import com.udeshcoffee.android.utils.deleteArtistArt
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
+import org.koin.standalone.KoinComponent
 import java.util.*
 
 
 /**
- * Created by Udathari on 9/12/2017.
- */
-class ArtistDetailPresenter(val artist: Artist,
-                            val view: ArtistDetailContract.View,
-                            private val mediaRepository: MediaRepository,
-                            private val dataRepository: DataRepository): ArtistDetailContract.Presenter {
+* Created by Udathari on 9/12/2017.
+*/
+class ArtistDetailPresenter(
+        private val mediaRepository: MediaRepository,
+        private val dataRepository: DataRepository
+): ArtistDetailContract.Presenter, KoinComponent {
 
-    val TAG = "ArtistDetailPresenter"
+    val TAG = this.javaClass.simpleName
+
+    override var artistId: Long = -1
+    override lateinit var artistName: String
+    override lateinit var view: ArtistDetailContract.View
 
     private var songsDisposable: Disposable? = null
     private var albumsDisposable: Disposable? = null
     private var broadcastDisposable: Disposable? = null
-
-    init {
-        view.presenter = this
-    }
 
     override fun start() {
         fetchAlbums()
@@ -77,7 +80,7 @@ class ArtistDetailPresenter(val artist: Artist,
                 data?.let {
                     Log.d(TAG, "data: $it")
 //                    saveArtistArt(contentResolver, artist.id, it.data)
-                    view.artistArtChanged(artist.id, artist.name)
+                    view.artistArtChanged(artistId, artistName)
                 }
             }
         }
@@ -99,7 +102,7 @@ class ArtistDetailPresenter(val artist: Artist,
 
     override fun fetchSongs() {
         disposeSongs()
-        songsDisposable = mediaRepository.getArtistSongs(artist.id)
+        songsDisposable = mediaRepository.getArtistSongs(artistId)
                 .map({ songs ->
                     SortManager.sortArtistSongs(songs)
 
@@ -119,7 +122,7 @@ class ArtistDetailPresenter(val artist: Artist,
 
     override fun fetchAlbums() {
         disposeAlbums()
-        albumsDisposable = mediaRepository.getArtistAlbums(artist.name)
+        albumsDisposable = mediaRepository.getArtistAlbums(artistName)
                 .map({ albums ->
                     SortManager.sortArtistAlbums(albums)
 
@@ -137,7 +140,7 @@ class ArtistDetailPresenter(val artist: Artist,
     // Bio
     private fun fetchBio() {
         Log.d(TAG, "fetchBio")
-        dataRepository.getBio(artist)
+        dataRepository.getBio(artistId, artistName)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe({
@@ -154,7 +157,7 @@ class ArtistDetailPresenter(val artist: Artist,
     }
 
     override fun deleteImage() {
-        deleteArtistArt(artist.id)
+        deleteArtistArt(artistId)
         view.artistArtDeleted()
     }
 

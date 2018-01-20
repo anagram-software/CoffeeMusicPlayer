@@ -12,10 +12,11 @@ import android.widget.*
 import com.h6ah4i.android.widget.verticalseekbar.VerticalSeekBar
 import com.h6ah4i.android.widget.verticalseekbar.VerticalSeekBarWrapper
 import com.udeshcoffee.android.R
-import com.udeshcoffee.android.openDrawer
-import com.udeshcoffee.android.setRoundColor
+import com.udeshcoffee.android.extensions.openDrawer
+import com.udeshcoffee.android.extensions.setRoundColor
 import com.udeshcoffee.android.ui.dialogs.DeleteEQDialog
 import com.udeshcoffee.android.ui.dialogs.SaveEQDialog
+import org.koin.android.ext.android.inject
 
 
 /**
@@ -23,31 +24,30 @@ import com.udeshcoffee.android.ui.dialogs.SaveEQDialog
  */
 class EqualizerFragment : Fragment(), EqualizerContract.View {
 
-    val TAG = "EqualizerFragment"
+    val TAG = this.javaClass.simpleName
 
-    override var presenter: EqualizerContract.Presenter? = null
+    override val presenter: EqualizerContract.Presenter by inject()
 
     var actionBar: ActionBar? = null
-    lateinit var presetSpinner: Spinner
-    lateinit var actionSave: ImageButton
-    lateinit var bandBars: Array<VerticalSeekBar?>
-    lateinit var dbTextViews: Array<TextView?>
-    lateinit var bandHolder: LinearLayout
+    private lateinit var presetSpinner: Spinner
+    private lateinit var actionSave: ImageButton
+    private lateinit var bandBars: Array<VerticalSeekBar?>
+    private lateinit var dbTextViews: Array<TextView?>
+    private lateinit var bandHolder: LinearLayout
 
     // Virtualizer
-    lateinit var virtualizerSwitch: Switch
-    lateinit var virtualizerSeekbar: SeekBar
+    private lateinit var virtualizerSwitch: Switch
+    private lateinit var virtualizerSeekbar: SeekBar
 
     // BassBoost
-    lateinit var bassBoostSwitch: Switch
-    lateinit var bassBoostSeekbar: SeekBar
+    private lateinit var bassBoostSwitch: Switch
+    private lateinit var bassBoostSeekbar: SeekBar
 
     // Reverb
-    lateinit var reverbSpinner: Spinner
+    private lateinit var reverbSpinner: Spinner
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        return inflater.inflate(R.layout.frag_equalizer, container, false)
-    }
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
+            inflater.inflate(R.layout.frag_equalizer, container, false)
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -72,21 +72,21 @@ class EqualizerFragment : Fragment(), EqualizerContract.View {
 
             actionSave = findViewById(R.id.action_save)
             actionSave.setOnClickListener{
-                presenter?.actionSaveOrDelete()
+                presenter.actionSaveOrDelete()
             }
 
             bandHolder = findViewById(R.id.equalizerLinearLayout)
 
             virtualizerSwitch = findViewById<Switch>(R.id.virtualizer_switch)
             virtualizerSwitch.setOnCheckedChangeListener { _, b ->
-                presenter?.actionVirtualizerEnable(b)
+                presenter.actionVirtualizerEnable(b)
             }
             virtualizerSeekbar = findViewById<SeekBar>(R.id.virtualizer_seekbar).also{
                 it.max = 1000
                 it.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener{
                     override fun onProgressChanged(p0: SeekBar?, p1: Int, p2: Boolean) {
                         if (p2) {
-                            presenter?.changeVirtualizer(p1)
+                            presenter.changeVirtualizer(p1)
                         }
                     }
                     override fun onStartTrackingTouch(p0: SeekBar?) {}
@@ -96,14 +96,14 @@ class EqualizerFragment : Fragment(), EqualizerContract.View {
 
             bassBoostSwitch = findViewById(R.id.bass_boost_switch)
             bassBoostSwitch.setOnCheckedChangeListener { _, b ->
-                presenter?.actionBassBoostEnable(b)
+                presenter.actionBassBoostEnable(b)
             }
             bassBoostSeekbar = findViewById<SeekBar>(R.id.bass_boost_seekbar).also{
                 it.max = 1000
                 it.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener{
                     override fun onProgressChanged(p0: SeekBar?, p1: Int, p2: Boolean) {
                         if (p2) {
-                            presenter?.changeBassBoost(p1)
+                            presenter.changeBassBoost(p1)
                         }
                     }
                     override fun onStartTrackingTouch(p0: SeekBar?) {}
@@ -114,7 +114,8 @@ class EqualizerFragment : Fragment(), EqualizerContract.View {
             reverbSpinner = findViewById(R.id.reverb_spinner)
         }
 
-        presenter?.start()
+        presenter.view = this
+        presenter.start()
     }
 
     override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
@@ -126,9 +127,9 @@ class EqualizerFragment : Fragment(), EqualizerContract.View {
         val item = menu?.findItem(R.id.switch_equalizer)
         item?.let {
             val actionEnable = item.actionView.findViewById<Switch>(R.id.action_enable_equalizer)
-            presenter?.enabled?.let { actionEnable.isChecked = it }
+            presenter.enabled?.let { actionEnable.isChecked = it }
             actionEnable.setOnCheckedChangeListener { _, isChecked ->
-                presenter?.actionEnable(isChecked)
+                presenter.actionEnable(isChecked)
             }
         }
         super.onPrepareOptionsMenu(menu)
@@ -139,22 +140,22 @@ class EqualizerFragment : Fragment(), EqualizerContract.View {
             android.R.id.home -> activity?.openDrawer()
             R.id.switch_equalizer -> {
                 Toast.makeText(context, "Switch: ${item.isChecked}", Toast.LENGTH_SHORT).show()
-                presenter?.actionEnable(item.isChecked)
+                presenter.actionEnable(item.isChecked)
             }
         }
         return super.onOptionsItemSelected(item)
     }
 
     fun onSaveEQDialogResult(name: String){
-        presenter?.saveUserPreset(name)
+        presenter.saveUserPreset(name)
     }
 
     fun onDeleteEQDialogResult(id: Int){
-        presenter?.deletePreset(id)
+        presenter.deletePreset(id)
     }
 
     override fun setEnableAction() {
-        activity?.supportInvalidateOptionsMenu()
+        activity?.invalidateOptionsMenu()
     }
 
     override fun setEnabled(enabled: Boolean) {
@@ -211,7 +212,7 @@ class EqualizerFragment : Fragment(), EqualizerContract.View {
             override fun onNothingSelected(p0: AdapterView<*>?) {}
 
             override fun onItemSelected(p0: AdapterView<*>?, p1: View?, index: Int, p3: Long) {
-                presenter?.pickReverb(index)
+                presenter.pickReverb(index)
             }
 
         }
@@ -226,7 +227,7 @@ class EqualizerFragment : Fragment(), EqualizerContract.View {
             override fun onNothingSelected(p0: AdapterView<*>?) {}
 
             override fun onItemSelected(p0: AdapterView<*>?, p1: View?, index: Int, p3: Long) {
-                presenter?.pickPreset(index)
+                presenter.pickPreset(index)
             }
 
         }
@@ -281,7 +282,7 @@ class EqualizerFragment : Fragment(), EqualizerContract.View {
                     override fun onProgressChanged(seekBar: SeekBar, progress: Int,
                                                    fromUser: Boolean) {
                         if (fromUser)
-                            presenter?.changeFrequency(i, progress)
+                            presenter.changeFrequency(i, progress)
                         dbTextViews[i]?.text = "${(progress + equalizer.bandLevelRange[0])/100}dB"
                     }
 
@@ -289,7 +290,7 @@ class EqualizerFragment : Fragment(), EqualizerContract.View {
                     }
 
                     override fun onStopTrackingTouch(seekBar: SeekBar) {
-                        presenter?.setFrequency(i, seekBar.progress)
+                        presenter.setFrequency(i, seekBar.progress)
                     }
                 })
             }
@@ -321,5 +322,9 @@ class EqualizerFragment : Fragment(), EqualizerContract.View {
         bundle.putString(DeleteEQDialog.ARGUMENT_NAME, name)
         mDialog.arguments = bundle
         mDialog.show(fragmentManager, "SaveEQDialog")
+    }
+
+    companion object {
+        fun create(): EqualizerFragment = EqualizerFragment()
     }
 }

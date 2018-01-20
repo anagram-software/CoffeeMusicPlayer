@@ -20,11 +20,12 @@ import com.udeshcoffee.android.ui.MiniPlayerActivity
 import com.udeshcoffee.android.ui.adapters.DragableAdapter
 import com.udeshcoffee.android.ui.dialogs.AddToPlaylistDialog
 import com.udeshcoffee.android.utils.DopeUtil
+import org.koin.android.ext.android.inject
 import java.util.*
 
 /**
- * Created by Udathari on 9/16/2017.
- */
+* Created by Udathari on 9/16/2017.
+*/
 class QueueFragment: Fragment(), QueueContract.View {
 
     val TAG = "QueueFragment"
@@ -32,7 +33,7 @@ class QueueFragment: Fragment(), QueueContract.View {
     var adapter: DragableAdapter? = null
     lateinit var recyclerView: RecyclerView
 
-    override var presenter: QueueContract.Presenter? = null
+    override val presenter: QueueContract.Presenter by inject()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         postponeEnterTransition()
@@ -56,13 +57,13 @@ class QueueFragment: Fragment(), QueueContract.View {
                 setOnMenuItemClickListener {
                     when(it.itemId) {
                         R.id.action_add_to_playlist -> {
-                            presenter?.addToPlaylist()
+                            presenter.addToPlaylist()
                         }
                         R.id.action_close -> {
-                            presenter?.closeQueue()
+                            presenter.closeQueue()
                         }
                         R.id.action_clear_queue -> {
-                            presenter?.clearQueue()
+                            presenter.clearQueue()
                         }
                     }
                     return@setOnMenuItemClickListener false
@@ -77,15 +78,17 @@ class QueueFragment: Fragment(), QueueContract.View {
             val itemHelper = ItemTouchHelper(ItemTouchHelperCallback(
                     { fromPosition, toPosition -> adapter!!.onItemMove(fromPosition, toPosition) },
                     { fromPosition, toPosition ->
-                        if (fromPosition != toPosition) { presenter?.itemMoved(fromPosition, toPosition) }
+                        if (fromPosition != toPosition) {
+                            presenter.itemMoved(fromPosition, toPosition)
+                        }
                     },
-                    { presenter?.itemRemoved(it) })
+                    { presenter.itemRemoved(it) })
             )
             itemHelper.attachToRecyclerView(recyclerView)
 
             adapter?.listener = object : OnDragableItemListener{
                 override fun onItemClick(position: Int) {
-                    presenter?.itemClicked(position)
+                    presenter.itemClicked(position)
                 }
 
                 override fun onItemLongClick(position: Int) {}
@@ -109,12 +112,13 @@ class QueueFragment: Fragment(), QueueContract.View {
 
     override fun onStart() {
         super.onStart()
-        presenter?.start()
+        presenter.view = this
+        presenter.start()
     }
 
     override fun onStop() {
         super.onStop()
-        presenter?.stop()
+        presenter.stop()
     }
 
     override fun showQueue(songs: List<Song>) {

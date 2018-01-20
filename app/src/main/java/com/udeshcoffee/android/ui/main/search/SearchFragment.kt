@@ -18,50 +18,45 @@ import android.widget.TextView
 import com.bumptech.glide.Glide
 import com.jakewharton.rxbinding2.support.v7.widget.RxSearchView
 import com.udeshcoffee.android.R
-import com.udeshcoffee.android.doSharedTransaction
+import com.udeshcoffee.android.extensions.navigateToDetail
+import com.udeshcoffee.android.extensions.openSongLongDialog
 import com.udeshcoffee.android.interfaces.OnGridItemClickListener
 import com.udeshcoffee.android.interfaces.OnSongItemClickListener
 import com.udeshcoffee.android.model.Album
 import com.udeshcoffee.android.model.Artist
 import com.udeshcoffee.android.model.Song
-import com.udeshcoffee.android.openSongLongDialog
 import com.udeshcoffee.android.recyclerview.EmptyRecyclerView
 import com.udeshcoffee.android.recyclerview.MiniGridItemDecor
 import com.udeshcoffee.android.ui.adapters.AlbumAdapter
 import com.udeshcoffee.android.ui.adapters.ArtistAdapter
 import com.udeshcoffee.android.ui.adapters.SongAdapter
-import com.udeshcoffee.android.ui.main.detail.artistdetail.ArtistDetailFragment
-import com.udeshcoffee.android.ui.detail.albumdetail.ArtistDetailPresenter
-import com.udeshcoffee.android.ui.main.MainActivity
-import com.udeshcoffee.android.ui.main.detail.albumdetail.AlbumDetailFragment
-import com.udeshcoffee.android.ui.main.detail.albumdetail.AlbumDetailPresenter
-import com.udeshcoffee.android.utils.Injection
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
+import org.koin.android.ext.android.inject
 import java.util.concurrent.TimeUnit
 
 /**
- * Created by Udathari on 9/12/2017.
- */
+* Created by Udathari on 9/12/2017.
+*/
 class SearchFragment : Fragment(), SearchContract.View {
     val TAG = "SearchFragment"
 
-    override var presenter: SearchContract.Presenter? = null
+    override val presenter: SearchContract.Presenter by inject()
 
-    lateinit var songAdpt: SongAdapter
-    lateinit var albumAdpt: AlbumAdapter
-    lateinit var artistAdpt: ArtistAdapter
+    private lateinit var songAdpt: SongAdapter
+    private lateinit var albumAdpt: AlbumAdapter
+    private lateinit var artistAdpt: ArtistAdapter
 
-    lateinit var songs: TextView
-    lateinit var albums: TextView
-    lateinit var artists: TextView
+    private lateinit var songs: TextView
+    private lateinit var albums: TextView
+    private lateinit var artists: TextView
 
 
-    lateinit var imm: InputMethodManager
+    private lateinit var imm: InputMethodManager
 
-    var searchDisposable = CompositeDisposable()
+    private var searchDisposable = CompositeDisposable()
 
-    var actionBar: ActionBar? = null
+    private var actionBar: ActionBar? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val root = inflater.inflate(R.layout.frag_search, container, false)
@@ -100,7 +95,7 @@ class SearchFragment : Fragment(), SearchContract.View {
                     .skip(1)
                     .debounce(200, TimeUnit.MILLISECONDS)
                     .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe({ searchViewQueryTextEvent -> presenter?.search(searchViewQueryTextEvent.queryText().toString()) }))
+                    .subscribe({ searchViewQueryTextEvent -> presenter.search(searchViewQueryTextEvent.queryText().toString()) }))
 
             // Album View
             val albumView = findViewById<RecyclerView>(R.id.album_recycler_view)
@@ -110,7 +105,7 @@ class SearchFragment : Fragment(), SearchContract.View {
             albumAdpt = AlbumAdapter(AlbumAdapter.ITEM_TYPE_MINI)
             albumAdpt.listener = object : OnGridItemClickListener {
                 override fun onItemClick(position: Int, shareElement: View) {
-                    presenter?.albumItemClicked(position)
+                    presenter.albumItemClicked(position)
                 }
 
                 override fun onItemOptionClick() {
@@ -129,7 +124,7 @@ class SearchFragment : Fragment(), SearchContract.View {
             artistAdpt = ArtistAdapter(ArtistAdapter.ITEM_TYPE_MINI, Glide.with(context), false)
             artistAdpt.listener = object : OnGridItemClickListener {
                 override fun onItemClick(position: Int, shareElement: View) {
-                    presenter?.artistItemClicked(position)
+                    presenter.artistItemClicked(position)
                 }
 
                 override fun onItemOptionClick() {
@@ -155,11 +150,11 @@ class SearchFragment : Fragment(), SearchContract.View {
                 override fun onItemClick(position: Int) {
                     val tempList = ArrayList<Song>()
                     tempList.add(songAdpt.getItem(position))
-                    presenter?.itemClicked(0, tempList)
+                    presenter.itemClicked(0, tempList)
                 }
 
                 override fun onItemLongClick(position: Int) {
-                    presenter?.itemLongClicked(songAdpt.songList[position])
+                    presenter.itemLongClicked(songAdpt.songList[position])
                 }
 
                 override fun onShuffleClick() {
@@ -182,12 +177,13 @@ class SearchFragment : Fragment(), SearchContract.View {
 
     override fun onResume() {
         super.onResume()
-        presenter?.start()
+        presenter.view = this
+        presenter.start()
     }
 
     override fun onPause() {
         super.onPause()
-        presenter?.stop()
+        presenter.stop()
         imm.hideSoftInputFromWindow(view?.windowToken, 0)
     }
 
@@ -226,20 +222,12 @@ class SearchFragment : Fragment(), SearchContract.View {
 
     override fun showAlbum(position: Int) {
         val detail = albumAdpt.getItem(position)
-        val detailFragment = activity!!.supportFragmentManager.findFragmentByTag(MainActivity.Fragments.ALBUM_DETAIL)
-                as AlbumDetailFragment? ?: AlbumDetailFragment()
-        AlbumDetailPresenter(detail, detailFragment, Injection.provideMediaRepository(context!!.applicationContext),
-                Injection.provideDataRepository(context!!.applicationContext))
-        doSharedTransaction(R.id.main_container, detailFragment, MainActivity.Fragments.ALBUM_DETAIL, detail)
+        fragmentManager?.navigateToDetail(detail)
     }
 
     override fun showArtist(position: Int) {
         val detail = artistAdpt.getItem(position)
-        val detailFragment = activity!!.supportFragmentManager.findFragmentByTag(MainActivity.Fragments.ARTIST_DETAIL)
-                as ArtistDetailFragment? ?: ArtistDetailFragment()
-        ArtistDetailPresenter(detail, detailFragment, Injection.provideMediaRepository(context!!.applicationContext),
-                Injection.provideDataRepository(context!!.applicationContext))
-        doSharedTransaction(R.id.main_container, detailFragment, MainActivity.Fragments.ARTIST_DETAIL, detail)
+        fragmentManager?.navigateToDetail(detail)
     }
 
     override fun showAddToPlaylistDialog(songs: ArrayList<Song>) {}
@@ -248,5 +236,9 @@ class SearchFragment : Fragment(), SearchContract.View {
 
     override fun showSongLongDialog(song: Song) {
         openSongLongDialog(song)
+    }
+
+    companion object {
+        fun create() = SearchFragment()
     }
 }

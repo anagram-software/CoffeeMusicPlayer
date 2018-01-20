@@ -1,6 +1,5 @@
 package com.udeshcoffee.android.ui.main.detail.playlistdetail
 
-import com.udeshcoffee.android.model.Playlist
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.ui.main.SongContainingPresenter
 import com.udeshcoffee.android.ui.main.SongContainingView
@@ -14,9 +13,9 @@ interface PlaylistDetailContract {
 
         fun setPlaylist(isEditable: Boolean)
 
-        fun showRenameUI(title: String, id: Long)
+        fun showRenameUI(playlistId: Long, playlistTitle: String)
 
-        fun showDeleteUI(playlist: Playlist)
+        fun showDeleteUI(playlistId: Long, playlistTitle: String)
 
         fun showAddToPlaylistUI(id: Long, title: String)
 
@@ -24,7 +23,7 @@ interface PlaylistDetailContract {
 
     }
 
-    interface Presenter : SongContainingPresenter {
+    interface Presenter : SongContainingPresenter<View> {
 
         fun addToPlaylist()
 
@@ -35,5 +34,11 @@ interface PlaylistDetailContract {
         fun itemMoved(fromPosition: Int, toPosition: Int)
 
         fun itemRemoved(id: Long, position: Int)
+
+        var playlistId: Long
+
+        var playlistType: Int
+
+        var playlistTitle: String
     }
 }

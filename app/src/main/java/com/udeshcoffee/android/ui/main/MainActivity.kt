@@ -13,20 +13,10 @@ import android.util.Log
 import android.view.Gravity
 import android.view.MenuItem
 import com.udeshcoffee.android.R
-import com.udeshcoffee.android.addFragmentToActivity
-import com.udeshcoffee.android.doTransaction
-import com.udeshcoffee.android.getService
+import com.udeshcoffee.android.extensions.*
 import com.udeshcoffee.android.ui.MiniPlayerActivity
-import com.udeshcoffee.android.ui.main.equalizer.EqualizerFragment
-import com.udeshcoffee.android.ui.main.equalizer.EqualizerPresenter
-import com.udeshcoffee.android.ui.main.favorites.FavoritesFragment
-import com.udeshcoffee.android.ui.main.favorites.FavoritesPresenter
 import com.udeshcoffee.android.ui.main.library.LibraryFragment
-import com.udeshcoffee.android.ui.main.playlist.PlaylistFragment
-import com.udeshcoffee.android.ui.main.search.SearchFragment
-import com.udeshcoffee.android.ui.main.search.SearchPresenter
 import com.udeshcoffee.android.ui.settings.SettingsActivity
-import com.udeshcoffee.android.utils.Injection
 import com.udeshcoffee.android.utils.PreferenceUtil
 import io.reactivex.Single
 import java.util.concurrent.TimeUnit
@@ -51,10 +41,6 @@ class MainActivity : MiniPlayerActivity(), NavigationView.OnNavigationItemSelect
     }
 
     object DetailFragments {
-        val ARGUMENT_ID = "ARGUMENT_ID"
-        val ARGUMENT_NAME = "ARGUMENT_NAME"
-        val ARGUMENT_ARTIST_NAME = "ARGUMENT_ARTIST_NAME"
-        val ARGUMENT_TRANSITION_NAME = "ARGUMENT_TRANSITION_NAME"
         val PERCENTAGE_TO_SHOW_TITLE_AT_TOOLBAR = 0.9f
         val PERCENTAGE_TO_HIDE_TITLE_DETAILS = 0.3f
         val ALPHA_ANIMATIONS_DURATION = 200
@@ -90,7 +76,7 @@ class MainActivity : MiniPlayerActivity(), NavigationView.OnNavigationItemSelect
             PreferenceUtil.APP_START_LIB -> {
                 supportFragmentManager.findFragmentByTag(Fragments.LIBRARY)
                         as LibraryFragment? ?: LibraryFragment().also {
-                    addFragmentToActivity(it, R.id.main_container, Fragments.LIBRARY)
+                    replaceFragmentToActivity(it, R.id.main_container, Fragments.LIBRARY)
                 }
                 drawer.setCheckedItem(R.id.navigation_library)
                 mainContentItem = R.id.navigation_library
@@ -125,10 +111,7 @@ class MainActivity : MiniPlayerActivity(), NavigationView.OnNavigationItemSelect
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
         when (item?.itemId) {
             R.id.action_search -> {
-                val detailFragment = supportFragmentManager.findFragmentByTag(MainActivity.Fragments.SEARCH)
-                        as SearchFragment? ?: SearchFragment()
-                SearchPresenter(detailFragment, Injection.provideMediaRepository(applicationContext))
-                doTransaction(R.id.main_container, detailFragment, MainActivity.Fragments.SEARCH)
+                supportFragmentManager?.navigateToSearch()
 //                mainContentItem = R.id.navigation_playlist
             }
         }
@@ -200,37 +183,26 @@ class MainActivity : MiniPlayerActivity(), NavigationView.OnNavigationItemSelect
                     closeDrawerLayout()
                 } else {
                     supportFragmentManager.popBackStack()
-                    val libFragment = supportFragmentManager.findFragmentByTag(Fragments.LIBRARY)
-                            as LibraryFragment? ?: LibraryFragment()
-                    doTransaction(R.id.main_container, libFragment, MainActivity.Fragments.LIBRARY)
+                    supportFragmentManager?.navigateToLibrary()
                     mainContentItem = R.id.navigation_library
                     closeDrawerLayout()
                 }
             }
             R.id.navigation_playlist -> {
                 supportFragmentManager.popBackStack()
-                val detailFragment = supportFragmentManager.findFragmentByTag(MainActivity.Fragments.PLAYLISTS)
-                        as PlaylistFragment? ?: PlaylistFragment()
-                doTransaction(R.id.main_container, detailFragment, MainActivity.Fragments.PLAYLISTS)
+                supportFragmentManager?.navigateToPlaylist()
                 mainContentItem = R.id.navigation_playlist
                 closeDrawerLayout()
             }
             R.id.navigation_equalizer -> {
                 supportFragmentManager.popBackStack()
-                val detailFragment = supportFragmentManager.findFragmentByTag(MainActivity.Fragments.EQUALIZER)
-                        as EqualizerFragment? ?: EqualizerFragment()
-                EqualizerPresenter(detailFragment)
-                doTransaction(R.id.main_container, detailFragment, MainActivity.Fragments.EQUALIZER)
+                supportFragmentManager?.navigateToEqualizer()
                 mainContentItem = R.id.navigation_equalizer
                 closeDrawerLayout()
             }
             R.id.navigation_favorites -> {
                 supportFragmentManager.popBackStack()
-                val detailFragment = supportFragmentManager.findFragmentByTag(MainActivity.Fragments.FAVORITES)
-                        as FavoritesFragment? ?: FavoritesFragment()
-                FavoritesPresenter(detailFragment, Injection.provideMediaRepository(this.applicationContext),
-                        Injection.provideDataRepository(this.applicationContext))
-                doTransaction(R.id.main_container, detailFragment, MainActivity.Fragments.FAVORITES)
+                supportFragmentManager?.navigateToFavorites()
                 mainContentItem = R.id.navigation_favorites
                 closeDrawerLayout()
             }
@@ -308,9 +280,7 @@ class MainActivity : MiniPlayerActivity(), NavigationView.OnNavigationItemSelect
             closeDrawerLayout()
         } else {
             supportFragmentManager.popBackStack()
-            val libFragment = supportFragmentManager.findFragmentByTag(Fragments.LIBRARY)
-                    as LibraryFragment? ?: LibraryFragment()
-            doTransaction(R.id.main_container, libFragment, MainActivity.Fragments.LIBRARY)
+            supportFragmentManager?.navigateToLibrary()
             mainContentItem = R.id.navigation_library
             drawer.setCheckedItem(R.id.navigation_library)
             closeDrawerLayout()

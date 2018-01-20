@@ -10,29 +10,21 @@ import android.support.v7.app.AlertDialog
 import android.widget.Toast
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.data.DataRepository
-import com.udeshcoffee.android.doSharedTransaction
+import com.udeshcoffee.android.extensions.navigateToDetail
+import com.udeshcoffee.android.extensions.navigateToEditor
+import com.udeshcoffee.android.extensions.playSong
+import com.udeshcoffee.android.extensions.queueSong
 import com.udeshcoffee.android.model.Song
-import com.udeshcoffee.android.playSong
-import com.udeshcoffee.android.queueSong
-import com.udeshcoffee.android.ui.main.detail.artistdetail.ArtistDetailFragment
-import com.udeshcoffee.android.ui.detail.albumdetail.ArtistDetailPresenter
-import com.udeshcoffee.android.ui.main.MainActivity
-import com.udeshcoffee.android.ui.main.detail.albumdetail.AlbumDetailFragment
-import com.udeshcoffee.android.ui.main.detail.albumdetail.AlbumDetailPresenter
-import com.udeshcoffee.android.ui.main.editor.EditorFragment
-import com.udeshcoffee.android.ui.main.editor.EditorPresenter
-import com.udeshcoffee.android.utils.Injection
+import org.koin.android.ext.android.inject
 
 /**
- * Created by Udathari on 9/27/2017.
- */
+* Created by Udathari on 9/27/2017.
+*/
 class SongLongDialog: DialogFragment() {
 
-    private lateinit var dataRepository: DataRepository
+    private val dataRepository: DataRepository by inject()
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        dataRepository = Injection.provideDataRepository(context!!)
-
         val song = this.arguments!!.getParcelable<Song>(ARGUMENT_SONG)
 
         val items = arrayOf(getString(R.string.action_play),
@@ -47,7 +39,7 @@ class SongLongDialog: DialogFragment() {
                 getString(R.string.action_share))
 
         if (dataRepository.isFavoriteSync(song.id)){
-            items[8] = getString(R.string.action_rem_from_favorites);
+            items[8] = getString(R.string.action_rem_from_favorites)
         }
 
         val builder = AlertDialog.Builder(context!!)
@@ -107,29 +99,17 @@ class SongLongDialog: DialogFragment() {
     }
     private fun showAlbum(song: Song){
         dismiss()
-        val detailFragment = activity!!.supportFragmentManager.findFragmentByTag(MainActivity.Fragments.ALBUM_DETAIL)
-                as AlbumDetailFragment? ?: AlbumDetailFragment()
-        AlbumDetailPresenter(song.getAlbum(), detailFragment, Injection.provideMediaRepository(context!!.applicationContext),
-                Injection.provideDataRepository(context!!))
-        doSharedTransaction(R.id.main_container, detailFragment, MainActivity.Fragments.ALBUM_DETAIL, song.getAlbum())
+        fragmentManager?.navigateToDetail(song.getAlbum())
     }
 
     private fun showEditor(song: Song){
         dismiss()
-        val detailFragment = activity!!.supportFragmentManager.findFragmentByTag(MainActivity.Fragments.EDITOR)
-                as EditorFragment? ?: EditorFragment()
-        EditorPresenter(detailFragment, song, Injection.provideMediaRepository(context!!.applicationContext),
-                Injection.provideDataRepository(context!!))
-        doSharedTransaction(R.id.main_container, detailFragment, MainActivity.Fragments.EDITOR, song)
+        activity?.supportFragmentManager?.navigateToEditor(song)
     }
 
     private fun showArtist(song: Song){
         dismiss()
-        val detailFragment = activity!!.supportFragmentManager.findFragmentByTag(MainActivity.Fragments.ARTIST_DETAIL)
-                as ArtistDetailFragment? ?: ArtistDetailFragment()
-        ArtistDetailPresenter(song.getArtist(), detailFragment, Injection.provideMediaRepository(context!!.applicationContext),
-                Injection.provideDataRepository(context!!))
-        doSharedTransaction(R.id.main_container, detailFragment, MainActivity.Fragments.ARTIST_DETAIL, song.getArtist())
+        fragmentManager?.navigateToDetail(song.getArtist())
     }
 
 

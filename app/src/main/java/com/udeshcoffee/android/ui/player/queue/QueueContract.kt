@@ -5,8 +5,8 @@ import com.udeshcoffee.android.ui.BasePresenter
 import com.udeshcoffee.android.ui.BaseView
 
 /**
- * Created by Udathari on 8/25/2017.
- */
+* Created by Udathari on 8/25/2017.
+*/
 interface QueueContract {
 
     interface View: BaseView<Presenter> {
@@ -25,7 +25,7 @@ interface QueueContract {
 
     }
 
-    interface Presenter: BasePresenter {
+    interface Presenter: BasePresenter<View> {
 
         fun loadQueue()
 

@@ -8,18 +8,19 @@ import android.widget.Toast
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.data.DataRepository
 import com.udeshcoffee.android.data.MediaRepository
+import com.udeshcoffee.android.extensions.playSong
+import com.udeshcoffee.android.extensions.queueSong
 import com.udeshcoffee.android.model.Playlist
 import com.udeshcoffee.android.model.Song
-import com.udeshcoffee.android.playSong
-import com.udeshcoffee.android.queueSong
+import org.koin.android.ext.android.inject
 
 /**
- * Created by Udathari on 10/17/2017.
- */
+* Created by Udathari on 10/17/2017.
+*/
 class CollectionLongDialog: DialogFragment() {
 
-    lateinit var dataRepository: DataRepository
-    lateinit var mediaRepository: MediaRepository
+    val dataRepository: DataRepository by inject()
+    val mediaRepository: MediaRepository by inject()
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val title = this.arguments!!.getString(ARGUMENT_TITLE)
@@ -93,7 +94,7 @@ class CollectionLongDialog: DialogFragment() {
                         6 -> if (editablePlaylist != null) {
                             val mDialog = DeletePlaylistDialog()
                             val bundle1 = Bundle()
-                            bundle1.putParcelable(DeletePlaylistDialog.ARGUMENT_PLAYLIST, editablePlaylist)
+                            bundle1.putParcelable(ARGUMENT_PLAYLIST, editablePlaylist)
                             mDialog.arguments = bundle1
                             mDialog.show(fragmentManager, "DeletePlaylistDialog")
                         }
@@ -106,5 +107,14 @@ class CollectionLongDialog: DialogFragment() {
         val ARGUMENT_TITLE = "ARGUMENT_TITLE"
         val ARGUMENT_SONGS = "ARGUMENT_SONGS"
         val ARGUMENT_PLAYLIST = "ARGUMENT_PLAYLIST"
+
+        fun create(title: String, songs: ArrayList<Song>): CollectionLongDialog {
+            val mDialog = CollectionLongDialog()
+            val bundle = Bundle()
+            bundle.putString(CollectionLongDialog.ARGUMENT_TITLE, title)
+            bundle.putParcelableArrayList(CollectionLongDialog.ARGUMENT_SONGS, songs)
+            mDialog.arguments = bundle
+            return mDialog
+        }
     }
 }

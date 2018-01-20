@@ -5,8 +5,8 @@ import com.udeshcoffee.android.ui.BasePresenter
 import com.udeshcoffee.android.ui.BaseView
 
 /**
- * Created by Udathari on 8/25/2017.
- */
+* Created by Udathari on 8/25/2017.
+*/
 interface MiniPlayerContract {
 
     interface View: BaseView<Presenter> {
@@ -27,7 +27,7 @@ interface MiniPlayerContract {
 
     }
 
-    interface Presenter: BasePresenter {
+    interface Presenter: BasePresenter<View> {
 
         fun loadDetails()
 

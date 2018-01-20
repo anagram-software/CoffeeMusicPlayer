@@ -14,9 +14,9 @@ import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.widget.Toast
 import com.greysonparrelli.permiso.Permiso
-import com.udeshcoffee.android.bindToService
+import com.udeshcoffee.android.extensions.bindToService
 import com.udeshcoffee.android.service.MusicService
-import com.udeshcoffee.android.unbindFromService
+import com.udeshcoffee.android.extensions.unbindFromService
 import com.udeshcoffee.android.utils.ServiceConnectionUtil.ServiceConnectionToken
 
 /**

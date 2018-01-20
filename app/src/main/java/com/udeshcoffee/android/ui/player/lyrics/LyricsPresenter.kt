@@ -6,23 +6,22 @@ import android.util.Log
 import com.cantrowitz.rxbroadcast.RxBroadcast
 import com.udeshcoffee.android.App
 import com.udeshcoffee.android.api.genius.Result
-import com.udeshcoffee.android.api.genius.SearchResponse
 import com.udeshcoffee.android.data.DataRepository
-import com.udeshcoffee.android.data.remote.CallbackWrapper
-import com.udeshcoffee.android.getService
+import com.udeshcoffee.android.extensions.getService
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.service.MusicService
-import com.udeshcoffee.android.toLastFMArtistQuery
+import com.udeshcoffee.android.extensions.toLastFMArtistQuery
 import com.udeshcoffee.android.utils.PreferenceUtil
 import io.reactivex.disposables.Disposable
+import org.koin.standalone.KoinComponent
 import java.util.*
 
 /**
  * Created by Udathari on 8/25/2017.
  */
-class LyricsPresenter(val view: LyricsContract.View, private val dataRepository: DataRepository,
+class LyricsPresenter(private val dataRepository: DataRepository,
                       val sharedPreferences: SharedPreferences):
-        LyricsContract.Presenter {
+        LyricsContract.Presenter, KoinComponent {
 
     object LyricsSize {
         val SMALL = 1
@@ -31,13 +30,12 @@ class LyricsPresenter(val view: LyricsContract.View, private val dataRepository:
     }
 
     val TAG = "LyricsPresenter"
+
+    override lateinit var view: LyricsContract.View
+
     var broadcastDisposable: Disposable? = null
     var currentSong: Song? = null
     var lyricDisposable: Disposable? = null
-
-    init {
-        view.presenter = this
-    }
 
     override fun start() {
         val filter = IntentFilter()
@@ -104,10 +102,9 @@ class LyricsPresenter(val view: LyricsContract.View, private val dataRepository:
         view.showSearching()
         disposeLyrics()
         lyricDisposable = dataRepository.searchLyrics(title, artist.toLastFMArtistQuery(), shouldCheckEqual)
-                .subscribeWith(object : CallbackWrapper<SearchResponse>() {
-            override fun onSuccess(t: SearchResponse) {
+                .subscribe( { t->
                 currentSong?.id?.let {
-                    if (id == it){
+                    if (id == it) {
                         t.response?.hits?.let { it1 ->
                             if (it1.isNotEmpty()) {
                                 if (it1.size == 1) {
@@ -122,16 +119,14 @@ class LyricsPresenter(val view: LyricsContract.View, private val dataRepository:
                             }
                         }
                     }
-                }
-            }
-        })
+                }}, {})
     }
 
-    fun loadLyrics(id: Long, path: String) {
+    private fun loadLyrics(id: Long, path: String) {
         view.showLoading()
         if (path != "")
             dataRepository.loadLyrics(id, path)
-                    .subscribe {
+                    .subscribe ({
                         it?.let {
                             currentSong?.id?.let { it1 ->
                                 if (id == it1) {
@@ -139,7 +134,7 @@ class LyricsPresenter(val view: LyricsContract.View, private val dataRepository:
                                 }
                             }
                         }
-                    }
+                    }, {})
     }
 
     override fun search(id: Long, title: String, artist:String) {

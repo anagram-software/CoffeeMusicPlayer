@@ -22,17 +22,17 @@ import com.cantrowitz.rxbroadcast.RxBroadcast
 import com.udeshcoffee.android.data.DataRepository
 import com.udeshcoffee.android.data.MediaRepository
 import com.udeshcoffee.android.data.model.EQPreset
-import com.udeshcoffee.android.getQueue
-import com.udeshcoffee.android.getSharedData
+import com.udeshcoffee.android.extensions.getQueue
+import com.udeshcoffee.android.extensions.getSharedData
 import com.udeshcoffee.android.model.Song
-import com.udeshcoffee.android.saveQueue
-import com.udeshcoffee.android.utils.Injection
+import com.udeshcoffee.android.extensions.saveQueue
 import com.udeshcoffee.android.utils.ObservableList
 import com.udeshcoffee.android.utils.PreferenceUtil
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
+import org.koin.android.ext.android.inject
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -45,8 +45,8 @@ class MusicService : Service() {
 
     private val binder = MusicBinder(this)
 
-    lateinit var mediaRepository: MediaRepository
-    lateinit var dataRepository: DataRepository
+    val mediaRepository: MediaRepository by inject()
+    val dataRepository: DataRepository by inject()
 
     lateinit var player : Player
     private lateinit var audioManager: AudioManager
@@ -117,9 +117,6 @@ class MusicService : Service() {
         super.onCreate()
 
         Log.d(TAG, "onCreate")
-
-        mediaRepository = Injection.provideMediaRepository(this.applicationContext)
-        dataRepository = Injection.provideDataRepository(this.applicationContext)
 
         audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
         player = Player(this)

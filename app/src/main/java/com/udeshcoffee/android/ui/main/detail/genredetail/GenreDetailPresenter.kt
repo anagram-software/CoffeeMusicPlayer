@@ -2,37 +2,39 @@ package com.udeshcoffee.android.ui.main.detail.genredetail
 
 import android.content.IntentFilter
 import com.cantrowitz.rxbroadcast.RxBroadcast
-import com.udeshcoffee.android.*
+import com.udeshcoffee.android.App
 import com.udeshcoffee.android.data.DataRepository
 import com.udeshcoffee.android.data.MediaRepository
+import com.udeshcoffee.android.extensions.getService
+import com.udeshcoffee.android.extensions.playSong
+import com.udeshcoffee.android.extensions.queueSong
+import com.udeshcoffee.android.extensions.shuffle
 import com.udeshcoffee.android.model.Album
-import com.udeshcoffee.android.model.Genre
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.service.MusicService
-import com.udeshcoffee.android.ui.detail.albumdetail.GenreDetailContract
 import com.udeshcoffee.android.utils.SortManager
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
+import org.koin.standalone.KoinComponent
 import java.util.*
 
 /**
 * Created by Udathari on 9/12/2017.
 */
-class GenreDetailPresenter(val genre: Genre,
-                           val view: GenreDetailContract.View,
-                           val mediaRepository: MediaRepository,
-                           val dataRepository: DataRepository): GenreDetailContract.Presenter {
+class GenreDetailPresenter(
+        val mediaRepository: MediaRepository,
+        val dataRepository: DataRepository
+): GenreDetailContract.Presenter, KoinComponent {
 
-    val TAG = "GenreDetailPresenter"
+    val TAG = this.javaClass.simpleName
+
+    override var genreId: Long = -1
+    override lateinit var view: GenreDetailContract.View
 
     private var songsDisposable: Disposable? = null
     private var albumsDisposable: Disposable? = null
     private var broadcastDisposable: Disposable? = null
-
-    init {
-        view.presenter = this
-    }
 
     override fun start() {
         fetchSongs()
@@ -61,14 +63,14 @@ class GenreDetailPresenter(val genre: Genre,
         }
     }
 
-    fun disposeSongs() {
+    private fun disposeSongs() {
         songsDisposable?.let {
             if (!it.isDisposed)
                 it.dispose()
         }
     }
 
-    fun disposeAlbums() {
+    private fun disposeAlbums() {
         albumsDisposable?.let {
             if (!it.isDisposed)
                 it.dispose()
@@ -77,7 +79,7 @@ class GenreDetailPresenter(val genre: Genre,
 
     override fun fetchSongs() {
         disposeSongs()
-        songsDisposable = mediaRepository.getGenreSongs(genre.id)
+        songsDisposable = mediaRepository.getGenreSongs(genreId)
                 .observeOn(AndroidSchedulers.mainThread())
                 .map({ songs ->
                     SortManager.sortGenreSongs(songs)
@@ -96,7 +98,7 @@ class GenreDetailPresenter(val genre: Genre,
 
     override fun fetchAlbums() {
         disposeAlbums()
-        albumsDisposable = mediaRepository.getGenreAlbums(genre.id)
+        albumsDisposable = mediaRepository.getGenreAlbums(genreId)
                 .observeOn(AndroidSchedulers.mainThread())
                 .map({ albums ->
                     SortManager.sortGenreAlbums(albums)

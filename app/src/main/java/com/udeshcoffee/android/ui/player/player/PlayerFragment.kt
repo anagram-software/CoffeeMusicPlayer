@@ -2,7 +2,6 @@ package com.udeshcoffee.android.ui.player.player
 
 import android.os.Build
 import android.os.Bundle
-import android.preference.PreferenceManager
 import android.support.constraint.ConstraintLayout
 import android.support.v4.app.Fragment
 import android.support.v4.view.ViewPager
@@ -16,27 +15,27 @@ import android.widget.ImageButton
 import android.widget.SeekBar
 import android.widget.TextView
 import com.udeshcoffee.android.*
+import com.udeshcoffee.android.extensions.*
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.service.MusicService
 import com.udeshcoffee.android.ui.MiniPlayerActivity
 import com.udeshcoffee.android.ui.adapters.PlayerArtAdapter
 import com.udeshcoffee.android.ui.dialogs.PlayerMoreDialog
 import com.udeshcoffee.android.ui.player.lyrics.LyricsFragment
-import com.udeshcoffee.android.ui.player.lyrics.LyricsPresenter
 import com.udeshcoffee.android.utils.DopeUtil
-import com.udeshcoffee.android.utils.Injection
 import com.udeshcoffee.android.views.CustomScroller
 import com.udeshcoffee.android.views.ZoomOutPageTransformer
+import org.koin.android.ext.android.inject
 
 
 /**
- * Created by Udathari on 8/25/2017.
- */
+* Created by Udathari on 8/25/2017.
+*/
 class PlayerFragment : Fragment(), PlayerContract.View {
 
     val TAG = "PlayerFragment"
 
-    override var presenter: PlayerContract.Presenter? = null
+    override val presenter: PlayerContract.Presenter by inject()
 
     private lateinit var play: ImageButton
     private lateinit var repeat: ImageButton
@@ -56,8 +55,7 @@ class PlayerFragment : Fragment(), PlayerContract.View {
     private lateinit var playerArtPagerAdapter: PlayerArtAdapter
 
     // Lyrics
-    private var lyricPresenter: LyricsPresenter? = null
-    private var lyricFragment: LyricsFragment? = null
+    private val lyricFragment: LyricsFragment by inject()
 
     // Art change listener
     private val pagerChangeListener = object : ViewPager.OnPageChangeListener {
@@ -66,7 +64,7 @@ class PlayerFragment : Fragment(), PlayerContract.View {
         override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {}
 
         override fun onPageSelected(position: Int) {
-            presenter?.artScrolled(position)
+            presenter.artScrolled(position)
         }
 
     }
@@ -92,15 +90,15 @@ class PlayerFragment : Fragment(), PlayerContract.View {
                 setOnMenuItemClickListener {
                     when(it.itemId) {
                         R.id.action_queue -> {
-                            presenter?.openQueue()
+                            presenter.openQueue()
                         }
                         R.id.action_toggle_lyrics -> {
-                            presenter?.lyricsToggle()
+                            presenter.lyricsToggle()
                         }
                     }
                     return@setOnMenuItemClickListener false
                 }
-                setNavigationOnClickListener { presenter?.closeNowPlay() }
+                setNavigationOnClickListener { presenter.closeNowPlay() }
             }
 
             art = findViewById(R.id.art_container)
@@ -110,39 +108,39 @@ class PlayerFragment : Fragment(), PlayerContract.View {
             setupViewPager()
 
             val more = root.findViewById<ImageButton>(R.id.more)
-            more.setOnClickListener{ presenter?.showMore() }
+            more.setOnClickListener{ presenter.showMore() }
 
             favorite = root.findViewById(R.id.favorite)
-            favorite.setOnClickListener{ presenter?.favToggle() }
+            favorite.setOnClickListener{ presenter.favToggle() }
 
             repeat = root.findViewById(R.id.repeat)
-            repeat.setOnClickListener { presenter?.changeRepeatMode() }
+            repeat.setOnClickListener { presenter.changeRepeatMode() }
 
             shuffle = root.findViewById(R.id.shuffle)
-            shuffle.setOnClickListener { presenter?.shuffle() }
+            shuffle.setOnClickListener { presenter.shuffle() }
 
             play = root.findViewById(R.id.play)
-            play.setOnClickListener { presenter?.playPauseToggle() }
+            play.setOnClickListener { presenter.playPauseToggle() }
 
             val next: ImageButton = root.findViewById(R.id.gotoNext)
-            next.setOnClickListener { presenter?.gotoNext() }
+            next.setOnClickListener { presenter.gotoNext() }
 
             val back: ImageButton = root.findViewById(R.id.gotoBack)
-            back.setOnClickListener { presenter?.gotoBack() }
+            back.setOnClickListener { presenter.gotoBack() }
 
             progress = findViewById(R.id.progress)
             progress.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener{
                 override fun onProgressChanged(p0: SeekBar?, p1: Int, p2: Boolean) {
                     if (p2)
-                        presenter?.seeking(p1.toLong())
+                        presenter.seeking(p1.toLong())
                 }
 
                 override fun onStartTrackingTouch(p0: SeekBar?) {
-                    presenter?.startSeek()
+                    presenter.startSeek()
                 }
 
                 override fun onStopTrackingTouch(p0: SeekBar?) {
-                    p0?.progress?.toLong()?.let { presenter?.seeked(it) }
+                    p0?.progress?.toLong()?.let { presenter.seeked(it) }
                 }
             })
 
@@ -160,12 +158,13 @@ class PlayerFragment : Fragment(), PlayerContract.View {
 
     override fun onResume() {
         super.onResume()
-        presenter?.start()
+        presenter.view = this
+        presenter.start()
     }
 
     override fun onPause() {
         super.onPause()
-        presenter?.stop()
+        presenter.stop()
     }
 
     override fun onDestroy() {
@@ -269,22 +268,15 @@ class PlayerFragment : Fragment(), PlayerContract.View {
     }
 
     override fun showLyricUI() {
-        lyricFragment = childFragmentManager.findFragmentById(R.id.lyrics_container)
-                as LyricsFragment? ?: LyricsFragment().also {
-            replaceFragment(R.id.lyrics_container, it)
-            lyricPresenter = LyricsPresenter(it, Injection.provideDataRepository(context!!),
-                    PreferenceManager.getDefaultSharedPreferences(context))
-        }
+        replaceFragment(R.id.lyrics_container, lyricFragment)
         art.fadeOut(200)
     }
 
     override fun hideLyricUI() {
-        lyricFragment?.let {
+        lyricFragment.let {
             removeFragment(it)
         }
         art.fadeIn(200)
-        lyricPresenter = null
-        lyricFragment = null
     }
 
     override fun showMoreDialog(song: Song) {

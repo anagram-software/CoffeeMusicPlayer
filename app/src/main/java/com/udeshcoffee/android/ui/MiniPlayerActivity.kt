@@ -10,18 +10,18 @@ import android.util.Log
 import android.view.View
 import com.cantrowitz.rxbroadcast.RxBroadcast
 import com.sothree.slidinguppanel.SlidingUpPanelLayout
-import com.udeshcoffee.android.*
+import com.udeshcoffee.android.R
+import com.udeshcoffee.android.extensions.getService
+import com.udeshcoffee.android.extensions.loadFadableBack
+import com.udeshcoffee.android.extensions.replaceFragmentToActivity
 import com.udeshcoffee.android.service.MusicService
 import com.udeshcoffee.android.ui.main.MainActivity
 import com.udeshcoffee.android.ui.miniplayer.MiniPlayerFragment
-import com.udeshcoffee.android.ui.miniplayer.MiniPlayerPresenter
 import com.udeshcoffee.android.ui.player.player.PlayerFragment
-import com.udeshcoffee.android.ui.player.player.PlayerPresenter
 import com.udeshcoffee.android.ui.player.queue.QueueFragment
-import com.udeshcoffee.android.ui.player.queue.QueuePresenter
-import com.udeshcoffee.android.utils.Injection
 import com.udeshcoffee.android.views.FadableLayout
 import io.reactivex.disposables.Disposable
+import org.koin.android.ext.android.inject
 
 /**
  * Created by Udathari on 8/25/2017.
@@ -29,12 +29,10 @@ import io.reactivex.disposables.Disposable
 
 open class MiniPlayerActivity : BaseActivity() {
 
-    open lateinit var miniPlayerPresenter: MiniPlayerPresenter
+    open val miniPlayerFragment: MiniPlayerFragment by inject()
 
-    private lateinit var playerFragment: PlayerFragment
-    private lateinit var queueFragment: QueueFragment
-    private lateinit var playerPresenter: PlayerPresenter
-    private lateinit var queuePresenter: QueuePresenter
+    private val playerFragment: PlayerFragment by inject()
+    private val queueFragment: QueueFragment by inject()
 
     private var isQueueVisible = false
 
@@ -59,12 +57,12 @@ open class MiniPlayerActivity : BaseActivity() {
         slidingPanel.addPanelSlideListener(object : SlidingUpPanelLayout.PanelSlideListener {
             override fun onPanelSlide(panel: View?, slideOffset: Float) {
                 if (slideOffset <= 0.2f) {
-                    miniPlayerPresenter.setAlpha(1f)
+                    miniPlayerFragment.presenter.setAlpha(1f)
                 } else if (slideOffset > 0.2f && slideOffset <= 0.6f) {
-                    miniPlayerPresenter.setVisibility(View.VISIBLE)
-                    miniPlayerPresenter.setAlpha(1 - (slideOffset - 0.2f) / 0.4f)
+                    miniPlayerFragment.presenter.setVisibility(View.VISIBLE)
+                    miniPlayerFragment.presenter.setAlpha(1 - (slideOffset - 0.2f) / 0.4f)
                 } else if (slideOffset > 0.6f) {
-                    miniPlayerPresenter.setVisibility(View.INVISIBLE)
+                    miniPlayerFragment.presenter.setVisibility(View.INVISIBLE)
                 }
             }
 
@@ -76,8 +74,8 @@ open class MiniPlayerActivity : BaseActivity() {
                 }
 
                 if (newState == SlidingUpPanelLayout.PanelState.COLLAPSED) {
-                    miniPlayerPresenter.setVisibility(View.VISIBLE)
-                    miniPlayerPresenter.setAlpha(1f)
+                    miniPlayerFragment.presenter.setVisibility(View.VISIBLE)
+                    miniPlayerFragment.presenter.setAlpha(1f)
                 }
             }
 
@@ -85,39 +83,12 @@ open class MiniPlayerActivity : BaseActivity() {
 
         // Control Back
         controlBack = findViewById(R.id.controls_back)
+
         // Mini Player Fragment
-        val miniPlayerFragment = supportFragmentManager.findFragmentById(R.id.mini_player_container)
-                as MiniPlayerFragment? ?: MiniPlayerFragment().also {
-            addFragmentToActivity(it, R.id.mini_player_container)
-        }
+        replaceFragmentToActivity(miniPlayerFragment, R.id.mini_player_container)
 
-        miniPlayerPresenter = MiniPlayerPresenter(miniPlayerFragment)
-
-        val fragment = supportFragmentManager.findFragmentById(R.id.player_container)
-        when (fragment) {
-            is PlayerFragment -> {
-                playerFragment = fragment
-                queueFragment = QueueFragment()
-            }
-            is QueueFragment -> {
-                queueFragment = fragment
-                playerFragment = PlayerFragment().also {
-                    addFragmentToActivity(it, R.id.player_container)
-                    ViewCompat.requestApplyInsets(findViewById(R.id.player_container))
-                }
-            }
-            null -> {
-                playerFragment = PlayerFragment().also {
-                    addFragmentToActivity(it, R.id.player_container)
-                    ViewCompat.requestApplyInsets(findViewById(R.id.player_container))
-                }
-                queueFragment = QueueFragment()
-            }
-        }
-
-        playerPresenter = PlayerPresenter(playerFragment, sharedPreferences,
-                Injection.provideDataRepository(this.applicationContext))
-        queuePresenter = QueuePresenter(queueFragment)
+        replaceFragmentToActivity(playerFragment, R.id.player_container)
+        ViewCompat.requestApplyInsets(findViewById(R.id.player_container))
     }
 
     override fun onResume() {
@@ -126,7 +97,7 @@ open class MiniPlayerActivity : BaseActivity() {
         filter.addAction(MusicService.InternalIntents.METADATA_CHANGED)
         filter.addAction(MusicService.InternalIntents.SERVICE_CONNECTED)
 
-        broadcastDisposable = RxBroadcast.fromLocalBroadcast(App.instance, filter)
+        broadcastDisposable = RxBroadcast.fromLocalBroadcast(this, filter)
                 .subscribe {
                     when(it.action){
                         MusicService.InternalIntents.METADATA_CHANGED -> {

@@ -2,32 +2,35 @@ package com.udeshcoffee.android.ui.main.detail.albumdetail
 
 import android.content.IntentFilter
 import com.cantrowitz.rxbroadcast.RxBroadcast
-import com.udeshcoffee.android.*
+import com.udeshcoffee.android.App
 import com.udeshcoffee.android.data.DataRepository
 import com.udeshcoffee.android.data.MediaRepository
-import com.udeshcoffee.android.model.Album
+import com.udeshcoffee.android.extensions.getService
+import com.udeshcoffee.android.extensions.playSong
+import com.udeshcoffee.android.extensions.queueSong
+import com.udeshcoffee.android.extensions.shuffle
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.service.MusicService
 import com.udeshcoffee.android.utils.SortManager
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
+import org.koin.standalone.KoinComponent
 import java.util.*
 
 /**
- * Created by Udathari on 9/12/2017.
- */
-class AlbumDetailPresenter(val album: Album,
-                           val view: AlbumDetailContract.View,
-                           private val mediaRepository: MediaRepository,
-                           private val dataRepository: DataRepository): AlbumDetailContract.Presenter {
+* Created by Udathari on 9/12/2017.
+*/
+class AlbumDetailPresenter(
+        private val mediaRepository: MediaRepository,
+        private val dataRepository: DataRepository
+): AlbumDetailContract.Presenter, KoinComponent {
 
     private var disposable: Disposable? = null
     private var broadcastDisposable: Disposable? = null
 
-    init {
-        view.presenter = this
-    }
+    override var albumId: Long = -1
+    override lateinit var view: AlbumDetailContract.View
 
     override fun start() {
         fetchData()
@@ -66,7 +69,7 @@ class AlbumDetailPresenter(val album: Album,
 
     override fun fetchData() {
         dispose()
-        disposable = mediaRepository.getAlbumSongs(album.id)
+        disposable = mediaRepository.getAlbumSongs(albumId)
                 .map({ songs ->
                     SortManager.sortAlbumSongs(songs)
 

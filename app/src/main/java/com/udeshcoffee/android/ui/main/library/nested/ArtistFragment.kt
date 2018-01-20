@@ -7,20 +7,17 @@ import android.view.*
 import com.bumptech.glide.Glide
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.data.MediaRepository
-import com.udeshcoffee.android.doSharedTransaction
+import com.udeshcoffee.android.extensions.navigateToDetail
+import com.udeshcoffee.android.extensions.openCollectionLongDialog
 import com.udeshcoffee.android.interfaces.OnGridItemClickListener
 import com.udeshcoffee.android.model.Artist
-import com.udeshcoffee.android.openCollectionLongDialog
 import com.udeshcoffee.android.recyclerview.EmptyRecyclerView
 import com.udeshcoffee.android.recyclerview.GridItemDecor
 import com.udeshcoffee.android.ui.adapters.ArtistAdapter
-import com.udeshcoffee.android.ui.main.detail.artistdetail.ArtistDetailFragment
-import com.udeshcoffee.android.ui.detail.albumdetail.ArtistDetailPresenter
-import com.udeshcoffee.android.ui.main.MainActivity
-import com.udeshcoffee.android.utils.Injection
 import com.udeshcoffee.android.utils.SortManager
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
+import org.koin.android.ext.android.inject
 import java.util.*
 
 /**
@@ -29,9 +26,9 @@ import java.util.*
 
 class ArtistFragment : Fragment() {
 
-    val TAG = "ArtistFragment"
+    val TAG = this.javaClass.simpleName
 
-    private lateinit var mediaRepository: MediaRepository
+    private val mediaRepository: MediaRepository by inject()
 
     private var disposable : Disposable? = null
     private var artistAdpt : ArtistAdapter? = null
@@ -49,8 +46,6 @@ class ArtistFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        mediaRepository = Injection.provideMediaRepository(context!!.applicationContext)
-
         val albumView = view.findViewById<EmptyRecyclerView>(R.id.linear_list)
         // specify an adapter (see also next example)
         artistAdpt = ArtistAdapter(ArtistAdapter.ITEM_TYPE_NORMAL, Glide.with(context), true)
@@ -65,7 +60,7 @@ class ArtistFragment : Fragment() {
 
         artistAdpt?.listener = object : OnGridItemClickListener {
             override fun onItemClick(position: Int, shareElement: View) {
-                artistAdpt?.getItem(position)?.let { showDetailUI(it, shareElement) }
+                artistAdpt?.getItem(position)?.let { showDetailUI(it) }
             }
 
             override fun onItemLongClick(position: Int) {
@@ -114,7 +109,7 @@ class ArtistFragment : Fragment() {
 
         if (sortChanged) {
             fetchData()
-            activity?.supportInvalidateOptionsMenu()
+            activity?.invalidateOptionsMenu()
         }
 
         return super.onOptionsItemSelected(item)
@@ -153,12 +148,12 @@ class ArtistFragment : Fragment() {
         }
     }
 
-    fun showDetailUI(detail: Artist, shareElement: View) {
-        val detailFragment = activity!!.supportFragmentManager.findFragmentByTag(MainActivity.Fragments.ARTIST_DETAIL)
-                as ArtistDetailFragment? ?: ArtistDetailFragment()
-        ArtistDetailPresenter(detail, detailFragment, Injection.provideMediaRepository(context!!.applicationContext),
-                Injection.provideDataRepository(context!!.applicationContext))
-        doSharedTransaction(R.id.main_container, detailFragment, MainActivity.Fragments.ARTIST_DETAIL, detail)
+    fun showDetailUI(detail: Artist) {
+        activity?.supportFragmentManager?.navigateToDetail(detail)
+    }
+
+    companion object {
+        fun create(): ArtistFragment = ArtistFragment()
     }
 
 }

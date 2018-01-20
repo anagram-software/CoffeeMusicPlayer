@@ -6,8 +6,8 @@ import com.udeshcoffee.android.ui.BaseView
 
 
 /**
- * Created by Udathari on 8/25/2017.
- */
+* Created by Udathari on 8/25/2017.
+*/
 interface PlayerContract {
 
     interface View: BaseView<Presenter> {
@@ -48,7 +48,7 @@ interface PlayerContract {
         fun showQueueUI()
     }
 
-    interface Presenter: BasePresenter {
+    interface Presenter: BasePresenter<View> {
 
         fun artScrolled(position: Int)
 

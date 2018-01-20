@@ -28,7 +28,7 @@ interface FolderContract {
 
     }
 
-    interface Presenter: SongContainingPresenter {
+    interface Presenter: SongContainingPresenter<View> {
 
         fun upClicked()
 

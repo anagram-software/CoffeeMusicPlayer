@@ -11,33 +11,25 @@ import android.support.v7.widget.Toolbar
 import android.view.*
 import android.widget.TextView
 import com.udeshcoffee.android.R
-import com.udeshcoffee.android.openDrawer
-import com.udeshcoffee.android.setRoundColor
+import com.udeshcoffee.android.extensions.openDrawer
+import com.udeshcoffee.android.extensions.setRoundColor
 import com.udeshcoffee.android.ui.adapters.FragAdapter
 import com.udeshcoffee.android.ui.main.library.nested.AlbumFragment
 import com.udeshcoffee.android.ui.main.library.nested.ArtistFragment
 import com.udeshcoffee.android.ui.main.library.nested.GenreFragment
-import com.udeshcoffee.android.ui.main.library.nested.folder.FolderContract
 import com.udeshcoffee.android.ui.main.library.nested.folder.FolderFragment
-import com.udeshcoffee.android.ui.main.library.nested.folder.FolderPresenter
-import com.udeshcoffee.android.ui.main.library.nested.track.TrackContract
 import com.udeshcoffee.android.ui.main.library.nested.track.TrackFragment
-import com.udeshcoffee.android.ui.main.library.nested.track.TrackPresenter
-import com.udeshcoffee.android.utils.Injection
 import com.udeshcoffee.android.utils.PreferenceUtil
 
 
 /**
- * Created by Udathari on 8/26/2017.
- */
+* Created by Udathari on 8/26/2017.
+*/
 class LibraryFragment: Fragment() {
 
     var actionBar: ActionBar? = null
     lateinit var adapter: FragAdapter
     lateinit var viewPager: ViewPager
-
-    var trackPresenter: TrackContract.Presenter? = null
-    var folderPresenter: FolderContract.Presenter? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         super.onCreateView(inflater, container, savedInstanceState)
@@ -47,22 +39,19 @@ class LibraryFragment: Fragment() {
         val root = inflater.inflate(R.layout.frag_library, container, false)
         adapter = FragAdapter(childFragmentManager)
 
-        val trackFragment = TrackFragment()
+        val trackFragment = TrackFragment.create()
         adapter.addFragment(trackFragment, "Songs")
-        trackPresenter = TrackPresenter(trackFragment, Injection.provideMediaRepository(context!!.applicationContext))
 
-        val albumFragment = AlbumFragment()
+        val albumFragment = AlbumFragment.create()
         adapter.addFragment(albumFragment, "Albums")
 
-        val artistFragment = ArtistFragment()
+        val artistFragment = ArtistFragment.create()
         adapter.addFragment(artistFragment, "Artists")
 
-        val folderFragment = FolderFragment()
+        val folderFragment = FolderFragment.create()
         adapter.addFragment(folderFragment, "Folders")
-        folderPresenter = FolderPresenter(folderFragment, Injection.provideMediaRepository(context!!.applicationContext),
-                Injection.provideDataRepository(context!!.applicationContext))
 
-        val genreFragment = GenreFragment()
+        val genreFragment = GenreFragment.create()
         adapter.addFragment(genreFragment, "Genres")
 
         // Set up player view
@@ -101,5 +90,9 @@ class LibraryFragment: Fragment() {
             android.R.id.home -> activity?.openDrawer()
         }
         return super.onOptionsItemSelected(item)
+    }
+
+    companion object {
+        fun create() = LibraryFragment()
     }
 }

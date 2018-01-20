@@ -5,22 +5,23 @@ import android.support.v4.app.Fragment
 import android.support.v7.widget.LinearLayoutManager
 import android.view.*
 import com.udeshcoffee.android.R
+import com.udeshcoffee.android.extensions.openSongLongDialog
 import com.udeshcoffee.android.interfaces.OnSongItemClickListener
 import com.udeshcoffee.android.model.Song
-import com.udeshcoffee.android.openSongLongDialog
 import com.udeshcoffee.android.recyclerview.EmptyRecyclerView
 import com.udeshcoffee.android.ui.adapters.SongAdapter
 import com.udeshcoffee.android.utils.SortManager
+import org.koin.android.ext.android.inject
 
 /**
- * Created by Udathari on 8/27/2017.
- */
+* Created by Udathari on 8/27/2017.
+*/
 
-class TrackFragment() : Fragment(), TrackContract.View{
+class TrackFragment : Fragment(), TrackContract.View{
 
-    val TAG = "TrackFragment"
+    val TAG = this.javaClass.simpleName
 
-    override var presenter: TrackContract.Presenter? = null
+    override val presenter: TrackContract.Presenter by inject()
 
     internal var songAdpt: SongAdapter? = null
 
@@ -46,15 +47,15 @@ class TrackFragment() : Fragment(), TrackContract.View{
 
         songAdpt?.listener = object : OnSongItemClickListener {
             override fun onItemClick(position: Int) {
-                songAdpt?.let { presenter?.itemClicked(position, it.songList) }
+                songAdpt?.let { presenter.itemClicked(position, it.songList) }
             }
 
             override fun onItemLongClick(position: Int) {
-                songAdpt?.let { presenter?.itemLongClicked(it.songList[position]) }
+                songAdpt?.let { presenter.itemLongClicked(it.songList[position]) }
             }
 
             override fun onShuffleClick() {
-                songAdpt?.let { presenter?.shuffleClicked(it.songList) }
+                songAdpt?.let { presenter.shuffleClicked(it.songList) }
             }
         }
         songView.adapter = songAdpt
@@ -67,7 +68,7 @@ class TrackFragment() : Fragment(), TrackContract.View{
 
     override fun onPrepareOptionsMenu(menu: Menu?) {
         if (menu != null) {
-            when (presenter?.sortOrder) {
+            when (presenter.sortOrder) {
                 SortManager.SongSort.DEFAULT -> menu.findItem(R.id.action_sort_default).isChecked = true
                 SortManager.SongSort.NAME -> menu.findItem(R.id.action_sort_title).isChecked = true
                 SortManager.SongSort.TRACK_NUMBER -> menu.findItem(R.id.action_sort_track).isChecked = true
@@ -77,7 +78,7 @@ class TrackFragment() : Fragment(), TrackContract.View{
                 SortManager.SongSort.ALBUM_NAME -> menu.findItem(R.id.action_sort_album_name).isChecked = true
                 SortManager.SongSort.ARTIST_NAME -> menu.findItem(R.id.action_sort_artist_name).isChecked = true
             }
-            presenter?.let { menu.findItem(R.id.action_sort_ascending).isChecked = it.sortAscending }
+            presenter.let { menu.findItem(R.id.action_sort_ascending).isChecked = it.sortAscending }
         }
         super.onPrepareOptionsMenu(menu)
     }
@@ -86,21 +87,21 @@ class TrackFragment() : Fragment(), TrackContract.View{
         var sortChanged = true
 
         when (item?.itemId) {
-            R.id.action_sort_default -> presenter?.sortOrder = SortManager.SongSort.DEFAULT
-            R.id.action_sort_title -> presenter?.sortOrder = SortManager.SongSort.NAME
-            R.id.action_sort_track -> presenter?.sortOrder = SortManager.SongSort.TRACK_NUMBER
-            R.id.action_sort_duration -> presenter?.sortOrder = SortManager.SongSort.DURATION
-            R.id.action_sort_year -> presenter?.sortOrder = SortManager.SongSort.YEAR
-            R.id.action_sort_date -> presenter?.sortOrder = SortManager.SongSort.DATE
-            R.id.action_sort_album_name -> presenter?.sortOrder = SortManager.SongSort.ALBUM_NAME
-            R.id.action_sort_artist_name -> presenter?.sortOrder = SortManager.SongSort.ARTIST_NAME
-            R.id.action_sort_ascending -> { presenter?.sortAscending = !item.isChecked }
+            R.id.action_sort_default -> presenter.sortOrder = SortManager.SongSort.DEFAULT
+            R.id.action_sort_title -> presenter.sortOrder = SortManager.SongSort.NAME
+            R.id.action_sort_track -> presenter.sortOrder = SortManager.SongSort.TRACK_NUMBER
+            R.id.action_sort_duration -> presenter.sortOrder = SortManager.SongSort.DURATION
+            R.id.action_sort_year -> presenter.sortOrder = SortManager.SongSort.YEAR
+            R.id.action_sort_date -> presenter.sortOrder = SortManager.SongSort.DATE
+            R.id.action_sort_album_name -> presenter.sortOrder = SortManager.SongSort.ALBUM_NAME
+            R.id.action_sort_artist_name -> presenter.sortOrder = SortManager.SongSort.ARTIST_NAME
+            R.id.action_sort_ascending -> { presenter.sortAscending = !item.isChecked }
             else -> sortChanged = false
         }
 
         if (sortChanged) {
-            presenter?.fetchData()
-            activity?.supportInvalidateOptionsMenu()
+            presenter.fetchData()
+            activity?.invalidateOptionsMenu()
         }
 
         return super.onOptionsItemSelected(item)
@@ -108,12 +109,13 @@ class TrackFragment() : Fragment(), TrackContract.View{
 
     override fun onResume() {
         super.onResume()
-        presenter?.start()
+        presenter.view = this
+        presenter.start()
     }
 
     override fun onPause() {
         super.onPause()
-        presenter?.stop()
+        presenter.stop()
     }
 
     override fun populateItems(items: List<Song>) {
@@ -130,5 +132,9 @@ class TrackFragment() : Fragment(), TrackContract.View{
 
     override fun showSongLongDialog(song: Song) {
         openSongLongDialog(song)
+    }
+
+    companion object {
+        fun create() = TrackFragment()
     }
 }

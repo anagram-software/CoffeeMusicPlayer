@@ -2,30 +2,32 @@ package com.udeshcoffee.android.ui.main.favorites
 
 import android.content.IntentFilter
 import com.cantrowitz.rxbroadcast.RxBroadcast
-import com.udeshcoffee.android.*
-import com.udeshcoffee.android.data.DataRepository
+import com.udeshcoffee.android.App
 import com.udeshcoffee.android.data.MediaRepository
+import com.udeshcoffee.android.extensions.getService
+import com.udeshcoffee.android.extensions.playSong
+import com.udeshcoffee.android.extensions.queueSong
+import com.udeshcoffee.android.extensions.shuffle
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.service.MusicService
 import com.udeshcoffee.android.utils.SortManager
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
+import org.koin.standalone.KoinComponent
 import java.util.*
 
 /**
- * Created by Udathari on 9/29/2017.
- */
-class FavoritesPresenter(val view: FavoritesContract.View, private val mediaRepository: MediaRepository,
-                         private val dataRepository: DataRepository) :
-        FavoritesContract.Presenter {
+* Created by Udathari on 9/29/2017.
+*/
+class FavoritesPresenter(
+        private val mediaRepository: MediaRepository
+): FavoritesContract.Presenter, KoinComponent {
+
+    override lateinit var view: FavoritesContract.View
 
     var disposable: Disposable? = null
     var broadcastDisposable: Disposable? = null
-
-    init {
-        view.presenter = this
-    }
 
     override fun start() {
         fetchData()

@@ -11,10 +11,11 @@ import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
 import com.udeshcoffee.android.R
-import com.udeshcoffee.android.loadArtwork
+import com.udeshcoffee.android.extensions.loadArtwork
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.ui.MiniPlayerActivity
 import com.udeshcoffee.android.views.FadableLayout
+import org.koin.android.ext.android.inject
 
 
 /**
@@ -24,7 +25,8 @@ class MiniPlayerFragment : Fragment(), MiniPlayerContract.View {
 
     val TAG = "MiniPlayerFragment"
 
-    override var presenter: MiniPlayerContract.Presenter? = null
+    override val presenter: MiniPlayerContract.Presenter by inject()
+
     lateinit var title: TextView
     lateinit var subtitle: TextView
     lateinit var art: ImageView
@@ -53,12 +55,13 @@ class MiniPlayerFragment : Fragment(), MiniPlayerContract.View {
 
     override fun onResume() {
         super.onResume()
-        presenter?.start()
+        presenter.view = this
+        presenter.start()
     }
 
     override fun onPause() {
         super.onPause()
-        presenter?.stop()
+        presenter.stop()
     }
 
     override fun initProgress(max: Long) {

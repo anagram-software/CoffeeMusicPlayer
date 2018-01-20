@@ -6,22 +6,24 @@ import android.util.Log
 import com.cantrowitz.rxbroadcast.RxBroadcast
 import com.udeshcoffee.android.App
 import com.udeshcoffee.android.data.DataRepository
-import com.udeshcoffee.android.getService
+import com.udeshcoffee.android.extensions.getService
 import com.udeshcoffee.android.service.MusicService
 import com.udeshcoffee.android.utils.PreferenceUtil
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
+import org.koin.standalone.KoinComponent
 
 /**
  * Created by Udathari on 8/25/2017.
  */
-class PlayerPresenter(val view: PlayerContract.View,
-                      private val sharedPreferences: SharedPreferences,
+class PlayerPresenter(private val sharedPreferences: SharedPreferences,
                       private val dataRepository: DataRepository):
-        PlayerContract.Presenter {
+        PlayerContract.Presenter, KoinComponent {
 
     val TAG = "PlayerPresenter"
+
+    override lateinit var view: PlayerContract.View
 
     override var isPlaying: Boolean = false
     override var isSeeking: Boolean = false
@@ -45,10 +47,6 @@ class PlayerPresenter(val view: PlayerContract.View,
             field = value
             sharedPreferences.edit().putBoolean(PreferenceUtil.SHUFFLE, value).apply()
         }
-
-    init {
-        view.presenter = this
-    }
 
     override fun start() {
         val filter = IntentFilter()

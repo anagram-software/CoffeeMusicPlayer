@@ -2,7 +2,9 @@ package com.udeshcoffee.android
 
 import android.support.multidex.MultiDexApplication
 import com.bumptech.glide.Glide
+import com.udeshcoffee.android.di.appModule
 import org.jaudiotagger.tag.TagOptionSingleton
+import org.koin.android.ext.android.startKoin
 
 /**
  * Created by Udathari on 8/22/2017.
@@ -11,6 +13,7 @@ class App : MultiDexApplication() {
 
     override fun onCreate() {
         super.onCreate()
+        startKoin(this, appModule)
         instance = this
 
         TagOptionSingleton.getInstance().isAndroid = true

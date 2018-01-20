@@ -19,15 +19,16 @@ import com.udeshcoffee.android.interfaces.OnItemClickListener
 import com.udeshcoffee.android.ui.adapters.LyricAdapter
 import com.udeshcoffee.android.ui.dialogs.SearchSongDialog
 import com.udeshcoffee.android.utils.isNetworkAvailable
+import org.koin.android.ext.android.inject
 
 /**
- * Created by Udathari on 8/25/2017.
- */
+* Created by Udathari on 8/25/2017.
+*/
 class LyricsFragment : Fragment(), LyricsContract.View {
 
     val TAG = "LyricsFragment"
 
-    override var presenter: LyricsContract.Presenter? = null
+    override val presenter: LyricsContract.Presenter by inject()
 
     private var isRetryShowing = false
 
@@ -64,10 +65,13 @@ class LyricsFragment : Fragment(), LyricsContract.View {
             toolbar.setOnMenuItemClickListener {
                 when(it.itemId) {
                     R.id.action_lyrics_size -> {
-                        presenter?.changeLyricsSize()
+                        presenter.changeLyricsSize()
+                    }
+                    R.id.action_add_lyrics -> {
+                        presenter.changeLyricsSize()
                     }
                     R.id.action_search -> {
-                        presenter?.openSearch()
+                        presenter.openSearch()
                     }
                 }
                 return@setOnMenuItemClickListener false
@@ -80,9 +84,9 @@ class LyricsFragment : Fragment(), LyricsContract.View {
             errorAction = findViewById(R.id.lyric_error_action)
             errorAction.setOnClickListener {
                 if (isRetryShowing)
-                    presenter?.fetchLyrics()
+                    presenter.fetchLyrics()
                 else
-                    presenter?.openSearch()
+                    presenter.openSearch()
             }
 
             // Multiple
@@ -92,7 +96,7 @@ class LyricsFragment : Fragment(), LyricsContract.View {
             adapter = LyricAdapter()
             adapter.listener = object : OnItemClickListener{
                 override fun onItemClick(position: Int) {
-                    presenter?.selectFromMultiple(adapter.getItem(position))
+                    presenter.selectFromMultiple(adapter.getItem(position))
                 }
 
                 override fun onItemLongClick(position: Int) {}
@@ -105,52 +109,63 @@ class LyricsFragment : Fragment(), LyricsContract.View {
 
     override fun onResume() {
         super.onResume()
-        presenter?.start()
+        presenter.view = this
+        presenter.start()
     }
 
     override fun onPause() {
         super.onPause()
-        presenter?.stop()
+        presenter.stop()
     }
 
     override fun showLoading() {
-        if (isNetworkAvailable(context!!, false)) {
-            hideLyricLayout()
-            hideErrorLayout()
-            hideMultipleLayout()
-            lyricLayout.visibility = View.INVISIBLE
-            progressLayout.visibility = View.VISIBLE
-            progressText.text = getString(R.string.msg_loading)
-        } else {
-            setFailed()
+        if (isAdded) {
+            context?.let {
+                if (isNetworkAvailable(it, false)) {
+                    hideLyricLayout()
+                    hideErrorLayout()
+                    hideMultipleLayout()
+                    lyricLayout.visibility = View.INVISIBLE
+                    progressLayout.visibility = View.VISIBLE
+                    progressText.text = getString(R.string.msg_loading)
+                } else {
+                    setFailed()
+                }
+            }
         }
     }
 
     override fun showSearching() {
-        if (isNetworkAvailable(context!!, false)) {
-            hideLyricLayout()
-            hideErrorLayout()
-            hideMultipleLayout()
-            lyricLayout.visibility = View.INVISIBLE
-            progressLayout.visibility = View.VISIBLE
-            progressText.text = getString(R.string.msg_searching)
-        } else {
-            setFailed()
+        if (isAdded) {
+            context?.let {
+                if (isNetworkAvailable(it, false)) {
+                    hideLyricLayout()
+                    hideErrorLayout()
+                    hideMultipleLayout()
+                    lyricLayout.visibility = View.INVISIBLE
+                    progressLayout.visibility = View.VISIBLE
+                    progressText.text = getString(R.string.msg_searching)
+                } else {
+                    setFailed()
+                }
+            }
         }
     }
 
     override fun setLyrics(lyrics: String) {
-        hideErrorLayout()
-        hideProgressLayout()
-        hideMultipleLayout()
-        lyricLayout.visibility = View.VISIBLE
-        val result = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
-            Html.fromHtml(lyrics,Html.FROM_HTML_MODE_LEGACY)
-        } else {
-            @Suppress("DEPRECATION")
-            Html.fromHtml(lyrics)
+        if (isAdded) {
+            hideErrorLayout()
+            hideProgressLayout()
+            hideMultipleLayout()
+            lyricLayout.visibility = View.VISIBLE
+            val result = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+                Html.fromHtml(lyrics, Html.FROM_HTML_MODE_LEGACY)
+            } else {
+                @Suppress("DEPRECATION")
+                Html.fromHtml(lyrics)
+            }
+            lyricText.text = result
         }
-        lyricText.text = result
     }
 
     override fun setLyricsSize(size: Int) {
@@ -168,36 +183,42 @@ class LyricsFragment : Fragment(), LyricsContract.View {
     }
 
     override fun setNotFound() {
-        hideLyricLayout()
-        hideProgressLayout()
-        hideMultipleLayout()
-        isRetryShowing = false
-        errorLayout.visibility = View.VISIBLE
-        errorText.text = getString(R.string.msg_not_found)
-        errorAction.text = getString(R.string.action_search)
+        if (isAdded) {
+            hideLyricLayout()
+            hideProgressLayout()
+            hideMultipleLayout()
+            isRetryShowing = false
+            errorLayout.visibility = View.VISIBLE
+            errorText.text = getString(R.string.msg_not_found)
+            errorAction.text = getString(R.string.action_search)
+        }
     }
 
     override fun setMultipleFound(items: List<Result>) {
-        hideLyricLayout()
-        hideProgressLayout()
-        hideErrorLayout()
-        multipleLayout.visibility = View.VISIBLE
-        adapter.accept(items)
+        if (isAdded) {
+            hideLyricLayout()
+            hideProgressLayout()
+            hideErrorLayout()
+            multipleLayout.visibility = View.VISIBLE
+            adapter.accept(items)
+        }
     }
 
     override fun onSearchRequest(id:Long ,title: String, artist: String) {
         Log.d(TAG, "onSearchRequest id:$id, title:$title, artist:$artist")
-        presenter?.search(id, title, artist)
+        presenter.search(id, title, artist)
     }
 
     override fun setFailed() {
-        hideLyricLayout()
-        hideProgressLayout()
-        hideMultipleLayout()
-        isRetryShowing = true
-        errorLayout.visibility = View.VISIBLE
-        errorText.text = getString(R.string.msg_connection_failed)
-        errorAction.text = getString(R.string.action_retry)
+        if (isAdded) {
+            hideLyricLayout()
+            hideProgressLayout()
+            hideMultipleLayout()
+            isRetryShowing = true
+            errorLayout.visibility = View.VISIBLE
+            errorText.text = getString(R.string.msg_connection_failed)
+            errorAction.text = getString(R.string.action_retry)
+        }
     }
 
     override fun hideErrorLayout() {
@@ -219,14 +240,10 @@ class LyricsFragment : Fragment(), LyricsContract.View {
     }
 
     override fun showSearchDialog(id:Long ,title: String, artist: String) {
-        val mDialog = SearchSongDialog()
-        mDialog.setTargetFragment(this, SEARCH_LYRICS)
-        val bundle = Bundle()
-        bundle.putLong(SearchSongDialog.ARGUMENT_ID, id)
-        bundle.putString(SearchSongDialog.ARGUMENT_TITLE, title)
-        bundle.putString(SearchSongDialog.ARGUMENT_ARTIST, artist)
-        mDialog.arguments = bundle
-        mDialog.show(fragmentManager, "SearchLyricDialog")
+        SearchSongDialog.create(id, title, artist).also {
+            setTargetFragment(this, SEARCH_LYRICS)
+            it.show(fragmentManager, "SearchLyricDialog")
+        }
     }
 
     companion object {

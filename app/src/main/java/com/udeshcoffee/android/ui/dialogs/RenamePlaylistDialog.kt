@@ -50,5 +50,14 @@ class RenamePlaylistDialog: DialogFragment() {
     companion object {
         val ARGUMENT_TITLE = "ARGUMENT_TITLE"
         val ARGUMENT_ID = "ARGUMENT_ID"
+
+        fun create(playlistId: Long, playlistTitle: String): RenamePlaylistDialog {
+            val mDialog = RenamePlaylistDialog()
+            val bundle1 = Bundle()
+            bundle1.putLong(ARGUMENT_ID, playlistId)
+            bundle1.putString(ARGUMENT_TITLE, playlistTitle)
+            mDialog.arguments = bundle1
+            return mDialog
+        }
     }
 }

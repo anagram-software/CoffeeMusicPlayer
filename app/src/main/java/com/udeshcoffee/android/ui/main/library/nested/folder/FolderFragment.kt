@@ -11,34 +11,32 @@ import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
 import com.udeshcoffee.android.R
+import com.udeshcoffee.android.extensions.openAddToPlaylistDialog
+import com.udeshcoffee.android.extensions.openSongLongDialog
 import com.udeshcoffee.android.interfaces.OnItemClickListener
 import com.udeshcoffee.android.model.Folder
 import com.udeshcoffee.android.model.Song
-import com.udeshcoffee.android.openAddToPlaylistDialog
-import com.udeshcoffee.android.openSongLongDialog
 import com.udeshcoffee.android.recyclerview.EmptyRecyclerView
 import com.udeshcoffee.android.ui.adapters.FolderAdapter
 import com.udeshcoffee.android.ui.dialogs.CollectionLongDialog
 import io.reactivex.Observable
+import org.koin.android.ext.android.inject
 
 /**
- * Created by Udathari on 8/27/2017.
- */
+* Created by Udathari on 8/27/2017.
+*/
 
-class FolderFragment() : Fragment(), FolderContract.View {
+class FolderFragment : Fragment(), FolderContract.View {
 
     val TAG = "FolderFragment"
 
-    override var presenter: FolderContract.Presenter? = null
+    override val presenter: FolderContract.Presenter by inject()
 
     internal var adapter: FolderAdapter? = null
     lateinit var path: TextView
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        //setHasOptionsMenu(true)
-
-        return inflater.inflate(R.layout.frag_folder, container, false)
-    }
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
+            inflater.inflate(R.layout.frag_folder, container, false)
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -63,23 +61,23 @@ class FolderFragment() : Fragment(), FolderContract.View {
                 override fun onItemClick(position: Int) {
                     // Change position to match songsets position
                     val pos = position - adapter?.folderSet?.size!!
-                    adapter?.let { presenter?.itemClicked(pos, it.songSet) }
+                    adapter?.let { presenter.itemClicked(pos, it.songSet) }
                 }
 
                 override fun onItemLongClick(position: Int) {
                     // Change position to match songsets position
                     val pos = position - adapter?.folderSet?.size!!
-                    adapter?.let { presenter?.itemLongClicked(it.songSet[pos]) }
+                    adapter?.let { presenter.itemLongClicked(it.songSet[pos]) }
                 }
             }
 
             adapter?.folderClickListener = object : OnItemClickListener {
                 override fun onItemClick(position: Int) {
-                    adapter?.let { presenter?.folderItemClicked(it.folderSet[position], layoutManager.findLastVisibleItemPosition()) }
+                    adapter?.let { presenter.folderItemClicked(it.folderSet[position], layoutManager.findLastVisibleItemPosition()) }
                 }
 
                 override fun onItemLongClick(position: Int) {
-                    adapter?.let { presenter?.folderItemLongClicked(it.folderSet[position]) }
+                    adapter?.let { presenter.folderItemLongClicked(it.folderSet[position]) }
                 }
             }
 
@@ -87,16 +85,17 @@ class FolderFragment() : Fragment(), FolderContract.View {
 
             // Actions
             val actionUp = findViewById<ImageButton>(R.id.folder_up)
-            actionUp.setOnClickListener { presenter?.upClicked() }
+            actionUp.setOnClickListener { presenter.upClicked() }
 
             val actionPlay = findViewById<Button>(R.id.folder_play)
-            actionPlay.setOnClickListener { adapter?.songSet?.let { it1 -> presenter?.playClick(it1) } }
+            actionPlay.setOnClickListener { adapter?.songSet?.let { it1 -> presenter.playClick(it1) } }
 
             val actionQueue = findViewById<Button>(R.id.folder_queue)
-            actionQueue.setOnClickListener { adapter?.songSet?.let { it1 -> presenter?.queueClick(it1) } }
+            actionQueue.setOnClickListener { adapter?.songSet?.let { it1 -> presenter.queueClick(it1) } }
         }
 
-        presenter?.start()
+        presenter.view = this
+        presenter.start()
     }
 
     // Sorting
@@ -149,7 +148,7 @@ class FolderFragment() : Fragment(), FolderContract.View {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        presenter?.stop()
+        presenter.stop()
     }
 
     override fun setPath(path: String) {
@@ -200,5 +199,9 @@ class FolderFragment() : Fragment(), FolderContract.View {
                     mDialog.arguments = bundle
                     mDialog.show(fragmentManager, "CollectionLongDialog")
                 })
+    }
+
+    companion object {
+        fun create() = FolderFragment()
     }
 }

@@ -3,24 +3,24 @@ package com.udeshcoffee.android.ui.miniplayer
 import android.content.IntentFilter
 import com.cantrowitz.rxbroadcast.RxBroadcast
 import com.udeshcoffee.android.App
-import com.udeshcoffee.android.getService
+import com.udeshcoffee.android.extensions.getService
 import com.udeshcoffee.android.service.MusicService
 import io.reactivex.disposables.Disposable
+import org.koin.standalone.KoinComponent
 
 /**
  * Created by Udathari on 8/25/2017.
  */
-class MiniPlayerPresenter(val view: MiniPlayerContract.View): MiniPlayerContract.Presenter {
+class MiniPlayerPresenter(): MiniPlayerContract.Presenter, KoinComponent {
 
     val TAG = "MiniPlayerPresenter"
+
+    override lateinit var view: MiniPlayerContract.View
 
     var broadcastDisposable: Disposable? = null
     var progressDisposable: Disposable? = null
 
     override var isPlaying: Boolean = false
-    init {
-        view.presenter = this
-    }
 
     override fun start() {
         val filter = IntentFilter()

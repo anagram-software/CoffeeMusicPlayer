@@ -27,7 +27,8 @@ import com.bumptech.glide.request.transition.Transition
 import com.bumptech.glide.signature.ObjectKey
 import com.udeshcoffee.android.App
 import com.udeshcoffee.android.R
-import com.udeshcoffee.android.toLastFMArtistQuery
+import com.udeshcoffee.android.data.remote.RemoteDataSource
+import com.udeshcoffee.android.extensions.toLastFMArtistQuery
 import com.udeshcoffee.android.views.FadableLayout
 import java.io.File
 import java.io.FileNotFoundException
@@ -161,8 +162,7 @@ fun collectArtistArtwork(context: Context,
         return
     var tempName = name
     tempName = tempName.toLastFMArtistQuery()
-    val dataRepository = Injection.provideDataRepository(context.applicationContext)
-    dataRepository.searchLastFMArtist(tempName)
+    RemoteDataSource.searchLastFMArtist(tempName)
             .subscribe ({
                 val image = it.artist?.image
                 glide.asBitmap().load(image?.get(image.size - 1)?.text)

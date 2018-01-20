@@ -8,40 +8,34 @@ import android.view.View
 import android.view.ViewGroup
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.data.MediaRepository
-import com.udeshcoffee.android.doSharedTransaction
+import com.udeshcoffee.android.extensions.navigateToDetail
+import com.udeshcoffee.android.extensions.openCollectionLongDialog
 import com.udeshcoffee.android.interfaces.OnItemClickListener
 import com.udeshcoffee.android.model.Genre
-import com.udeshcoffee.android.openCollectionLongDialog
 import com.udeshcoffee.android.recyclerview.EmptyRecyclerView
 import com.udeshcoffee.android.ui.adapters.GenreAdapter
-import com.udeshcoffee.android.ui.main.detail.genredetail.GenreDetailFragment
-import com.udeshcoffee.android.ui.main.detail.genredetail.GenreDetailPresenter
-import com.udeshcoffee.android.ui.main.MainActivity
-import com.udeshcoffee.android.utils.Injection
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
+import org.koin.android.ext.android.inject
 
 /**
- * Created by Udathari on 8/27/2017.
- */
+* Created by Udathari on 8/27/2017.
+*/
 
 class GenreFragment : Fragment() {
 
     val TAG = "GenreFragment"
 
-    private lateinit var mediaRepository: MediaRepository
+    private val mediaRepository: MediaRepository by inject()
 
     private var disposable: Disposable? = null
     private var genreAdpt: GenreAdapter? = null
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        return inflater.inflate(R.layout.frag_linear, container, false)
-    }
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
+            inflater.inflate(R.layout.frag_linear, container, false)
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        mediaRepository = Injection.provideMediaRepository(context!!.applicationContext)
 
         val genreView = view.findViewById<EmptyRecyclerView>(R.id.linear_list)
         // specify an adapter (see also next example)
@@ -94,11 +88,11 @@ class GenreFragment : Fragment() {
     }
 
     fun showDetailUI(genre: Genre) {
-        val detailFragment = activity!!.supportFragmentManager.findFragmentByTag(MainActivity.Fragments.GENRE_DETAIL)
-                as GenreDetailFragment? ?: GenreDetailFragment()
-        GenreDetailPresenter(genre, detailFragment, Injection.provideMediaRepository(context!!.applicationContext),
-                Injection.provideDataRepository(context!!.applicationContext))
-        doSharedTransaction(R.id.main_container, detailFragment, MainActivity.Fragments.GENRE_DETAIL, genre)
+        activity?.supportFragmentManager?.navigateToDetail(genre)
+    }
+
+    companion object {
+        fun create(): GenreFragment = GenreFragment()
     }
 
 }
