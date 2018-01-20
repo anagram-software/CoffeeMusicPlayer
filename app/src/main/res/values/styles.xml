@@ -52,6 +52,11 @@
         <item name="android:textColorSecondary">@android:color/secondary_text_dark</item>
     </style>
 
+    <style name="PlayableActionToolbarTheme" parent="AppTheme">
+        <item name="android:textColorPrimary">#888</item>
+        <item name="actionMenuTextColor">#888</item>
+    </style>
+
     <style name="SeekBarTheme" parent="AppTheme">
         <item name="colorAccent">@android:color/white</item>
     </style>
