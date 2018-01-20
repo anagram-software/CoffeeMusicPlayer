@@ -12,7 +12,7 @@ import android.widget.TextView
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.interfaces.ItemTouchHelperAdapter
 import com.udeshcoffee.android.interfaces.OnDragableItemListener
-import com.udeshcoffee.android.loadArtwork
+import com.udeshcoffee.android.extensions.loadArtwork
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.ui.viewholders.SongViewHolder
 import io.reactivex.functions.Consumer

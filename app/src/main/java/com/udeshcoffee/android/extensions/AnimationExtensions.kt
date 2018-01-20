@@ -1,4 +1,4 @@
-package com.udeshcoffee.android
+package com.udeshcoffee.android.extensions
 
 import android.animation.Animator
 import android.animation.ValueAnimator

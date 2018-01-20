@@ -1,4 +1,4 @@
-package com.udeshcoffee.android
+package com.udeshcoffee.android.extensions
 
 import android.support.v4.app.DialogFragment
 import com.udeshcoffee.android.model.Song
@@ -7,8 +7,8 @@ import com.udeshcoffee.android.utils.ServiceConnectionUtil
 import java.util.*
 
 /**
- * Created by Udathari on 9/17/2017.
- */
+* Created by Udathari on 9/17/2017.
+*/
 // Init Song
 private fun playSongLogic(position: Int, allItems: List<Song>, shouldPlay: Boolean) {
     if (allItems.isNotEmpty()) {
@@ -20,7 +20,7 @@ private fun playSongLogic(position: Int, allItems: List<Song>, shouldPlay: Boole
     }
 }
 
-fun BasePresenter.playSong(position: Int, allItems: List<Song>, shouldPlay: Boolean) {
+fun <T> BasePresenter<T>.playSong(position: Int, allItems: List<Song>, shouldPlay: Boolean) {
     if (allItems.isNotEmpty()) {
         playSongLogic(position, allItems, shouldPlay)
     }
@@ -52,7 +52,7 @@ private fun queueSongLogic(allItems: List<Song>, isNext: Boolean) {
     }
 }
 
-fun BasePresenter.queueSong(allItems: List<Song>, isNext: Boolean) {
+fun <T> BasePresenter<T>.queueSong(allItems: List<Song>, isNext: Boolean) {
     if (allItems.isNotEmpty()) {
         queueSongLogic(allItems, isNext)
     }
@@ -65,7 +65,7 @@ fun DialogFragment.queueSong(allItems: List<Song>, isNext: Boolean) {
 }
 
 // Shuffle and play
-fun BasePresenter.shuffle(allItems: List<Song>) {
+fun <T> BasePresenter<T>.shuffle(allItems: List<Song>) {
     if (allItems.isNotEmpty()) {
         val tempList = allItems.toMutableList() as ArrayList<Song>
         if (tempList.size > 1)

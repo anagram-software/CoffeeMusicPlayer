@@ -1,4 +1,4 @@
-package com.udeshcoffee.android
+package com.udeshcoffee.android.extensions
 
 import android.content.ContentUris
 import android.content.Context
@@ -17,6 +17,7 @@ import com.bumptech.glide.request.target.SimpleTarget
 import com.bumptech.glide.request.target.Target
 import com.bumptech.glide.request.transition.Transition
 import com.bumptech.glide.signature.MediaStoreSignature
+import com.udeshcoffee.android.R
 import com.udeshcoffee.android.model.Album
 import com.udeshcoffee.android.model.Artist
 import com.udeshcoffee.android.model.Genre

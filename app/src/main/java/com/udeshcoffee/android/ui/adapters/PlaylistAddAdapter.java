@@ -11,8 +11,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.simplecityapps.recyclerview_fastscroll.views.FastScrollRecyclerView;
-import com.udeshcoffee.android.ArtExtensionsKt;
 import com.udeshcoffee.android.R;
+import com.udeshcoffee.android.extensions.ArtExtensionsKt;
 import com.udeshcoffee.android.model.Song;
 
 import java.util.ArrayList;

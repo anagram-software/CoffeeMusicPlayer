@@ -1,4 +1,4 @@
-package com.udeshcoffee.android
+package com.udeshcoffee.android.extensions
 
 import android.appwidget.AppWidgetProvider
 import android.content.Context
@@ -11,7 +11,6 @@ import com.udeshcoffee.android.data.MediaRepository
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.service.MusicService
 import com.udeshcoffee.android.utils.DopeUtil
-import com.udeshcoffee.android.utils.Injection
 import com.udeshcoffee.android.utils.PreferenceUtil
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -23,8 +22,8 @@ import io.reactivex.schedulers.Schedulers
 
 val TAG = "ServiceExtensions"
 
-fun AppWidgetProvider.getQueue(context: Context): Observable<ArrayList<Song>>? {
-    return getQueueLogic(context, Injection.provideMediaRepository(context.applicationContext))
+fun AppWidgetProvider.getQueue(context: Context, mediaRepository: MediaRepository): Observable<ArrayList<Song>>? {
+    return getQueueLogic(context, mediaRepository)
 }
 
 fun MusicService.getQueue(): Observable<ArrayList<Song>>? {

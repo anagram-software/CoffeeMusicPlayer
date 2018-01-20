@@ -9,7 +9,7 @@ import android.widget.TextView
 import com.bumptech.glide.RequestManager
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.interfaces.OnGridItemClickListener
-import com.udeshcoffee.android.loadArtwork
+import com.udeshcoffee.android.extensions.loadArtwork
 import com.udeshcoffee.android.model.Artist
 import com.udeshcoffee.android.utils.DopeUtil
 

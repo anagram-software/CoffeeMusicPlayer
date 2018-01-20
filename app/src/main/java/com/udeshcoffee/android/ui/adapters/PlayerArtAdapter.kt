@@ -8,7 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import com.udeshcoffee.android.R
-import com.udeshcoffee.android.loadArtwork
+import com.udeshcoffee.android.extensions.loadArtwork
 import com.udeshcoffee.android.model.Song
 import io.reactivex.functions.Consumer
 
