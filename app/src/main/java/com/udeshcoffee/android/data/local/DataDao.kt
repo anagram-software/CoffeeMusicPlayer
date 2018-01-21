@@ -2,11 +2,12 @@ package com.udeshcoffee.android.data.local
 
 import android.arch.persistence.room.*
 import com.udeshcoffee.android.data.model.*
+import io.reactivex.Flowable
 import io.reactivex.Single
 
 /**
- * Created by Udathari on 12/19/2017.
- */
+* Created by Udathari on 12/19/2017.
+*/
 @Dao
 interface DataDao {
 
@@ -69,7 +70,7 @@ interface DataDao {
     fun getFavorite(songId: Long): Favorite?
 
     @Query("SELECT * FROM favorites")
-    fun getFavorites(): List<Favorite>
+    fun getFavorites(): Flowable<List<Favorite>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun addFavorite(favorite: Favorite)

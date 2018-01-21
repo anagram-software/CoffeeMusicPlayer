@@ -137,6 +137,9 @@
     <string name="msg_home">Top songs, albums and artists with show up here\nTap above card to goto Library</string>
     <string name="msg_home_title">Hey! Welcome…</string>
     <string name="action_dismiss">Dismiss</string>
+    <string name="info_tracks">Tracks</string>
+    <string name="action_add_lyrics">Add Lyrics</string>
+    <string name="msg_add_lyrics">Add Lyrics</string>
 
     // New
 

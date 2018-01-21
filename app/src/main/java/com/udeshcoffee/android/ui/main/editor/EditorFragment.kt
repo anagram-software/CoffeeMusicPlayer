@@ -218,7 +218,7 @@ class EditorFragment : Fragment(), EditorContract.View {
         }
 
         SearchSongDialog.create(id, title, artist).also {
-            setTargetFragment(this, LyricsFragment.SEARCH_LYRICS)
+            it.setTargetFragment(this, LyricsFragment.SEARCH_LYRICS)
             it.show(fragmentManager, "SearchLyricDialog")
         }
     }

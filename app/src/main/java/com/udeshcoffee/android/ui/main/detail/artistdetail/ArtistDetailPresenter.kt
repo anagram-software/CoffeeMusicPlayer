@@ -204,6 +204,15 @@ class ArtistDetailPresenter(
 
     override fun albumItemLongClicked(album: Album) {
         mediaRepository.getAlbumSongs(album.id)
+                .map({ songs ->
+                    SortManager.sortAlbumSongs(songs)
+
+                    if (!sortAscending) {
+                        Collections.reverse(songs)
+                    }
+
+                    return@map songs
+                })
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .take(1)

@@ -20,7 +20,7 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.SimpleTarget
 import com.bumptech.glide.request.transition.Transition
 import com.udeshcoffee.android.R
-import com.udeshcoffee.android.getColorWithAlpha
+import com.udeshcoffee.android.extensions.getColorWithAlpha
 import com.udeshcoffee.android.service.MusicService
 import com.udeshcoffee.android.ui.main.MainActivity
 

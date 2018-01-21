@@ -17,6 +17,7 @@ import com.udeshcoffee.android.R
 import com.udeshcoffee.android.api.genius.Result
 import com.udeshcoffee.android.interfaces.OnItemClickListener
 import com.udeshcoffee.android.ui.adapters.LyricAdapter
+import com.udeshcoffee.android.ui.dialogs.CustomLyricDialog
 import com.udeshcoffee.android.ui.dialogs.SearchSongDialog
 import com.udeshcoffee.android.utils.isNetworkAvailable
 import org.koin.android.ext.android.inject
@@ -68,7 +69,7 @@ class LyricsFragment : Fragment(), LyricsContract.View {
                         presenter.changeLyricsSize()
                     }
                     R.id.action_add_lyrics -> {
-                        presenter.changeLyricsSize()
+                        presenter.openAddLyrics()
                     }
                     R.id.action_search -> {
                         presenter.openSearch()
@@ -209,6 +210,10 @@ class LyricsFragment : Fragment(), LyricsContract.View {
         presenter.search(id, title, artist)
     }
 
+    override fun onAddLyrics(id:Long , lyrics: String) {
+        presenter.addCustomLyrics(id, lyrics)
+    }
+
     override fun setFailed() {
         if (isAdded) {
             hideLyricLayout()
@@ -241,12 +246,20 @@ class LyricsFragment : Fragment(), LyricsContract.View {
 
     override fun showSearchDialog(id:Long ,title: String, artist: String) {
         SearchSongDialog.create(id, title, artist).also {
-            setTargetFragment(this, SEARCH_LYRICS)
+            it.setTargetFragment(this, SEARCH_LYRICS)
             it.show(fragmentManager, "SearchLyricDialog")
+        }
+    }
+
+    override fun showCustomLyricDialog(id: Long) {
+        CustomLyricDialog.create(id).also {
+            it.setTargetFragment(this, ADD_LYRICS)
+            it.show(fragmentManager, "CustomLyricDialog")
         }
     }
 
     companion object {
         val SEARCH_LYRICS = 0
+        val ADD_LYRICS = 1
     }
 }

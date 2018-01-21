@@ -9,80 +9,67 @@
     android:theme="@style/FavTheme">
 
     <android.support.design.widget.AppBarLayout
+        android:id="@+id/appBarLayout"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_width="match_parent"
         android:fitsSystemWindows="true"
-        app:layout_constraintTop_toTopOf="parent"
-        android:layout_marginTop="0dp"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginEnd="0dp"
         app:layout_constraintStart_toStartOf="parent"
-        android:layout_marginStart="0dp"
-        android:id="@+id/appBarLayout">
+        app:layout_constraintTop_toTopOf="parent">
 
         <android.support.v7.widget.Toolbar
             android:id="@+id/toolbar"
-            android:layout_height="?attr/actionBarSize"
             android:layout_width="match_parent"
-            app:navigationIcon="@drawable/ic_menu_white_24dp" >
+            android:layout_height="?attr/actionBarSize"
+            app:navigationIcon="@drawable/ic_menu_white_24dp">
 
             <TextView
                 android:id="@+id/title_view"
-                android:paddingTop="4dp"
-                android:paddingBottom="3dp"
-                android:paddingLeft="8dp"
-                android:paddingRight="8dp"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="@drawable/title_back"
+                android:paddingBottom="3dp"
+                android:paddingLeft="8dp"
+                android:paddingRight="8dp"
+                android:paddingTop="4dp"
+                android:textAllCaps="true"
                 android:textColor="?android:colorBackground"
-                android:textSize="16sp"
-                android:textAllCaps="true"/>
+                android:textSize="16sp" />
 
         </android.support.v7.widget.Toolbar>
 
     </android.support.design.widget.AppBarLayout>
 
-    <android.support.v4.widget.NestedScrollView
+    <LinearLayout
         android:layout_width="0dp"
         android:layout_height="0dp"
-        app:layout_constraintTop_toBottomOf="@+id/appBarLayout"
-        tools:layout_editor_absoluteX="0dp"
-        android:layout_marginEnd="0dp"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        android:layout_marginStart="0dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        android:layout_marginBottom="0dp"
-        android:fillViewport="true">
+        app:layout_constraintTop_toBottomOf="@+id/appBarLayout">
 
-        <LinearLayout
+        <android.support.v7.widget.Toolbar
+            android:id="@+id/toolbar_songs"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:theme="@style/PlayableActionToolbarTheme"
+            app:title="@string/info_songs" />
 
-            <android.support.v7.widget.Toolbar
-                android:id="@+id/toolbar_songs"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:theme="@style/PlayableActionToolbarTheme"
-                app:title="@string/info_songs" />
+        <com.udeshcoffee.android.recyclerview.EmptyRecyclerView
+            android:id="@+id/list"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:nestedScrollingEnabled="false"
+            app:fastScrollPopupBgColor="?attr/colorAccent"
+            app:fastScrollPopupTextColor="@android:color/primary_text_dark"
+            app:fastScrollThumbColor="?attr/colorAccent"
+            tools:ignore="UnusedAttribute" />
 
-            <com.udeshcoffee.android.recyclerview.EmptyRecyclerView
-                android:id="@+id/list"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:nestedScrollingEnabled="false"
-                app:fastScrollPopupBgColor="?attr/colorAccent"
-                app:fastScrollPopupTextColor="@android:color/primary_text_dark"
-                app:fastScrollThumbColor="?attr/colorAccent"
-                tools:ignore="UnusedAttribute" />
+        <include
+            layout="@layout/empty_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
 
-            <include
-                layout="@layout/empty_view"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent" />
-
-        </LinearLayout>
-    </android.support.v4.widget.NestedScrollView>
+    </LinearLayout>
 </android.support.constraint.ConstraintLayout>

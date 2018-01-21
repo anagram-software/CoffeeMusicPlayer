@@ -9,7 +9,7 @@ import android.support.constraint.ConstraintLayout
 import android.support.v4.view.animation.FastOutSlowInInterpolator
 import android.util.AttributeSet
 import com.udeshcoffee.android.R
-import com.udeshcoffee.android.getColorWithAlpha
+import com.udeshcoffee.android.extensions.getColorWithAlpha
 
 
 /**
@@ -37,7 +37,7 @@ class FadableLayout: ConstraintLayout {
         }
     }
 
-    fun setFadeColor(color: Int) {
+    private fun setFadeColor(color: Int) {
         this.color = color
         when (backgroundType) {
             0 -> {

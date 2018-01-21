@@ -4,12 +4,11 @@
     android:layout_height="wrap_content">
 
     <EditText
-        android:id="@+id/new_name"
+        android:id="@+id/multi_et"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="@dimen/activity_horizontal_margin"
-        android:inputType="text"
-        android:selectAllOnFocus="true"
-        android:singleLine="true"
-        android:text="@string/info_name" />
+        android:hint="@string/info_lyrics"
+        android:singleLine="false"
+        android:maxLines="5" />
 </LinearLayout>

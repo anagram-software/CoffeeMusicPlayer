@@ -1,17 +1,14 @@
 package com.udeshcoffee.android.model
 
-import android.content.ContentResolver
 import android.database.Cursor
 import android.os.Parcelable
 import android.provider.MediaStore
-import com.udeshcoffee.android.toBrite
 import com.udeshcoffee.android.utils.CompareUtils
-import io.reactivex.Observable
 import kotlinx.android.parcel.Parcelize
 
 /**
- * Created by Udathari on 8/22/2017.
- */
+* Created by Udathari on 8/22/2017.
+*/
 @Parcelize
 class Song(val id:Long, val title:String,
            val albumId:Long, val albumName:String,

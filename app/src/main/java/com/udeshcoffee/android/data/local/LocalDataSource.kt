@@ -1,19 +1,17 @@
 package com.udeshcoffee.android.data.local
 
-import android.support.annotation.VisibleForTesting
 import android.util.Log
 import com.udeshcoffee.android.data.model.*
 import com.udeshcoffee.android.model.Song
+import io.reactivex.Flowable
 import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.schedulers.Schedulers
 
 /**
- * Created by Udathari on 12/19/2017.
- */
+* Created by Udathari on 12/19/2017.
+*/
 class LocalDataSource(private val dataDao: DataDao) {
-
-    
 
     fun getMostPlayedSongs(): Observable<List<SongStat>> =
             Observable.fromCallable { dataDao.getSongMostPlayed() }
@@ -52,8 +50,7 @@ class LocalDataSource(private val dataDao: DataDao) {
 
     fun deleteFavorite(favorite: Favorite) = dataDao.deleteFavorite(favorite)
 
-    fun getFavorites(): Observable<List<Favorite>> =
-            Observable.fromCallable { dataDao.getFavorites() }
+    fun getFavorites(): Flowable<List<Favorite>> = dataDao.getFavorites()
 
     // Bio
     fun getBio(artistId: Long): Single<Pair<String, Array<String>?>> =
@@ -101,25 +98,6 @@ class LocalDataSource(private val dataDao: DataDao) {
                     it.playTime = System.currentTimeMillis() / 1000
                     dataDao.setStats(it)
                 }, { dataDao.setStats(ArtistStat(song.artistId, 1, System.currentTimeMillis() / 1000)) })
-    }
-
-    companion object {
-        private var INSTANCE: LocalDataSource? = null
-
-        @JvmStatic
-        fun getInstance(dataDao: DataDao): LocalDataSource {
-            if (INSTANCE == null) {
-                synchronized(LocalDataSource::javaClass) {
-                    INSTANCE = LocalDataSource(dataDao)
-                }
-            }
-            return INSTANCE!!
-        }
-
-        @VisibleForTesting
-        fun clearInstance() {
-            INSTANCE = null
-        }
     }
 
 }

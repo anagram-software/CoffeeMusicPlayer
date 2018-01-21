@@ -7,10 +7,11 @@ import com.cantrowitz.rxbroadcast.RxBroadcast
 import com.udeshcoffee.android.App
 import com.udeshcoffee.android.api.genius.Result
 import com.udeshcoffee.android.data.DataRepository
+import com.udeshcoffee.android.data.model.Lyric
 import com.udeshcoffee.android.extensions.getService
+import com.udeshcoffee.android.extensions.toLastFMArtistQuery
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.service.MusicService
-import com.udeshcoffee.android.extensions.toLastFMArtistQuery
 import com.udeshcoffee.android.utils.PreferenceUtil
 import io.reactivex.disposables.Disposable
 import org.koin.standalone.KoinComponent
@@ -141,6 +142,15 @@ class LyricsPresenter(private val dataRepository: DataRepository,
         currentSong?.id?.let { if (it == id) searchLyrics(it, title, artist, false) }
     }
 
+    override fun addCustomLyrics(id: Long, lyrics: String) {
+        currentSong?.id?.let { it1 ->
+            if (id == it1) {
+                view.setLyrics(lyrics)
+                dataRepository.setLyrics(Lyric(id, lyrics))
+            }
+        }
+    }
+
     override fun retry() {
         fetchLyrics()
     }
@@ -155,6 +165,10 @@ class LyricsPresenter(private val dataRepository: DataRepository,
 
     override fun openSearch() {
         currentSong?.let { view.showSearchDialog(it.id, it.title, it.artistName) }
+    }
+
+    override fun openAddLyrics() {
+        currentSong?.let { view.showCustomLyricDialog(it.id) }
     }
 
     private var lyricsSize: Int

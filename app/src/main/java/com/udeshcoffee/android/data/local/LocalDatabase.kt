@@ -16,38 +16,34 @@
 
 package com.udeshcoffee.android.data.local
 
+import android.arch.persistence.db.SupportSQLiteDatabase
 import android.arch.persistence.room.Database
-import android.arch.persistence.room.Room
 import android.arch.persistence.room.RoomDatabase
-import android.content.Context
+import android.arch.persistence.room.migration.Migration
 import com.udeshcoffee.android.data.model.*
 
 /**
  * The Room Database that contains the Task table.
  */
-@Database(entities = arrayOf(AlbumStat::class, ArtistStat::class, Bio::class, EQPreset::class,
-        Favorite::class, Lyric::class, SongStat::class), version = 1)
+@Database(entities = arrayOf( SongStat::class, AlbumStat::class, ArtistStat::class, Bio::class, EQPreset::class,
+        Favorite::class, Lyric::class), version = 6)
 abstract class LocalDatabase : RoomDatabase() {
 
     abstract fun dataDao(): DataDao
 
     companion object {
 
-        private var INSTANCE: LocalDatabase? = null
-
-        private val lock = Any()
-
-        fun getInstance(context: Context): LocalDatabase {
-            synchronized(lock) {
-                if (INSTANCE == null) {
-                    INSTANCE = Room.databaseBuilder(context.applicationContext,
-                            LocalDatabase::class.java, "database.db")
-                            .allowMainThreadQueries()
-                            .build()
-                }
-                return INSTANCE!!
+        val Migration_5_6 = object: Migration(5, 6) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Create the new table
+                database.execSQL(
+                        "CREATE TABLE song_stats (songid INTEGER, playcount INTEGER, playtime INTEGER, PRIMARY KEY(songid))")
+                // Copy the data
+                database.execSQL(
+                        "INSERT INTO song_stats (songid, playcount, playtime) SELECT songid, rplayedid, rplayed FROM playcount")
+                // Remove the old table
+                database.execSQL("DROP TABLE playcount");
             }
         }
     }
-
 }

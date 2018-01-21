@@ -25,6 +25,8 @@ interface LyricsContract {
 
         fun onSearchRequest(id:Long, title: String, artist: String)
 
+        fun onAddLyrics(id:Long, lyrics: String)
+
         fun setFailed()
 
         fun hideProgressLayout()
@@ -36,6 +38,8 @@ interface LyricsContract {
         fun hideMultipleLayout()
 
         fun showSearchDialog(id:Long, title:String, artist: String)
+
+        fun showCustomLyricDialog(id:Long)
     }
 
     interface Presenter: BasePresenter<View> {
@@ -46,7 +50,11 @@ interface LyricsContract {
 
         fun openSearch()
 
+        fun openAddLyrics()
+
         fun search(id: Long, title: String, artist: String)
+
+        fun addCustomLyrics(id: Long, lyrics: String)
 
         fun retry()
 

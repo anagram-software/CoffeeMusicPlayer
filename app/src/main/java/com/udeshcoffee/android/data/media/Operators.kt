@@ -10,13 +10,13 @@ import com.udeshcoffee.android.data.model.AlbumStat
 import com.udeshcoffee.android.data.model.ArtistStat
 import com.udeshcoffee.android.data.model.SongStat
 import com.udeshcoffee.android.model.*
-import com.udeshcoffee.android.toList
+import com.udeshcoffee.android.extensions.toList
 import io.reactivex.Observable
 
 /**
- * Created by Udathari on 9/5/2017.
- */
-private val TAG = "Operators"
+* Created by Udathari on 9/5/2017.
+*/
+        private val TAG = "Operators"
 
 fun songsToAlbums(songs: List<Song>): List<Album> {
 
