@@ -192,7 +192,7 @@ class PlaylistDetailFragment : Fragment(), PlaylistDetailContract.View {
     }
 
     override fun showDeleteUI(playlistId: Long, playlistTitle: String) {
-        DeletePlaylistDialog.create(playlistId, playlistTitle).show(fragmentManager, "DeletePlaylistDialog")
+        DeletePlaylistDialog.create(playlistId, playlistTitle, true).show(fragmentManager, "DeletePlaylistDialog")
     }
 
     override fun showSongLongDialog(song: Song) {

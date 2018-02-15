@@ -84,19 +84,12 @@ class CollectionLongDialog: DialogFragment() {
                             Toast.makeText(context, "No songs available", Toast.LENGTH_SHORT).show()
                         }
                         5 -> if (editablePlaylist != null) {
-                            val mDialog = RenamePlaylistDialog()
-                            val bundle1 = Bundle()
-                            bundle1.putString(RenamePlaylistDialog.ARGUMENT_TITLE, editablePlaylist.title)
-                            bundle1.putLong(RenamePlaylistDialog.ARGUMENT_ID, editablePlaylist.id)
-                            mDialog.arguments = bundle1
-                            mDialog.show(fragmentManager, "RenameDialog")
+                            RenamePlaylistDialog.create(editablePlaylist.id, editablePlaylist.title)
+                                    .show(fragmentManager, "RenameDialog")
                         }
                         6 -> if (editablePlaylist != null) {
-                            val mDialog = DeletePlaylistDialog()
-                            val bundle1 = Bundle()
-                            bundle1.putParcelable(ARGUMENT_PLAYLIST, editablePlaylist)
-                            mDialog.arguments = bundle1
-                            mDialog.show(fragmentManager, "DeletePlaylistDialog")
+                            DeletePlaylistDialog.create(editablePlaylist.id, editablePlaylist.title, false)
+                                    .show(fragmentManager, "DeletePlaylistDialog")
                         }
                     }
                 }

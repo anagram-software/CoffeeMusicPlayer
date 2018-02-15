@@ -43,6 +43,8 @@ interface ArtistDetailContract {
 
         fun albumItemLongClicked(album: Album)
 
+        fun albumItemOptionClicked(album: Album)
+
         fun selectImage()
 
         fun deleteImage()

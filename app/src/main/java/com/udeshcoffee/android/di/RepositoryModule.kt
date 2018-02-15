@@ -9,8 +9,8 @@ import com.udeshcoffee.android.data.remote.RemoteDataSource
 import org.koin.dsl.module.applicationContext
 
 /**
- * Created by Udathari on 1/14/2018.
- */
+* Created by Udathari on 1/14/2018.
+*/
 val repositoryModule = applicationContext {
 
     factory { Room.databaseBuilder(get(), LocalDatabase::class.java, "CoffeePlayer.db")

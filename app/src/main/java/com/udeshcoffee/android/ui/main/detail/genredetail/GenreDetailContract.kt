@@ -30,6 +30,8 @@ interface GenreDetailContract {
 
         fun albumItemLongClicked(album: Album)
 
+        fun albumItemOptionClicked(album: Album)
+
         var genreId: Long
 
         var albumSortOrder: Int

@@ -4,6 +4,7 @@ import android.content.Context
 import android.support.v4.view.ViewCompat
 import android.support.v7.widget.RecyclerView
 import android.view.View
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
 import com.udeshcoffee.android.R
@@ -19,12 +20,18 @@ import com.udeshcoffee.android.utils.DopeUtil
 class AlbumViewHolder(val context: Context, itemView: View, val listener: OnGridItemClickListener?) :
         RecyclerView.ViewHolder(itemView), View.OnClickListener, View.OnLongClickListener {
     // each data item is just a string in this case
-    var artView: ImageView = itemView.findViewById<View>(R.id.grid_art) as ImageView
-    var titleView: TextView = itemView.findViewById<View>(R.id.grid_title) as TextView
-    var subtitleView: TextView = itemView.findViewById<View>(R.id.grid_subtitle) as TextView
+    private var artView: ImageView = itemView.findViewById(R.id.grid_art)
+    private var titleView: TextView = itemView.findViewById(R.id.grid_title)
+    private var subtitleView: TextView = itemView.findViewById(R.id.grid_subtitle)
+    private var optionView: ImageButton = itemView.findViewById(R.id.action_optional_play)
 
     init {
-
+        optionView.setOnClickListener{
+            val position = adapterPosition
+            if (position != RecyclerView.NO_POSITION) {
+                listener?.onItemOptionClick(position)
+            }
+        }
         itemView.setOnClickListener(this)
         itemView.setOnLongClickListener(this)
     }

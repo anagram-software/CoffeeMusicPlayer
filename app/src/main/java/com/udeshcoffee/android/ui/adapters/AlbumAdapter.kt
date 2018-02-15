@@ -12,8 +12,8 @@ import com.udeshcoffee.android.ui.viewholders.AlbumViewHolder
 import io.reactivex.functions.Consumer
 
 /**
- * Created by Udathari on 5/30/2017.
- */
+* Created by Udathari on 5/30/2017.
+*/
 
 class AlbumAdapter(val dataType: Int) : RecyclerView.Adapter<RecyclerView.ViewHolder>(),
         FastScrollRecyclerView.SectionedAdapter, Consumer<List<Album>> {

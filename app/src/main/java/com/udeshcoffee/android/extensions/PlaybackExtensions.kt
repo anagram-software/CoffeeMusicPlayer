@@ -1,6 +1,7 @@
 package com.udeshcoffee.android.extensions
 
 import android.support.v4.app.DialogFragment
+import android.support.v4.app.Fragment
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.ui.BasePresenter
 import com.udeshcoffee.android.utils.ServiceConnectionUtil
@@ -26,7 +27,7 @@ fun <T> BasePresenter<T>.playSong(position: Int, allItems: List<Song>, shouldPla
     }
 }
 
-fun DialogFragment.playSong(position: Int, allItems: List<Song>, shouldPlay: Boolean) {
+fun Fragment.playSong(position: Int, allItems: List<Song>, shouldPlay: Boolean) {
     if (allItems.isNotEmpty()) {
         playSongLogic(position, allItems, shouldPlay)
     }
@@ -39,10 +40,13 @@ private fun queueSongLogic(allItems: List<Song>, isNext: Boolean) {
 
         service?.apply {
             val shouldPlay = list.isEmpty()
-            if (isNext)
+            if (isNext) {
                 list.addAll(playPosition + 1, allItems)
-            else
+            } else {
                 list.addAll(allItems)
+            }
+
+            checkAndAddToUnshuffledList(allItems as ArrayList<Song>)
 
             if (shouldPlay) {
                 initSong(0, true)

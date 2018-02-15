@@ -35,6 +35,7 @@ import io.reactivex.schedulers.Schedulers
 import org.koin.android.ext.android.inject
 import java.util.*
 import java.util.concurrent.TimeUnit
+import kotlin.collections.ArrayList
 
 /**
  * Created by Udesh Kumarasinghe on 8/22/2017.
@@ -332,7 +333,7 @@ class MusicService : Service() {
             loadLastList { pos, current -> initSong(pos, false, current) }
     }
 
-    fun loadLastList(callback: (pos: Int, current: Int)->Unit) {
+    private fun loadLastList(callback: (pos: Int, current: Int)->Unit) {
         getQueue()?.subscribe { songs ->
             val tempSongPos = getSharedData(PreferenceUtil.LAST_PLAYED_POS)
             if (songs.isNotEmpty() && tempSongPos < songs.size && tempSongPos != -1) {
@@ -379,6 +380,12 @@ class MusicService : Service() {
                 Log.d(TAG, "play position $playPosition")
                 unshuffledList.clear()
             }
+        }
+    }
+
+    fun checkAndAddToUnshuffledList(songs: ArrayList<Song>){
+        if (isShuffled) {
+            unshuffledList.addAll(songs)
         }
     }
 

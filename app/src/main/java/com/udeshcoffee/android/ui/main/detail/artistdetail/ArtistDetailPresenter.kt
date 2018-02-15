@@ -221,6 +221,25 @@ class ArtistDetailPresenter(
                 }
     }
 
+    override fun albumItemOptionClicked(album: Album) {
+        mediaRepository.getAlbumSongs(album.id)
+                .map({ songs ->
+                    SortManager.sortAlbumSongs(songs)
+
+                    if (!sortAscending) {
+                        Collections.reverse(songs)
+                    }
+
+                    return@map songs
+                })
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .firstOrError()
+                .subscribe({
+                    playSong(0, it, true)
+                }, {})
+    }
+
     override var sortOrder: Int
         get() = SortManager.artistSongsSortOrder
         set(value) {

@@ -14,7 +14,7 @@ import android.view.ViewGroup
 import android.widget.ImageButton
 import android.widget.SeekBar
 import android.widget.TextView
-import com.udeshcoffee.android.*
+import com.udeshcoffee.android.R
 import com.udeshcoffee.android.extensions.*
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.service.MusicService
@@ -55,7 +55,7 @@ class PlayerFragment : Fragment(), PlayerContract.View {
     private lateinit var playerArtPagerAdapter: PlayerArtAdapter
 
     // Lyrics
-    private val lyricFragment: LyricsFragment by inject()
+    private var lyricFragment: LyricsFragment? = null
 
     // Art change listener
     private val pagerChangeListener = object : ViewPager.OnPageChangeListener {
@@ -268,12 +268,14 @@ class PlayerFragment : Fragment(), PlayerContract.View {
     }
 
     override fun showLyricUI() {
-        replaceFragment(R.id.lyrics_container, lyricFragment)
+        Log.d(TAG, "showLyric UI")
+        lyricFragment = LyricsFragment.create()
+        replaceFragment(R.id.lyrics_container, lyricFragment!!)
         art.fadeOut(200)
     }
 
     override fun hideLyricUI() {
-        lyricFragment.let {
+        lyricFragment?.let {
             removeFragment(it)
         }
         art.fadeIn(200)

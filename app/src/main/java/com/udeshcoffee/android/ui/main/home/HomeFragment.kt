@@ -156,7 +156,7 @@ class HomeFragment: Fragment(), HomeContract.View {
                     presenter.albumItemLongClicked(topAlbumsAdapter.getItem(position))
                 }
 
-                override fun onItemOptionClick() {}
+                override fun onItemOptionClick(position: Int) {}
 
             }
             topAlbums.adapter = topAlbumsAdapter
@@ -178,7 +178,7 @@ class HomeFragment: Fragment(), HomeContract.View {
                     presenter.artistItemLongClicked(topArtistsAdapter.getItem(position))
                 }
 
-                override fun onItemOptionClick() {}
+                override fun onItemOptionClick(position: Int) {}
 
             }
             topArtists.adapter = topArtistsAdapter

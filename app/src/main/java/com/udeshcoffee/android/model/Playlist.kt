@@ -35,7 +35,7 @@ class Playlist(val type: Int, var id: Long = 0,var title: String = ""): Parcelab
 
     constructor(cursor: Cursor) : this(USER,
             cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Playlists._ID)),
-            cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Playlists.NAME)))
+            cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Playlists.NAME)) ?: "")
 
     companion object {
 

@@ -8,12 +8,16 @@ import com.udeshcoffee.android.App
 import com.udeshcoffee.android.data.MediaRepository
 import com.udeshcoffee.android.extensions.getService
 import com.udeshcoffee.android.extensions.playSong
+import com.udeshcoffee.android.model.Album
+import com.udeshcoffee.android.model.Artist
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.service.MusicService
+import com.udeshcoffee.android.utils.SortManager
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
 import org.koin.standalone.KoinComponent
+import java.util.*
 
 /**
 * Created by Udathari on 9/12/2017.
@@ -121,8 +125,48 @@ class SearchPresenter(
         view.showAlbum(position)
     }
 
+    override fun albumItemLongClicked(album: Album) {
+        mediaRepository.getAlbumSongs(album.id)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .take(1)
+                .subscribe {
+                    view.showCollectionLongDialog(album.title, it)
+                }
+    }
+
+    override fun albumItemOptionClicked(album: Album) {
+        mediaRepository.getAlbumSongs(album.id)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .firstOrError()
+                .subscribe({
+                    playSong(0, it, true)
+                }, {})
+    }
+
     override fun artistItemClicked(position: Int) {
         view.showArtist(position)
+    }
+
+    override fun artistItemLongClicked(artist: Artist) {
+        mediaRepository.getArtistSongs(artist.id)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .take(1)
+                .subscribe {
+                    view.showCollectionLongDialog(artist.name, it)
+                }
+    }
+
+    override fun artistItemOptionClicked(artist: Artist) {
+        mediaRepository.getArtistSongs(artist.id)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .firstOrError()
+                .subscribe({
+                    playSong(0, it, true)
+                }, {})
     }
 
 }

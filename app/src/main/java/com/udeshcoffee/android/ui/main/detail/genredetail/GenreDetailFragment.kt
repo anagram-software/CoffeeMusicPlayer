@@ -119,7 +119,8 @@ class GenreDetailFragment: Fragment(), GenreDetailContract.View {
                     presenter.albumItemClicked(position)
                 }
 
-                override fun onItemOptionClick() {
+                override fun onItemOptionClick(position: Int) {
+                    presenter.albumItemOptionClicked(albumAdpt.getItem(position))
                 }
 
                 override fun onItemLongClick(position: Int) {

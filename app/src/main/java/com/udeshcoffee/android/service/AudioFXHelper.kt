@@ -333,8 +333,10 @@ class AudioFXHelper private constructor(private val dataRepository: DataReposito
         virtualizer?.release()
         virtualizer = null
 
-        loudnessenhancer?.release()
-        loudnessenhancer = null
+        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            loudnessenhancer?.release()
+            loudnessenhancer = null
+        }
     }
 
 }

@@ -39,11 +39,12 @@ class DeletePlaylistDialog: DialogFragment() {
         val ARGUMENT_TITLE = "ARGUMENT_TITLE"
         val ARGUMENT_SHOULD_GO_BACK = "ARGUMENT_SHOULD_GO_BACK"
 
-        fun create(playlistId: Long, playlistTitle: String): DeletePlaylistDialog {
+        fun create(playlistId: Long, playlistTitle: String, shouldGoBack: Boolean): DeletePlaylistDialog {
             val mDialog = DeletePlaylistDialog()
             val bundle1 = Bundle()
             bundle1.putLong(DeletePlaylistDialog.ARGUMENT_ID, playlistId)
             bundle1.putString(DeletePlaylistDialog.ARGUMENT_TITLE, playlistTitle)
+            bundle1.putBoolean(DeletePlaylistDialog.ARGUMENT_SHOULD_GO_BACK, shouldGoBack)
             mDialog.arguments = bundle1
             return mDialog
         }

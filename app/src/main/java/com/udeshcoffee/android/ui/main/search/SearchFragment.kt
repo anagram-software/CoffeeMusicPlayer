@@ -19,6 +19,7 @@ import com.bumptech.glide.Glide
 import com.jakewharton.rxbinding2.support.v7.widget.RxSearchView
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.extensions.navigateToDetail
+import com.udeshcoffee.android.extensions.openCollectionLongDialog
 import com.udeshcoffee.android.extensions.openSongLongDialog
 import com.udeshcoffee.android.interfaces.OnGridItemClickListener
 import com.udeshcoffee.android.interfaces.OnSongItemClickListener
@@ -105,13 +106,16 @@ class SearchFragment : Fragment(), SearchContract.View {
             albumAdpt = AlbumAdapter(AlbumAdapter.ITEM_TYPE_MINI)
             albumAdpt.listener = object : OnGridItemClickListener {
                 override fun onItemClick(position: Int, shareElement: View) {
+
                     presenter.albumItemClicked(position)
                 }
 
-                override fun onItemOptionClick() {
+                override fun onItemOptionClick(position: Int) {
+                    presenter.albumItemOptionClicked(albumAdpt.getItem(position))
                 }
 
                 override fun onItemLongClick(position: Int) {
+                    presenter.albumItemLongClicked(albumAdpt.getItem(position))
                 }
             }
             albumView.adapter = albumAdpt
@@ -127,10 +131,12 @@ class SearchFragment : Fragment(), SearchContract.View {
                     presenter.artistItemClicked(position)
                 }
 
-                override fun onItemOptionClick() {
+                override fun onItemOptionClick(position: Int) {
+                    presenter.artistItemOptionClicked(artistAdpt.getItem(position))
                 }
 
                 override fun onItemLongClick(position: Int) {
+                    presenter.artistItemLongClicked(artistAdpt.getItem(position))
                 }
             }
             artistView.adapter = artistAdpt
@@ -236,6 +242,10 @@ class SearchFragment : Fragment(), SearchContract.View {
 
     override fun showSongLongDialog(song: Song) {
         openSongLongDialog(song)
+    }
+
+    override fun showCollectionLongDialog(title: String, songs: List<Song>) {
+        openCollectionLongDialog(title, songs)
     }
 
     companion object {

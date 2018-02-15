@@ -1,6 +1,7 @@
 package com.udeshcoffee.android.ui.main.library.nested.folder
 
 import android.content.IntentFilter
+import android.os.Build
 import android.os.Environment
 import android.text.TextUtils
 import com.cantrowitz.rxbroadcast.RxBroadcast
@@ -135,11 +136,13 @@ class FolderPresenter(
             this.internal = internal.path
         }
 
-        val sdCardFiles = getExtSdCardFiles()
-        for (file in sdCardFiles) {
-            file.let {
-                folderItems.add(Folder("SD Card", mediaRepository.getFolderSongCount(it.path + "/"), it))
-                this.sdCard = it.path
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            val sdCardFiles = getExtSdCardFiles()
+            for (file in sdCardFiles) {
+                file.let {
+                    folderItems.add(Folder("SD Card", mediaRepository.getFolderSongCount(it.path + "/"), it))
+                    this.sdCard = it.path
+                }
             }
         }
 

@@ -261,5 +261,7 @@ class LyricsFragment : Fragment(), LyricsContract.View {
     companion object {
         val SEARCH_LYRICS = 0
         val ADD_LYRICS = 1
+
+        fun create() = LyricsFragment()
     }
 }

@@ -4,10 +4,12 @@ import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.support.v7.widget.GridLayoutManager
 import android.view.*
+import android.widget.Toast
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.data.MediaRepository
 import com.udeshcoffee.android.extensions.navigateToDetail
 import com.udeshcoffee.android.extensions.openCollectionLongDialog
+import com.udeshcoffee.android.extensions.playSong
 import com.udeshcoffee.android.interfaces.OnGridItemClickListener
 import com.udeshcoffee.android.model.Album
 import com.udeshcoffee.android.recyclerview.EmptyRecyclerView
@@ -73,8 +75,16 @@ class AlbumFragment : Fragment(){
                 }
             }
 
-            override fun onItemOptionClick() {
-
+            override fun onItemOptionClick(position: Int) {
+                albumAdpt?.getItem(position)?.let {
+                    Toast.makeText(context, "Playing ${it.title}", Toast.LENGTH_SHORT).show()
+                    mediaRepository.getAlbumSongs(it.id)
+                            .observeOn(AndroidSchedulers.mainThread())
+                            .take(1)
+                            .subscribe({songs ->
+                                playSong(0, songs, true)
+                            })
+                }
             }
         }
         albumView.adapter = albumAdpt

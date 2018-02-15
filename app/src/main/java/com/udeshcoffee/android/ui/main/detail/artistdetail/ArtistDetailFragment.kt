@@ -115,7 +115,8 @@ class ArtistDetailFragment: Fragment(), ArtistDetailContract.View, AppBarLayout.
                     presenter.albumItemClicked(position)
                 }
 
-                override fun onItemOptionClick() {
+                override fun onItemOptionClick(position: Int) {
+                    presenter.albumItemOptionClicked(albumAdpt.getItem(position))
                 }
 
                 override fun onItemLongClick(position: Int) {
@@ -280,12 +281,15 @@ class ArtistDetailFragment: Fragment(), ArtistDetailContract.View, AppBarLayout.
 
     override fun populateItems(items: List<Song>) {
         songAdpt.accept(items)
+        if (items.isEmpty()) {
+            toolbarSongs.visibility = View.GONE
+        }
     }
 
     override fun populateAlbumItems(items: List<Album>) {
         albumAdpt.accept(items)
         if (items.isEmpty()) {
-            toolbarSongs.visibility = View.GONE
+            toolbarAlbums.visibility = View.GONE
         }
     }
 
@@ -385,10 +389,10 @@ class ArtistDetailFragment: Fragment(), ArtistDetailContract.View, AppBarLayout.
     }
 
     companion object {
-        val SELECT_PHOTO = 0
+        const val SELECT_PHOTO = 0
 
-        private val ARGUMENT_ID = "ARGUMENT_ID"
-        private val ARGUMENT_NAME = "ARGUMENT_ARTIST"
+        private const val ARGUMENT_ID = "ARGUMENT_ID"
+        private const val ARGUMENT_NAME = "ARGUMENT_ARTIST"
 
         fun create(artist: Artist): ArtistDetailFragment {
             val fragment = ArtistDetailFragment()
