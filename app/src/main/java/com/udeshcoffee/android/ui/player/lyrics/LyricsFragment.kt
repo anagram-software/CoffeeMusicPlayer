@@ -126,7 +126,7 @@ class LyricsFragment : Fragment(), LyricsContract.View {
                     hideLyricLayout()
                     hideErrorLayout()
                     hideMultipleLayout()
-                    lyricLayout.visibility = View.INVISIBLE
+                    toolbar.menu.findItem(R.id.action_lyrics_size).isVisible = false
                     progressLayout.visibility = View.VISIBLE
                     progressText.text = getString(R.string.msg_loading)
                 } else {
@@ -143,7 +143,7 @@ class LyricsFragment : Fragment(), LyricsContract.View {
                     hideLyricLayout()
                     hideErrorLayout()
                     hideMultipleLayout()
-                    lyricLayout.visibility = View.INVISIBLE
+                    toolbar.menu.findItem(R.id.action_lyrics_size).isVisible = false
                     progressLayout.visibility = View.VISIBLE
                     progressText.text = getString(R.string.msg_searching)
                 } else {
@@ -158,6 +158,7 @@ class LyricsFragment : Fragment(), LyricsContract.View {
             hideErrorLayout()
             hideProgressLayout()
             hideMultipleLayout()
+            toolbar.menu.findItem(R.id.action_lyrics_size).isVisible = true
             lyricLayout.visibility = View.VISIBLE
             val result = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
                 Html.fromHtml(lyrics, Html.FROM_HTML_MODE_LEGACY)
@@ -188,6 +189,7 @@ class LyricsFragment : Fragment(), LyricsContract.View {
             hideLyricLayout()
             hideProgressLayout()
             hideMultipleLayout()
+            toolbar.menu.findItem(R.id.action_lyrics_size).isVisible = false
             isRetryShowing = false
             errorLayout.visibility = View.VISIBLE
             errorText.text = getString(R.string.msg_not_found)
@@ -200,6 +202,7 @@ class LyricsFragment : Fragment(), LyricsContract.View {
             hideLyricLayout()
             hideProgressLayout()
             hideErrorLayout()
+            toolbar.menu.findItem(R.id.action_lyrics_size).isVisible = false
             multipleLayout.visibility = View.VISIBLE
             adapter.accept(items)
         }
@@ -219,6 +222,7 @@ class LyricsFragment : Fragment(), LyricsContract.View {
             hideLyricLayout()
             hideProgressLayout()
             hideMultipleLayout()
+            toolbar.menu.findItem(R.id.action_lyrics_size).isVisible = false
             isRetryShowing = true
             errorLayout.visibility = View.VISIBLE
             errorText.text = getString(R.string.msg_connection_failed)
@@ -227,21 +231,21 @@ class LyricsFragment : Fragment(), LyricsContract.View {
     }
 
     override fun hideErrorLayout() {
-        errorLayout.visibility = View.INVISIBLE
+        errorLayout.visibility = View.GONE
     }
 
     override fun hideProgressLayout() {
-        progressLayout.visibility = View.INVISIBLE
+        progressLayout.visibility = View.GONE
     }
 
     override fun hideLyricLayout() {
         lyricText.text = ""
-        lyricLayout.visibility = View.INVISIBLE
+        lyricLayout.visibility = View.GONE
     }
 
     override fun hideMultipleLayout() {
         adapter.accept(ArrayList())
-        multipleLayout.visibility = View.INVISIBLE
+        multipleLayout.visibility = View.GONE
     }
 
     override fun showSearchDialog(id:Long ,title: String, artist: String) {

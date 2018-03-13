@@ -11,6 +11,7 @@ import com.udeshcoffee.android.data.MediaRepository
 import com.udeshcoffee.android.extensions.navigateToDetail
 import com.udeshcoffee.android.extensions.openCollectionLongDialog
 import com.udeshcoffee.android.extensions.playSong
+import com.udeshcoffee.android.extensions.showPlayingToast
 import com.udeshcoffee.android.interfaces.OnGridItemClickListener
 import com.udeshcoffee.android.model.Artist
 import com.udeshcoffee.android.recyclerview.EmptyRecyclerView
@@ -51,7 +52,8 @@ class ArtistFragment : Fragment() {
         val albumView = view.findViewById<EmptyRecyclerView>(R.id.linear_list)
         // specify an adapter (see also next example)
         artistAdpt = ArtistAdapter(ArtistAdapter.ITEM_TYPE_NORMAL, Glide.with(context), true)
-        albumView.layoutManager = GridLayoutManager(context, 2, GridLayoutManager.VERTICAL, false)
+        albumView.layoutManager = GridLayoutManager(context,  resources.getInteger(R.integer.grid_columns),
+                GridLayoutManager.VERTICAL, false)
         albumView.setEmptyView(view.findViewById(R.id.empty_view))
         albumView.addItemDecoration(GridItemDecor(resources.getDimensionPixelSize(R.dimen.grid_spacing)))
         albumView.hasFixedSize()
@@ -78,7 +80,7 @@ class ArtistFragment : Fragment() {
 
             override fun onItemOptionClick(position: Int) {
                 artistAdpt?.getItem(position)?.let {
-                    Toast.makeText(context, "Playing ${it.name}'s songs", Toast.LENGTH_SHORT).show()
+                    showPlayingToast(it)
                     mediaRepository.getArtistSongs(it.id)
                             .observeOn(AndroidSchedulers.mainThread())
                             .firstOrError()

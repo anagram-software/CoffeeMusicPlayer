@@ -17,7 +17,9 @@ import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.schedulers.Schedulers
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 /**
  * Created by Udathari on 12/19/2017.
@@ -190,6 +192,31 @@ class MediaRepository constructor (
             cursor.close()
         }
         return count
+    }
+
+    fun cleanGenres() {
+        getGenres()
+                .subscribeOn(Schedulers.io())
+                .observeOn(Schedulers.newThread())
+                .take(1)
+                .flatMapIterable{it -> it}
+                .concatMap{Observable.just(it).delay(250, TimeUnit.MILLISECONDS)}
+                // Since this is called on app launch, let's delay to allow more important tasks to complete.
+                .delaySubscription(2500, TimeUnit.MILLISECONDS)
+                .subscribe{
+                    getGenreSongCount(it.id)
+                            ?.firstOrError()
+                            ?.subscribe{ numSongs ->
+                                if (numSongs == 0) {
+                                    try {
+                                        contentResolver.delete(MediaStore.Audio.Genres.EXTERNAL_CONTENT_URI,
+                                                MediaStore.Audio.Genres._ID + " == " + it.id, null);
+                                    } catch (e: Exception) {
+                                        //Don't care if we couldn't delete this uri.
+                                    }
+                                }
+                            }
+                }
     }
 
     // Playlist

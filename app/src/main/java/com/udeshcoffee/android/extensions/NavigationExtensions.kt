@@ -27,12 +27,12 @@ import com.udeshcoffee.android.ui.main.search.SearchFragment
 * Created by Udathari on 1/14/2018.
 */
 
-private val main_container = R.id.main_container
+private const val main_container = R.id.main_container
 
 fun FragmentManager.navigateToDetail(detail: Any) {
 
     val transaction = this.beginTransaction()
-0
+
     val fragment: Fragment
 
     when (detail) {

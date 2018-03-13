@@ -40,7 +40,6 @@ class ArtistViewHolder(val context: Context, itemView: View, val glide: RequestM
 
     fun bindData(currentItem: Artist, shouldCollectArt: Boolean) {
         context.let { currentItem.loadArtwork(it, glide, artView, shouldCollectArt) }
-        ViewCompat.setTransitionName(artView, "share_${position}_${currentItem.id}")
         titleView.text = currentItem.name
         subtitleView.text = DopeUtil.countToSongCount(currentItem.songCount)
     }

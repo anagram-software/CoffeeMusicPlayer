@@ -21,6 +21,7 @@ import com.udeshcoffee.android.R
 import com.udeshcoffee.android.extensions.navigateToDetail
 import com.udeshcoffee.android.extensions.openCollectionLongDialog
 import com.udeshcoffee.android.extensions.openSongLongDialog
+import com.udeshcoffee.android.extensions.showPlayingToast
 import com.udeshcoffee.android.interfaces.OnGridItemClickListener
 import com.udeshcoffee.android.interfaces.OnSongItemClickListener
 import com.udeshcoffee.android.model.Album
@@ -111,7 +112,10 @@ class SearchFragment : Fragment(), SearchContract.View {
                 }
 
                 override fun onItemOptionClick(position: Int) {
-                    presenter.albumItemOptionClicked(albumAdpt.getItem(position))
+                    albumAdpt.getItem(position).let {
+                        showPlayingToast(it)
+                        presenter.albumItemOptionClicked(it)
+                    }
                 }
 
                 override fun onItemLongClick(position: Int) {
@@ -132,7 +136,10 @@ class SearchFragment : Fragment(), SearchContract.View {
                 }
 
                 override fun onItemOptionClick(position: Int) {
-                    presenter.artistItemOptionClicked(artistAdpt.getItem(position))
+                    artistAdpt.getItem(position).let {
+                        showPlayingToast(it)
+                        presenter.artistItemOptionClicked(it)
+                    }
                 }
 
                 override fun onItemLongClick(position: Int) {

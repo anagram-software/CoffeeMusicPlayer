@@ -116,7 +116,10 @@ class ArtistDetailFragment: Fragment(), ArtistDetailContract.View, AppBarLayout.
                 }
 
                 override fun onItemOptionClick(position: Int) {
-                    presenter.albumItemOptionClicked(albumAdpt.getItem(position))
+                    albumAdpt.getItem(position).let {
+                        showPlayingToast(it)
+                        presenter.albumItemOptionClicked(it)
+                    }
                 }
 
                 override fun onItemLongClick(position: Int) {

@@ -19,8 +19,8 @@ import org.koin.android.ext.android.inject
 
 
 /**
- * Created by Udathari on 8/25/2017.
- */
+* Created by Udathari on 8/25/2017.
+*/
 class MiniPlayerFragment : Fragment(), MiniPlayerContract.View {
 
     val TAG = "MiniPlayerFragment"
@@ -44,9 +44,9 @@ class MiniPlayerFragment : Fragment(), MiniPlayerContract.View {
             subtitle = findViewById(R.id.mini_player_subtitle)
             art = findViewById(R.id.mini_player_art)
             layout = findViewById(R.id.mini_player_layout)
-            layout.setOnClickListener { presenter?.openNowPlay() }
+            layout.setOnClickListener { presenter.openNowPlay() }
             playPause = findViewById(R.id.mini_player_playpause)
-            playPause.setOnClickListener { presenter?.playPauseToggle() }
+            playPause.setOnClickListener { presenter.playPauseToggle() }
             progress = findViewById(R.id.mini_player_progress)
         }
 

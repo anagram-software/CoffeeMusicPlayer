@@ -9,6 +9,7 @@
     <dimen name="lyrics_text_large">12sp</dimen>
 
     <!-- Recycler View -->
+    <integer name="grid_columns">2</integer>
     <dimen name="grid_spacing">1dp</dimen>
     <dimen name="mini_grid_spacing">8dp</dimen>
     <dimen name="home_grid_spacing">8dp</dimen>
