@@ -30,6 +30,10 @@ interface FolderContract {
 
     interface Presenter: SongContainingPresenter<View> {
 
+        fun checkSortAndFetchFolders()
+
+        fun fetchSongs()
+
         fun upClicked()
 
         fun folderItemClicked(item: Folder, lastVisibleItem: Int)
@@ -41,6 +45,12 @@ interface FolderContract {
         var currentDir: File?
 
         var sortOrder: Int
+
+        var folderSortOrder: Int
+
+        var sortAscending: Boolean
+
+        var folderSortAscending: Boolean
 
     }
 

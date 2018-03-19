@@ -28,7 +28,7 @@ class LyricAdapter : RecyclerView.Adapter<LyricViewHolder>(), Consumer<List<Resu
     }
 
     // Create new views (invoked by the layout manager)
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): LyricViewHolder? {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): LyricViewHolder {
         context = parent.context
         val inflater = LayoutInflater.from(context)
         val view = inflater.inflate(R.layout.lyricitem, parent, false)

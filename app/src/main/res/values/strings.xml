@@ -140,6 +140,9 @@
     <string name="info_tracks">Tracks</string>
     <string name="action_add_lyrics">Add Lyrics</string>
     <string name="msg_add_lyrics">Add Lyrics</string>
+    <string name="folder_sort">Folder Sort</string>
+    <string name="song_sort">Song Sort</string>
+    <string name="action_sort_song_count">Song Count</string>
 
     // New
 

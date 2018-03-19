@@ -92,9 +92,10 @@ class MiniPlayerPresenter(): MiniPlayerContract.Presenter, KoinComponent {
         isPlaying = getService()?.isPlaying() ?: false
         if (isPlaying) {
             setProgress()
-        } else {
-            disposeProgress()
         }
+//        else {
+//            disposeProgress()
+//        }
         view.setPlayOrPause(!isPlaying)
     }
 
@@ -106,7 +107,7 @@ class MiniPlayerPresenter(): MiniPlayerContract.Presenter, KoinComponent {
                 }
     }
 
-    fun disposeProgress() {
+    private fun disposeProgress() {
         progressDisposable?.let {
             if (!it.isDisposed)
                 it.dispose()

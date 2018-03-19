@@ -19,8 +19,8 @@ import io.reactivex.functions.Consumer
 import java.util.*
 
 /**
- * Created by Udathari on 9/17/2017.
- */
+* Created by Udathari on 9/17/2017.
+*/
 class DragableAdapter(var dragable: Boolean):
         RecyclerView.Adapter<RecyclerView.ViewHolder>(), Consumer<List<Song>>, ItemTouchHelperAdapter {
 
@@ -114,8 +114,8 @@ class DragableAdapter(var dragable: Boolean):
         }
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): RecyclerView.ViewHolder{
-        context = parent?.context
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder{
+        context = parent.context
         val inflater = LayoutInflater.from(context)
         return if (dragable) {
             val itemView = inflater.inflate(R.layout.dragable_item, parent, false)
@@ -126,7 +126,7 @@ class DragableAdapter(var dragable: Boolean):
         }
     }
 
-    override fun onBindViewHolder(holder: RecyclerView.ViewHolder?, position: Int) {
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         if (dragable)
             (holder as DragViewHolder?)?.bindData(position, holder)
         else

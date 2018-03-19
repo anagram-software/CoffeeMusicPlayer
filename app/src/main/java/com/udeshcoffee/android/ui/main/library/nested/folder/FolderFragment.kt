@@ -3,9 +3,7 @@ package com.udeshcoffee.android.ui.main.library.nested.folder
 import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.support.v7.widget.LinearLayoutManager
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import android.widget.Button
 import android.widget.ImageButton
 import android.widget.TextView
@@ -19,6 +17,7 @@ import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.recyclerview.EmptyRecyclerView
 import com.udeshcoffee.android.ui.adapters.FolderAdapter
 import com.udeshcoffee.android.ui.dialogs.CollectionLongDialog
+import com.udeshcoffee.android.utils.SortManager
 import io.reactivex.Observable
 import org.koin.android.ext.android.inject
 
@@ -40,6 +39,8 @@ class FolderFragment : Fragment(), FolderContract.View {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        setHasOptionsMenu(true)
 
         view.apply {
 
@@ -100,51 +101,72 @@ class FolderFragment : Fragment(), FolderContract.View {
 
     // Sorting
 
-//    override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
-//        inflater?.inflate(R.menu.song_sort, menu)
-//        super.onCreateOptionsMenu(menu, inflater)
-//    }
-//
-//    override fun onPrepareOptionsMenu(menu: Menu?) {
-//        if (menu != null) {
-//            when (presenter?.sortOrder) {
-//                SortManager.SongSort.DEFAULT -> menu.findItem(R.id.action_sort_default).isChecked = true
-//                SortManager.SongSort.NAME -> menu.findItem(R.id.action_sort_title).isChecked = true
-//                SortManager.SongSort.TRACK_NUMBER -> menu.findItem(R.id.action_sort_track).isChecked = true
-//                SortManager.SongSort.DURATION -> menu.findItem(R.id.action_sort_duration).isChecked = true
-//                SortManager.SongSort.DATE -> menu.findItem(R.id.action_sort_date).isChecked = true
-//                SortManager.SongSort.YEAR -> menu.findItem(R.id.action_sort_year).isChecked = true
-//                SortManager.SongSort.ALBUM_NAME -> menu.findItem(R.id.action_sort_album_name).isChecked = true
-//                SortManager.SongSort.ARTIST_NAME -> menu.findItem(R.id.action_sort_artist_name).isChecked = true
-//            }
-//        }
-//        super.onPrepareOptionsMenu(menu)
-//    }
-//
-//    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
-//        var sortChanged = true
-//
-//        when (item?.itemId) {
-//            R.id.action_sort_default -> presenter?.sortOrder = SortManager.SongSort.DEFAULT
-//            R.id.action_sort_title -> presenter?.sortOrder = SortManager.SongSort.NAME
-//            R.id.action_sort_track -> presenter?.sortOrder = SortManager.SongSort.TRACK_NUMBER
-//            R.id.action_sort_duration -> presenter?.sortOrder = SortManager.SongSort.DURATION
-//            R.id.action_sort_year -> presenter?.sortOrder = SortManager.SongSort.YEAR
-//            R.id.action_sort_date -> presenter?.sortOrder = SortManager.SongSort.DATE
-//            R.id.action_sort_album_name -> presenter?.sortOrder = SortManager.SongSort.ALBUM_NAME
-//            R.id.action_sort_artist_name -> presenter?.sortOrder = SortManager.SongSort.ARTIST_NAME
-//            R.id.action_sort_ascending -> {
-//            }
-//            else -> sortChanged = false
-//        }
-//
-//        if (sortChanged) {
-//            presenter?.fetchData()
-//            activity.supportInvalidateOptionsMenu()
-//        }
-//
-//        return super.onOptionsItemSelected(item)
-//    }
+    override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
+        inflater?.inflate(R.menu.folder_menu, menu)
+        super.onCreateOptionsMenu(menu, inflater)
+    }
+
+    override fun onPrepareOptionsMenu(menu: Menu?) {
+        if (menu != null) {
+            when (presenter.sortOrder) {
+                SortManager.SongSort.DEFAULT -> menu.findItem(R.id.action_sort_default).isChecked = true
+                SortManager.SongSort.NAME -> menu.findItem(R.id.action_sort_title).isChecked = true
+                SortManager.SongSort.TRACK_NUMBER -> menu.findItem(R.id.action_sort_track).isChecked = true
+                SortManager.SongSort.DURATION -> menu.findItem(R.id.action_sort_duration).isChecked = true
+                SortManager.SongSort.DATE -> menu.findItem(R.id.action_sort_date).isChecked = true
+                SortManager.SongSort.YEAR -> menu.findItem(R.id.action_sort_year).isChecked = true
+                SortManager.SongSort.ALBUM_NAME -> menu.findItem(R.id.action_sort_album_name).isChecked = true
+                SortManager.SongSort.ARTIST_NAME -> menu.findItem(R.id.action_sort_artist_name).isChecked = true
+            }
+            when (presenter.folderSortOrder) {
+                SortManager.FolderSort.DEFAULT -> menu.findItem(R.id.action_sort_folder_default).isChecked = true
+                SortManager.FolderSort.NAME -> menu.findItem(R.id.action_sort_folder_title).isChecked = true
+                SortManager.FolderSort.SONG_COUNT -> menu.findItem(R.id.action_sort_folder_song_count).isChecked = true
+            }
+            menu.findItem(R.id.action_sort_ascending).isChecked = presenter.sortAscending
+            menu.findItem(R.id.action_sort_folder_ascending).isChecked = presenter.folderSortAscending
+        }
+        super.onPrepareOptionsMenu(menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
+        var sortChanged = true
+        var folderSortChanged = true
+
+        if (item?.groupId == R.id.sort_folder) {
+            when (item.itemId) {
+                R.id.action_sort_folder_default -> presenter.folderSortOrder = SortManager.AlbumSort.DEFAULT
+                R.id.action_sort_folder_title-> presenter.folderSortOrder = SortManager.AlbumSort.NAME
+                R.id.action_sort_folder_song_count -> presenter.folderSortOrder = SortManager.AlbumSort.YEAR
+                R.id.action_sort_folder_ascending -> presenter.folderSortAscending = !item.isChecked
+            }
+        } else folderSortChanged = false
+
+        when (item?.itemId) {
+            R.id.action_sort_default -> presenter.sortOrder = SortManager.SongSort.DEFAULT
+            R.id.action_sort_title -> presenter.sortOrder = SortManager.SongSort.NAME
+            R.id.action_sort_track -> presenter.sortOrder = SortManager.SongSort.TRACK_NUMBER
+            R.id.action_sort_duration -> presenter.sortOrder = SortManager.SongSort.DURATION
+            R.id.action_sort_year -> presenter.sortOrder = SortManager.SongSort.YEAR
+            R.id.action_sort_date -> presenter.sortOrder = SortManager.SongSort.DATE
+            R.id.action_sort_album_name -> presenter.sortOrder = SortManager.SongSort.ALBUM_NAME
+            R.id.action_sort_artist_name -> presenter.sortOrder = SortManager.SongSort.ARTIST_NAME
+            R.id.action_sort_ascending -> { presenter.sortAscending = !item.isChecked }
+            else -> sortChanged = false
+        }
+
+        if (folderSortChanged) {
+            presenter.checkSortAndFetchFolders()
+            activity?.invalidateOptionsMenu()
+        }
+
+        if (sortChanged) {
+            presenter.fetchSongs()
+            activity?.invalidateOptionsMenu()
+        }
+
+        return super.onOptionsItemSelected(item)
+    }
 
     override fun onDestroyView() {
         super.onDestroyView()

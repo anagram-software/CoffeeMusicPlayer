@@ -70,7 +70,7 @@
         <Preference
             android:key="pref_version"
             android:title="Version"
-            android:summary="2.0.2" />
+            android:summary="2.0.8" />
 
         <Preference
             android:key="pref_dev"

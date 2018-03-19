@@ -4,6 +4,7 @@ import android.content.IntentFilter
 import android.os.Build
 import android.os.Environment
 import android.text.TextUtils
+import android.util.Log
 import com.cantrowitz.rxbroadcast.RxBroadcast
 import com.udeshcoffee.android.App
 import com.udeshcoffee.android.data.DataRepository
@@ -70,61 +71,72 @@ class FolderPresenter(
         }
     }
 
-    private fun fetchFolders(file: File) {
-        if (!file.canRead()) {
-            if (file.absolutePath.startsWith(
-                    Environment.getExternalStorageDirectory().toString())
-                    || file.absolutePath.startsWith("/sdcard")
-                    || file.absolutePath.startsWith("/mnt/sdcard")) {
-                if (Environment.getExternalStorageState() != Environment.MEDIA_MOUNTED && Environment.getExternalStorageState() != Environment.MEDIA_MOUNTED_READ_ONLY) {
-                    currentDir = file
-                    val state = Environment.getExternalStorageState()
-                    if (Environment.MEDIA_SHARED == state) {
-                        view.showErrorToast("USB Active")
-                    } else {
-                        view.showErrorToast("Not Mounted")
+    private fun fetchFolders() {
+        currentDir?.let {
+            val file = it
+            if (!file.canRead()) {
+                if (file.absolutePath.startsWith(
+                                Environment.getExternalStorageDirectory().toString())
+                        || file.absolutePath.startsWith("/sdcard")
+                        || file.absolutePath.startsWith("/mnt/sdcard")) {
+                    if (Environment.getExternalStorageState() != Environment.MEDIA_MOUNTED && Environment.getExternalStorageState() != Environment.MEDIA_MOUNTED_READ_ONLY) {
+                        currentDir = file
+                        val state = Environment.getExternalStorageState()
+                        if (Environment.MEDIA_SHARED == state) {
+                            view.showErrorToast("USB Active")
+                        } else {
+                            view.showErrorToast("Not Mounted")
+                        }
+                        view.populateItems(ArrayList(), 0)
                     }
-                    view.populateItems(ArrayList(), 0)
                 }
+                view.showErrorToast("Access Error ${file.canRead()},${file.canWrite()},${file.path}")
             }
-            view.showErrorToast("Access Error ${file.canRead()},${file.canWrite()},${file.path}")
-        }
-        var files: Array<File>? = null
-        try {
-            files = file.listFiles()
-        } catch (e: Exception) {
-            view.showErrorToast(e.localizedMessage)
-        }
+            var files: Array<File>? = null
+            try {
+                files = file.listFiles()
+            } catch (e: Exception) {
+                view.showErrorToast(e.localizedMessage)
+            }
 
-        if (files == null) {
-            view.showErrorToast("No Files Found")
-            return
-        }
-        currentDir = file
-        Arrays.sort(files) { lhs, rhs ->
-            if (lhs.isDirectory != rhs.isDirectory) {
-                return@sort if (lhs.isDirectory) -1 else 1
+            if (files == null) {
+                view.showErrorToast("No Files Found")
+                return
             }
-            lhs.name.compareTo(rhs.name, ignoreCase = true)
-            /*
+            currentDir = file
+            Arrays.sort(files) { lhs, rhs ->
+                if (lhs.isDirectory != rhs.isDirectory) {
+                    return@sort if (lhs.isDirectory) -1 else 1
+                }
+                lhs.name.compareTo(rhs.name, ignoreCase = true)
+                /*
              * long lm = lhs.lastModified(); long rm = lhs.lastModified();
              * if (lm == rm) { return 0; } else if (lm > rm) { return -1; }
              * else { return 1; }
              */
-        }
-        val folderItems = ArrayList<Folder> ()
-        for (item in files) {
-            if (item.name.startsWith(".")) {
-                continue
             }
-            if (item.isDirectory) {
-                val songCount = mediaRepository.getFolderSongCount(item.path + "/")
-                if (songCount > 0) {
-                    folderItems.add(Folder(item.name, songCount, item))
+            val folderItems = ArrayList<Folder>()
+            for (item in files) {
+                if (item.name.startsWith(".")) {
+                    continue
+                }
+                if (item.isDirectory) {
+                    val songCount = mediaRepository.getFolderSongCount(item.path + "/")
+                    if (songCount > 0) {
+                        folderItems.add(Folder(item.name, songCount, item))
+                    }
                 }
             }
+            // Sorting
+            val items = folderItems as List<Folder>
+            SortManager.sortFolders(items)
+
+            if (!folderSortAscending) {
+                Collections.reverse(items)
+            }
+
+            view.populateItems(items, 0)
         }
-        view.populateItems(folderItems, 0)
     }
 
     private fun fetchRoot() {
@@ -146,10 +158,42 @@ class FolderPresenter(
             }
         }
 
+        //Sorting
+        val items = folderItems as List<Folder>
+        SortManager.sortFolders(items)
+
+        if (!folderSortAscending) {
+            Collections.reverse(items)
+        }
+
         dispose()
-        view.populateItems(ArrayList())
-        view.populateItems(folderItems, 0)
+        view.populateItems(items, 0)
         currentDir = null
+    }
+
+    override fun fetchSongs() {
+        currentDir?.let {
+            dispose()
+            disposable = mediaRepository.getFolderSongs(it.path + "/")
+                    .map {
+                        SortManager.sortFolderSongs(it)
+
+                        if (!sortAscending) {
+                            Collections.reverse(it)
+                        }
+
+                        return@map it
+                    }
+                    .subscribe { view.populateItems(it) }
+        }
+    }
+
+    override fun checkSortAndFetchFolders() {
+        Log.d(TAG, "checkSortAndFetchFolders history: ${history.size}")
+        if (currentDir == null)
+            fetchRoot()
+        else if (currentDir != null)
+            fetchFolders()
     }
 
     fun dispose() {
@@ -164,9 +208,8 @@ class FolderPresenter(
         val prev = history.removeAt(history.size - 1)
         currentDir = prev.directory
         setPath(currentDir!!.path)
-        fetchFolders(currentDir!!)
-        dispose()
-        disposable = mediaRepository.getFolderSongs(currentDir!!.path + "/").subscribe { view.populateItems(it) }
+        fetchFolders()
+        fetchSongs()
     } else if (history.size == 0 && currentDir != null) {
         view.showHideLoading(true)
         view.setPath("/")
@@ -219,10 +262,10 @@ class FolderPresenter(
         currentDir = item.file
         currentDir?.let {
             setPath(it.path)
-            fetchFolders(it)
-            dispose()
-            disposable = mediaRepository.getFolderSongs(it.path + "/").subscribe { view.populateItems(it) }
+            fetchFolders()
+            fetchSongs()
         }
+
     }
 
     override fun folderItemLongClicked(item: Folder) {
@@ -247,7 +290,21 @@ class FolderPresenter(
     }
 
     override var sortOrder: Int
-        get() = SortManager.songsSortOrder
+        get() = SortManager.folderSongsSortOrder
         set(value) {
-            SortManager.songsSortOrder = value}
+            SortManager.folderSongsSortOrder = value}
+
+    override var sortAscending: Boolean
+        get() = SortManager.folderSongsAscending
+        set(value) {
+            SortManager.folderSongsAscending = value}
+
+    override var folderSortOrder: Int
+        get() = SortManager.folderSortOrder
+        set(value) {
+            SortManager.folderSortOrder = value}
+
+    override var folderSortAscending: Boolean
+        get() = SortManager.foldersAscending
+        set(value) { SortManager.foldersAscending = value}
 }

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/sort"
+        android:icon="@drawable/ic_sort_white"
+        android:title="@string/action_sort"
+        app:showAsAction="ifRoom">
+        <menu>
+            <group android:id="@+id/sort_folder" android:checkableBehavior="single">
+                <item
+                    android:checkable="false"
+                    android:enabled="false"
+                    android:title="@string/folder_sort"
+                    android:visible="true" />
+                <item
+                    android:id="@+id/action_sort_folder_default"
+                    android:title="@string/action_sort_default"/>
+                <item
+                    android:id="@+id/action_sort_folder_title"
+                    android:title="@string/action_sort_title"/>
+                <item
+                    android:id="@+id/action_sort_folder_song_count"
+                    android:title="@string/action_sort_song_count"/>
+                <item
+                    android:id="@+id/action_sort_folder_ascending"
+                    android:checkable="true"
+                    android:checked="true"
+                    android:title="@string/action_sort_ascending"/>
+            </group>
+            <group android:id="@+id/sort_song" android:checkableBehavior="single">
+                <item
+                    android:checkable="false"
+                    android:enabled="false"
+                    android:title="@string/song_sort"
+                    android:visible="true" />
+                <item
+                    android:id="@+id/action_sort_default"
+                    android:title="@string/action_sort_default"/>
+                <item
+                    android:id="@+id/action_sort_title"
+                    android:title="@string/action_sort_title"/>
+                <item
+                    android:id="@+id/action_sort_track"
+                    android:title="@string/action_sort_track"/>
+                <item
+                    android:id="@+id/action_sort_duration"
+                    android:title="@string/action_sort_duration"/>
+                <item
+                    android:id="@+id/action_sort_date"
+                    android:title="@string/action_sort_date_added"/>
+                <item
+                    android:id="@+id/action_sort_year"
+                    android:title="@string/action_sort_year"/>
+                <item
+                    android:id="@+id/action_sort_album_name"
+                    android:title="@string/action_sort_album_name"/>
+                <item
+                    android:id="@+id/action_sort_ascending"
+                    android:checkable="true"
+                    android:checked="true"
+                    android:title="@string/action_sort_ascending"/>
+            </group>
+        </menu>
+    </item>
+</menu>

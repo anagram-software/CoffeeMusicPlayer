@@ -88,15 +88,14 @@ class FolderAdapter(): RecyclerView.Adapter<RecyclerView.ViewHolder>() {
         }
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder? {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         context = parent.context
         val inflater = LayoutInflater.from(parent.context)
-        if (viewType == ITEM_TYPE_SONG) {
-            return SongViewHolder(context, inflater.inflate(R.layout.song, parent, false), songClickListener, false)
-        } else if (viewType == ITEM_TYPE_FOLDER) {
-            return FolderViewHolder(inflater.inflate(R.layout.folder, parent, false))
+        return if (viewType == ITEM_TYPE_SONG) {
+            SongViewHolder(context, inflater.inflate(R.layout.song, parent, false), songClickListener, false)
+        } else {
+            FolderViewHolder(inflater.inflate(R.layout.folder, parent, false))
         }
-        return null
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {

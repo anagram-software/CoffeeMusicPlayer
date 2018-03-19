@@ -100,20 +100,23 @@ class SongAdapter(val dataType: Int, val hasShuffle: Boolean) : RecyclerView.Ada
         get() = mDataset as ArrayList<Song>
 
     // Create new views (invoked by the layout manager)
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder? {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         context = parent.context
         val inflater = LayoutInflater.from(context)
-        if (viewType == ITEM_TYPE_NORMAL) {
-            val songView = inflater.inflate(R.layout.song, parent, false)
-            return SongViewHolder(context!!, songView, listener, hasShuffle) // view holder for normal items
-        } else if (viewType == ITEM_TYPE_ALBUM_ITEM) {
-            val songView = inflater.inflate(R.layout.albumsongitem, parent, false)
-            return AlbumSongViewHolder(context!!, songView, listener) // view holder for normal items
-        }  else if (viewType == ITEM_TYPE_SHAFFLE) {
-            val shaffleView = inflater.inflate(R.layout.shuffle, parent, false)
-            return ShuffleViewHolder(shaffleView) // view holder for header items
+        return when (viewType) {
+            ITEM_TYPE_NORMAL -> {
+                val songView = inflater.inflate(R.layout.song, parent, false)
+                SongViewHolder(context!!, songView, listener, hasShuffle) // view holder for normal items
+            }
+            ITEM_TYPE_ALBUM_ITEM -> {
+                val songView = inflater.inflate(R.layout.albumsongitem, parent, false)
+                AlbumSongViewHolder(context!!, songView, listener) // view holder for normal items
+            }
+            else -> {
+                val shaffleView = inflater.inflate(R.layout.shuffle, parent, false)
+                ShuffleViewHolder(shaffleView) // view holder for header items
+            }
         }
-        return null
     }
 
     // Replace the contents of a view (invoked by the layout manager)
