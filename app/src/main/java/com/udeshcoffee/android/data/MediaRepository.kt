@@ -6,6 +6,7 @@ import android.content.Context
 import android.database.Cursor
 import android.net.Uri
 import android.provider.MediaStore
+import androidx.content.contentValuesOf
 import com.annimon.stream.Collectors
 import com.annimon.stream.Stream
 import com.udeshcoffee.android.data.local.LocalDataSource
@@ -220,6 +221,15 @@ class MediaRepository constructor (
     }
 
     // Playlist
+    fun addPlaylist(name: String) {
+        val mInserts = contentValuesOf(
+                Pair(MediaStore.Audio.Playlists.NAME, name),
+                Pair(MediaStore.Audio.Playlists.DATE_ADDED, System.currentTimeMillis()),
+                Pair(MediaStore.Audio.Playlists.DATE_MODIFIED, System.currentTimeMillis())
+        )
+        contentResolver.insert(MediaStore.Audio.Playlists.EXTERNAL_CONTENT_URI, mInserts)
+    }
+
     fun addToPlaylist(playlistId: Long, songs: ArrayList<Song>?) {
         for (i in songs!!.indices) {
             val resolver = contentResolver
@@ -252,14 +262,14 @@ class MediaRepository constructor (
                         playlistQuery.selection,
                         playlistQuery.args,
                         playlistQuery.sort)?.use { cursor ->
-            if (cursor.moveToFirst()) {
-                do {
-                    val item = Playlist(cursor)
-                    if (playlistId != item.id)
-                        items.add(item)
-                } while (cursor.moveToNext())
-            }
-        }
+                    if (cursor.moveToFirst()) {
+                        do {
+                            val item = Playlist(cursor)
+                            if (playlistId != item.id)
+                                items.add(item)
+                        } while (cursor.moveToNext())
+                    }
+                }
         return items
     }
 
@@ -297,18 +307,18 @@ class MediaRepository constructor (
             }
             Playlist.MOST_PLAYED -> return localDataSource.getMostPlayedSongs()
                     .flatMap({ stats -> statsToSongs(stats, briteContentResolver, songQuery)
-                                .map({ songs ->
-                                    Collections.sort(songs) { a, b -> b.playcount - a.playcount}
-                                    songs
-                                })
+                            .map({ songs ->
+                                Collections.sort(songs) { a, b -> b.playcount - a.playcount}
+                                songs
+                            })
                     })
             Playlist.RECENTLY_PLAYED -> {
                 return localDataSource.getRecentlyPlayedSongs()
                         .flatMap({ stats -> statsToSongs(stats, briteContentResolver, songQuery)
-                                    .map({ songs ->
-                                        Collections.sort(songs) { a, b -> b.lastplayed - a.lastplayed }
-                                        songs
-                                    })
+                                .map({ songs ->
+                                    Collections.sort(songs) { a, b -> b.lastplayed - a.lastplayed }
+                                    songs
+                                })
                         })
             }
             Playlist.RECENTLY_ADDED -> {

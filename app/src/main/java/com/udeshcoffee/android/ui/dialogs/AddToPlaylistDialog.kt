@@ -12,8 +12,8 @@ import org.koin.android.ext.android.inject
 import java.util.*
 
 /**
- * Created by Udathari on 10/19/2017.
- */
+* Created by Udathari on 10/19/2017.
+*/
 class AddToPlaylistDialog: DialogFragment() {
 
     val mediaRepository: MediaRepository by inject()
@@ -38,8 +38,7 @@ class AddToPlaylistDialog: DialogFragment() {
         builder.setTitle("Add to playlist")
                 .setItems(titles) { _, i ->
                     if (i == size) {
-                        val mDialog = NewPlaylistDialog()
-                        mDialog.show(fragmentManager, "NewPlaylistDialog")
+                        NewPlaylistDialog.create().show(fragmentManager, "NewPlaylistDialog")
                         dismiss()
                     } else {
                         addToPlaylist(playlists[i].id, songs)
@@ -58,8 +57,8 @@ class AddToPlaylistDialog: DialogFragment() {
     }
 
     companion object {
-        val ARGUMENT_SONGS = "ARGUMENT_SONGS"
-        val ARGUMENT_THIS_PLAYLIST_ID = "ARGUMENT_THIS_PLAYLIST_ID"
+        const val ARGUMENT_SONGS = "ARGUMENT_SONGS"
+        const val ARGUMENT_THIS_PLAYLIST_ID = "ARGUMENT_THIS_PLAYLIST_ID"
 
         fun create(songs: ArrayList<Song>, thisPlaylistId: Long? = null): AddToPlaylistDialog {
             val addToPlaylistDialog = AddToPlaylistDialog()

@@ -6,6 +6,7 @@ import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.drawable.Drawable
 import android.support.v4.content.ContextCompat
+import android.widget.ImageButton
 import android.widget.ImageView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.RequestManager
@@ -32,7 +33,7 @@ import com.udeshcoffee.android.views.FadableLayout
 /**
  * Created by Udathari on 9/12/2017.
  */
-fun Song.loadFadableBack(context: Context, background: FadableLayout, callback: (()->Unit)? = null) {
+fun Song.loadSongColor(context: Context, background: FadableLayout? = null, play: ImageButton? = null) {
     val uri = ContentUris.withAppendedId(ArtworkURI, albumId)
     if (uri != null) {
         Glide.with(context)
@@ -45,17 +46,16 @@ fun Song.loadFadableBack(context: Context, background: FadableLayout, callback: 
                     override fun onResourceReady(resource: Bitmap?, transition: Transition<in Bitmap>?) {
                         resource?.let {
                             getPalette(it, {
-                                val nextColor = it.getMutedColor(Color.DKGRAY)
-                                background.fadeToColor(nextColor, 500)
+                                background?.apply { fadeToColor(it.getMutedColor(Color.DKGRAY), 500) }
+                                play?.apply { setColorFilter(it.getLightMutedColor(Color.WHITE)) }
                             })
-                            callback?.let { it() }
                         }
                     }
 
                     override fun onLoadFailed(errorDrawable: Drawable?) {
                         super.onLoadFailed(errorDrawable)
-                        background.fadeToColor(Color.DKGRAY, 500)
-                        callback?.let { it() }
+                        background?.apply { fadeToColor(Color.DKGRAY, 500) }
+                        play?.apply { colorFilter = null }
                     }
 
                 })

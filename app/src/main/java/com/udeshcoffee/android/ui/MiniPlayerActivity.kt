@@ -1,9 +1,10 @@
 package com.udeshcoffee.android.ui
 
 import android.content.IntentFilter
+import android.os.Build
 import android.os.Bundle
 import android.support.design.widget.NavigationView
-import android.support.v4.app.FragmentTransaction
+import android.transition.Fade
 import android.support.v4.view.ViewCompat
 import android.support.v4.widget.DrawerLayout
 import android.util.Log
@@ -12,7 +13,7 @@ import com.cantrowitz.rxbroadcast.RxBroadcast
 import com.sothree.slidinguppanel.SlidingUpPanelLayout
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.extensions.getService
-import com.udeshcoffee.android.extensions.loadFadableBack
+import com.udeshcoffee.android.extensions.loadSongColor
 import com.udeshcoffee.android.extensions.replaceFragmentToActivity
 import com.udeshcoffee.android.service.MusicService
 import com.udeshcoffee.android.ui.main.MainActivity
@@ -24,8 +25,8 @@ import io.reactivex.disposables.Disposable
 import org.koin.android.ext.android.inject
 
 /**
- * Created by Udathari on 8/25/2017.
- */
+* Created by Udathari on 8/25/2017.
+*/
 
 open class MiniPlayerActivity : BaseActivity() {
 
@@ -138,7 +139,7 @@ open class MiniPlayerActivity : BaseActivity() {
         val service = getService()
         service?.currentSong()?.let {
             if (controlBackSongId != it.id) {
-                it.loadFadableBack(this, controlBack)
+                it.loadSongColor(this, controlBack)
                 controlBackSongId = it.id
             }
         }
@@ -148,7 +149,10 @@ open class MiniPlayerActivity : BaseActivity() {
         isQueueVisible = true
         val transaction = supportFragmentManager.beginTransaction()
         transaction.replace(R.id.player_container, queueFragment)
-        transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            queueFragment.enterTransition = Fade()
+            playerFragment.exitTransition = Fade()
+        }
         transaction.commit()
         slidingPanel.isTouchEnabled = false
         ViewCompat.requestApplyInsets(findViewById(R.id.player_container))
@@ -158,7 +162,10 @@ open class MiniPlayerActivity : BaseActivity() {
         isQueueVisible = false
         val transaction = supportFragmentManager.beginTransaction()
         transaction.replace(R.id.player_container, playerFragment)
-        transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            playerFragment.enterTransition = Fade()
+            queueFragment.exitTransition = Fade()
+        }
         transaction.commit()
         slidingPanel.isTouchEnabled = true
         ViewCompat.requestApplyInsets(findViewById(R.id.player_container))

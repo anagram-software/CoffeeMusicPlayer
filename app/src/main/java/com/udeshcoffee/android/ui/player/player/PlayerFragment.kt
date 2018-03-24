@@ -197,6 +197,7 @@ class PlayerFragment : Fragment(), PlayerContract.View {
     }
 
     override fun setDetails(song: Song, animate: Boolean) {
+        context?.let { song.loadSongColor(it, play = play) }
         if (animate) {
             title.fadeOut(150, {
                 title.text = song.title

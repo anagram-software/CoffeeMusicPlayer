@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content">
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:gravity="center_vertical"
+            android:text="Version 2.0.8"
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Folder Browser Sorting - Sort songs and folders in the folder browser."
+            android:drawableLeft="@drawable/ic_new_releases_white_24dp"
+            android:drawableStart="@drawable/ic_new_releases_white_24dp"
+            android:drawablePadding="8dp"
+            android:gravity="center_vertical"/>
+
+    </LinearLayout>
+</ScrollView>

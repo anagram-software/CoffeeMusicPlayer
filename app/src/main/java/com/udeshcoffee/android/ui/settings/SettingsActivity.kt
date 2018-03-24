@@ -21,6 +21,7 @@ import android.widget.TextView
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.service.CollectionService
 import com.udeshcoffee.android.extensions.setRoundColor
+import com.udeshcoffee.android.ui.dialogs.WhatsNewDialog
 import com.udeshcoffee.android.utils.PreferenceUtil
 
 /**
@@ -61,27 +62,27 @@ class SettingsActivity: AppCompatActivity() {
 
         override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
 
-            val pref_app_start = findPreference(PreferenceUtil.PREF_APP_START) as ListPreference
+            val prefAppStart = findPreference(PreferenceUtil.PREF_APP_START) as ListPreference
             //TODO Home - Remove isEnabled(false) from pref_app_start
-            pref_app_start.isEnabled = false
-            pref_app_start.summary = pref_app_start.entry
+            prefAppStart.isEnabled = false
+            prefAppStart.summary = prefAppStart.entry
 
-            val pref_lib_start = findPreference(PreferenceUtil.PREF_LIB_START) as ListPreference
-            pref_lib_start.summary = pref_lib_start.entry
+            val prefLibStart = findPreference(PreferenceUtil.PREF_LIB_START) as ListPreference
+            prefLibStart.summary = prefLibStart.entry
 
-            val pref_collect_content = findPreference(PreferenceUtil.PREF_COLLECT_CONTENT) as CheckBoxPreference
-            findPreference(PreferenceUtil.PREF_WIFI_ONLY).isEnabled = pref_collect_content.isChecked
+            val prefCollectContent = findPreference(PreferenceUtil.PREF_COLLECT_CONTENT) as CheckBoxPreference
+            findPreference(PreferenceUtil.PREF_WIFI_ONLY).isEnabled = prefCollectContent.isChecked
 
-            val pref_collect_lyrics = findPreference(PreferenceUtil.PREF_COLLECT_LYRICS)
-            pref_collect_lyrics.onPreferenceClickListener = Preference.OnPreferenceClickListener {
+            val prefCollectLyrics = findPreference(PreferenceUtil.PREF_COLLECT_LYRICS)
+            prefCollectLyrics.onPreferenceClickListener = Preference.OnPreferenceClickListener {
                 val intent = Intent(context, CollectionService::class.java)
                 intent.action = CollectionService.ACTION_COLLECT_LYRICS
                 context?.let { it1 -> ContextCompat.startForegroundService(it1,intent) }
                 true
             }
 
-            val pref_open = findPreference(PreferenceUtil.PREF_OPEN)
-            pref_open.onPreferenceClickListener = Preference.OnPreferenceClickListener {
+            val prefOpen = findPreference(PreferenceUtil.PREF_OPEN)
+            prefOpen.onPreferenceClickListener = Preference.OnPreferenceClickListener {
                 val view = LayoutInflater.from(context).inflate(R.layout.dialog_licence, null) as WebView
                 view.loadUrl("file:///android_asset/licences.html")
                 AlertDialog.Builder(context!!, R.style.Theme_AppCompat_Light_Dialog_Alert)
@@ -91,6 +92,15 @@ class SettingsActivity: AppCompatActivity() {
                         .show()
                 true
             }
+
+            val prefWhatsNew = findPreference(PreferenceUtil.PREF_WHATS_NEW)
+            prefWhatsNew.onPreferenceClickListener = Preference.OnPreferenceClickListener {
+                WhatsNewDialog.create().show(fragmentManager, "WhatsNewDialog")
+                true
+            }
+
+            val prefVersion = findPreference(PreferenceUtil.PREF_VERSION)
+            prefVersion.summary = activity!!.packageManager.getPackageInfo( activity!!.packageName, 0).versionName
 
             return super.onCreateView(inflater, container, savedInstanceState)
         }

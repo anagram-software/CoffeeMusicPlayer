@@ -24,7 +24,7 @@ class PermissionToSdCardDialog: DialogFragment() {
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val builder = AlertDialog.Builder(context)
 
-        val view = activity!!.layoutInflater.inflate(R.layout.dialog_permission_to_sdcard, null)
+        val view = layoutInflater.inflate(R.layout.dialog_permission_to_sdcard, null)
 
         builder.setView(view)
         builder.setTitle(R.string.grant_permission)

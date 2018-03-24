@@ -69,11 +69,7 @@ class SongLongDialog: DialogFragment() {
                 }
                 6 -> showEditor(song)
                 7 -> {
-                    val deleteSongDialog = DeleteSongDialog()
-                    val bundle2 = Bundle()
-                    bundle2.putParcelable("song", song)
-                    deleteSongDialog.arguments = bundle2
-                    deleteSongDialog.show(fragmentManager, "DeleteSongPlaylistDialog")
+                    DeleteSongDialog.create(song).show(fragmentManager, "DeleteSongPlaylistDialog")
                 }
                 8 -> {
                     dataRepository.toggleFavorite(song.id){

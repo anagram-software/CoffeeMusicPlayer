@@ -14,7 +14,7 @@ android {
         applicationId "com.udeshcoffee.android"
         minSdkVersion 16
         targetSdkVersion 27
-        versionCode 28
+        versionCode 30
         versionName '2.0.8'
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -94,6 +94,9 @@ dependencies {
     // ExoPlayer
     implementation 'com.google.android.exoplayer:exoplayer-core:2.6.0'
     implementation 'com.google.android.exoplayer:extension-mediasession:2.6.0'
+
+    // KTX
+    implementation 'androidx.core:core-ktx:0.2'
 
     // Koin
     implementation 'org.koin:koin-android:0.9.0'

@@ -93,9 +93,6 @@ class MiniPlayerPresenter(): MiniPlayerContract.Presenter, KoinComponent {
         if (isPlaying) {
             setProgress()
         }
-//        else {
-//            disposeProgress()
-//        }
         view.setPlayOrPause(!isPlaying)
     }
 

@@ -1,11 +1,11 @@
 package com.udeshcoffee.android.utils
 
-import android.net.Uri
+import androidx.net.toUri
 
 /**
- * Created by Udathari on 8/25/2017.
- */
-val ArtworkURI = Uri.parse("content://media/external/audio/albumart")!!
+* Created by Udathari on 8/25/2017.
+*/
+val ArtworkURI = "content://media/external/audio/albumart".toUri()
 
 object PreferenceUtil {
     val LAST_QUEUE = "queue"
@@ -17,6 +17,7 @@ object PreferenceUtil {
     val LYRICS = "lyrics"
     val LYRICS_SIZE = "lyricssize"
     val HOME_INFO_DISMISSED = "homeinfodismissed"
+    val LAST_VIEWED_WHATS_NEW = "lastviewedwhatsnew"
 
     val APP_START_HOME = 0
     val APP_START_LIB = 1
@@ -31,4 +32,6 @@ object PreferenceUtil {
     var PREF_WIFI_ONLY = "pref_wifi_only"
     var PREF_COLLECT_LYRICS = "pref_collect_lyrics"
     var PREF_OPEN = "pref_open_source"
+    var PREF_WHATS_NEW = "pref_whats_new"
+    var PREF_VERSION = "pref_version"
 }

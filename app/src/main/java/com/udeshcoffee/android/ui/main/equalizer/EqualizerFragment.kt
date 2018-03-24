@@ -309,18 +309,14 @@ class EqualizerFragment : Fragment(), EqualizerContract.View {
     }
 
     override fun showSaveEQDialog() {
-        val mDialog = SaveEQDialog()
+        val mDialog = SaveEQDialog.create()
         mDialog.setTargetFragment(this, 0)
         mDialog.show(fragmentManager, "SaveEQDialog")
     }
 
     override fun showDeleteEQDialog(preset: Int, name: String) {
-        val mDialog = DeleteEQDialog()
+        val mDialog = DeleteEQDialog.create(preset, name)
         mDialog.setTargetFragment(this, 0)
-        val bundle = Bundle()
-        bundle.putInt(DeleteEQDialog.ARGUMENT_PRESET, preset)
-        bundle.putString(DeleteEQDialog.ARGUMENT_NAME, name)
-        mDialog.arguments = bundle
         mDialog.show(fragmentManager, "SaveEQDialog")
     }
 

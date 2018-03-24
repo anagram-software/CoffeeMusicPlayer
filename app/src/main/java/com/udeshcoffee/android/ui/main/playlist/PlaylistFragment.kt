@@ -98,8 +98,7 @@ class PlaylistFragment: Fragment() {
         when (item?.itemId) {
             android.R.id.home -> {activity?.openDrawer()}
             R.id.action_add_playlist -> {
-                val mDialog = NewPlaylistDialog()
-                mDialog.show(fragmentManager, "NewPlaylistDialog")
+                NewPlaylistDialog.create().show(fragmentManager, "NewPlaylistDialog")
             }
         }
         return super.onOptionsItemSelected(item)

@@ -68,9 +68,12 @@
             android:title="Open source licences" />
 
         <Preference
+            android:key="pref_whats_new"
+            android:title="What's new" />
+
+        <Preference
             android:key="pref_version"
-            android:title="Version"
-            android:summary="2.0.8" />
+            android:title="Version"/>
 
         <Preference
             android:key="pref_dev"

@@ -2,6 +2,7 @@ package com.udeshcoffee.android.ui.main
 
 import android.content.ComponentName
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.IBinder
@@ -12,14 +13,17 @@ import android.support.v4.widget.DrawerLayout
 import android.util.Log
 import android.view.Gravity
 import android.view.MenuItem
+import androidx.content.edit
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.extensions.*
 import com.udeshcoffee.android.ui.MiniPlayerActivity
+import com.udeshcoffee.android.ui.dialogs.WhatsNewDialog
 import com.udeshcoffee.android.ui.main.library.LibraryFragment
 import com.udeshcoffee.android.ui.settings.SettingsActivity
 import com.udeshcoffee.android.utils.PreferenceUtil
 import io.reactivex.Single
 import java.util.concurrent.TimeUnit
+
 
 class MainActivity : MiniPlayerActivity(), NavigationView.OnNavigationItemSelectedListener,
         FragmentManager.OnBackStackChangedListener{
@@ -27,23 +31,23 @@ class MainActivity : MiniPlayerActivity(), NavigationView.OnNavigationItemSelect
     override val TAG = "MainActivity"
 
     object Fragments {
-        val FAVORITES = "favorites"
-        val HOME = "home"
-        val LIBRARY = "library"
-        val PLAYLISTS = "playlists"
-        val EQUALIZER = "equalizer"
-        val SEARCH = "search"
-        val ARTIST_DETAIL = "artist_detail"
-        val ALBUM_DETAIL = "album_detail"
-        val GENRE_DETAIL = "genre_detail"
-        val PLAYLIST_DETAIL = "playlist_detail"
-        val EDITOR = "editor"
+        const val FAVORITES = "favorites"
+        const val HOME = "home"
+        const val LIBRARY = "library"
+        const val PLAYLISTS = "playlists"
+        const val EQUALIZER = "equalizer"
+        const val SEARCH = "search"
+        const val ARTIST_DETAIL = "artist_detail"
+        const val ALBUM_DETAIL = "album_detail"
+        const val GENRE_DETAIL = "genre_detail"
+        const val PLAYLIST_DETAIL = "playlist_detail"
+        const val EDITOR = "editor"
     }
 
     object DetailFragments {
-        val PERCENTAGE_TO_SHOW_TITLE_AT_TOOLBAR = 0.9f
-        val PERCENTAGE_TO_HIDE_TITLE_DETAILS = 0.3f
-        val ALPHA_ANIMATIONS_DURATION = 200
+        const val PERCENTAGE_TO_SHOW_TITLE_AT_TOOLBAR = 0.9f
+        const val PERCENTAGE_TO_HIDE_TITLE_DETAILS = 0.3f
+        const val ALPHA_ANIMATIONS_DURATION = 200
     }
 
     private var loadListOnConnection = false
@@ -83,6 +87,23 @@ class MainActivity : MiniPlayerActivity(), NavigationView.OnNavigationItemSelect
             }
         }
 
+        try {
+            //current version
+            val packageInfo = packageManager.getPackageInfo(packageName, 0)
+            val versionCode = packageInfo.versionCode
+
+            //version where changelog has been viewed
+            val lastViewWhatsNew = sharedPreferences.getInt(PreferenceUtil.LAST_VIEWED_WHATS_NEW, 0)
+            if (lastViewWhatsNew == 0) {
+                sharedPreferences.edit { putInt(PreferenceUtil.LAST_VIEWED_WHATS_NEW, versionCode) }
+            } else if (lastViewWhatsNew < versionCode) {
+                sharedPreferences.edit { putInt(PreferenceUtil.LAST_VIEWED_WHATS_NEW, versionCode) }
+                WhatsNewDialog.create().show(supportFragmentManager, "WhatsNewDialog")
+            }
+        } catch (e: PackageManager.NameNotFoundException) {
+            Log.w(TAG,"Unable to get version code.")
+        }
+
         intent?.let {
             handleIntent(it)
             this.intent = Intent()
@@ -112,7 +133,6 @@ class MainActivity : MiniPlayerActivity(), NavigationView.OnNavigationItemSelect
         when (item?.itemId) {
             R.id.action_search -> {
                 supportFragmentManager?.navigateToSearch()
-//                mainContentItem = R.id.navigation_playlist
             }
         }
         return super.onOptionsItemSelected(item)
@@ -146,7 +166,7 @@ class MainActivity : MiniPlayerActivity(), NavigationView.OnNavigationItemSelect
         drawerLayout.openDrawer(Gravity.START)
     }
 
-    fun closeDrawerLayout() {
+    private fun closeDrawerLayout() {
         drawerLayout.closeDrawer(Gravity.START)
     }
 
