@@ -3,7 +3,7 @@ package com.udeshcoffee.android.model
 import android.database.Cursor
 import android.os.Parcelable
 import android.provider.MediaStore
-import com.udeshcoffee.android.utils.CompareUtils
+import com.udeshcoffee.android.utils.compareString
 import kotlinx.android.parcel.Parcelize
 
 /**
@@ -46,6 +46,6 @@ class Song(val id:Long, val title:String,
     fun getArtist() : Artist = Artist(artistId, artistName)
 
     operator fun compareTo(song: Song): Int {
-        return CompareUtils.compare(this.title, song.title)
+        return compareString(this.title, song.title)
     }
 }

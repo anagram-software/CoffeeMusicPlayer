@@ -23,16 +23,11 @@ class EqualizerPresenter: EqualizerContract.Presenter, KoinComponent {
     private var presetCount = 0
     private var userCount = 0
 
-//    companion object {
-
     object SaveType {
-        val CAN_SAVE = 0
-        val CANT_SAVE = 1
-        val DELETE = 2
+        const val CAN_SAVE = 0
+        const val CANT_SAVE = 1
+        const val DELETE = 2
     }
-
-//    }
-
 
     override fun start() {
         helper?.apply {

@@ -18,20 +18,17 @@ import com.udeshcoffee.android.ui.dialogs.DeleteEQDialog
 import com.udeshcoffee.android.ui.dialogs.SaveEQDialog
 import org.koin.android.ext.android.inject
 
-
 /**
- * Created by Udathari on 9/28/2017.
- */
+* Created by Udathari on 9/28/2017.
+*/
 class EqualizerFragment : Fragment(), EqualizerContract.View {
-
-    val TAG = this.javaClass.simpleName
 
     override val presenter: EqualizerContract.Presenter by inject()
 
     var actionBar: ActionBar? = null
     private lateinit var presetSpinner: Spinner
     private lateinit var actionSave: ImageButton
-    private lateinit var bandBars: Array<VerticalSeekBar?>
+    private var bandBars: Array<VerticalSeekBar?>? = null
     private lateinit var dbTextViews: Array<TextView?>
     private lateinit var bandHolder: LinearLayout
 
@@ -77,7 +74,7 @@ class EqualizerFragment : Fragment(), EqualizerContract.View {
 
             bandHolder = findViewById(R.id.equalizerLinearLayout)
 
-            virtualizerSwitch = findViewById<Switch>(R.id.virtualizer_switch)
+            virtualizerSwitch = findViewById(R.id.virtualizer_switch)
             virtualizerSwitch.setOnCheckedChangeListener { _, b ->
                 presenter.actionVirtualizerEnable(b)
             }
@@ -159,8 +156,10 @@ class EqualizerFragment : Fragment(), EqualizerContract.View {
     }
 
     override fun setEnabled(enabled: Boolean) {
-        for (bar in bandBars) {
-            bar?.isEnabled = enabled
+        bandBars?.let {
+            for (bar in it) {
+                bar?.isEnabled = enabled
+            }
         }
         presetSpinner.isEnabled = enabled
     }
@@ -273,8 +272,8 @@ class EqualizerFragment : Fragment(), EqualizerContract.View {
             val wrapper = VerticalSeekBarWrapper(context)
             wrapper.layoutParams = layoutParams
             val view = LayoutInflater.from(context).inflate(R.layout.equalizer_seekbar, null)
-            bandBars[i] = view.findViewById(R.id.equalizerBandBar)
-            bandBars[i]?.apply {
+            bandBars!![i] = view.findViewById(R.id.equalizerBandBar)
+            bandBars!![i]?.apply {
                 max = equalizer.bandLevelRange[1] - equalizer.bandLevelRange[0]
                 rotationAngle = 270
                 rotation = 270f
@@ -303,8 +302,10 @@ class EqualizerFragment : Fragment(), EqualizerContract.View {
     }
 
     override fun setBands(equalizer: Equalizer) {
-        for (i in 0 until bandBars.size) {
-            bandBars[i]?.progress = equalizer.getBandLevel(i.toShort()) - equalizer.bandLevelRange[0]
+        bandBars?.let {
+            for (i in 0 until it.size) {
+                it[i]?.progress = equalizer.getBandLevel(i.toShort()) - equalizer.bandLevelRange[0]
+            }
         }
     }
 
@@ -322,5 +323,6 @@ class EqualizerFragment : Fragment(), EqualizerContract.View {
 
     companion object {
         fun create(): EqualizerFragment = EqualizerFragment()
+//        private const val TAG = "EqualizerFragment"
     }
 }

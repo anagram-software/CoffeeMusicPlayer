@@ -235,10 +235,10 @@ object SortManager {
         when (key) {
             AlbumSort.DEFAULT -> Collections.sort(albums) { a, b -> a.compareTo(b)}
             AlbumSort.NAME -> {
-                Collections.sort(albums) { a, b -> CompareUtils.compare(a.title, b.title) }
+                Collections.sort(albums) { a, b -> compareString(a.title, b.title) }
             }
-            AlbumSort.YEAR -> Collections.sort(albums) { a, b -> CompareUtils.compareInt(b.year, a.year) }
-            AlbumSort.ARTIST_NAME -> Collections.sort(albums) { a, b -> CompareUtils.compare(a.artist, b.artist) }
+            AlbumSort.YEAR -> Collections.sort(albums) { a, b -> compareInt(b.year, a.year) }
+            AlbumSort.ARTIST_NAME -> Collections.sort(albums) { a, b -> compareString(a.artist, b.artist) }
         }
     }
 
@@ -271,33 +271,33 @@ object SortManager {
         when (key) {
             SongSort.DEFAULT -> Collections.sort(songs) { a, b -> a.compareTo(b) }
             SongSort.ALBUM_DEFAULT -> {
-                Collections.sort(songs) { a, b -> CompareUtils.compareInt(a.track, b.track) }
-                Collections.sort(songs) { a, b -> CompareUtils.compareInt(a.discNumber, b.discNumber) }
+                Collections.sort(songs) { a, b -> compareInt(a.track, b.track) }
+                Collections.sort(songs) { a, b -> compareInt(a.discNumber, b.discNumber) }
             }
-            SongSort.NAME -> Collections.sort(songs) { a, b -> CompareUtils.compare(a.title, b.title) }
+            SongSort.NAME -> Collections.sort(songs) { a, b -> compareString(a.title, b.title) }
             SongSort.TRACK_NUMBER -> {
-                Collections.sort(songs) { a, b -> CompareUtils.compareInt(a.track, b.track) }
-                Collections.sort(songs) { a, b -> CompareUtils.compareInt(a.discNumber, b.discNumber) }
+                Collections.sort(songs) { a, b -> compareInt(a.track, b.track) }
+                Collections.sort(songs) { a, b -> compareInt(a.discNumber, b.discNumber) }
             }
-            SongSort.DURATION -> Collections.sort(songs) { a, b -> CompareUtils.compareLong(a.duration, b.duration) }
-            SongSort.DATE -> Collections.sort(songs) { a, b -> CompareUtils.compareInt(b.dateAdded, a.dateAdded) }
+            SongSort.DURATION -> Collections.sort(songs) { a, b -> compareLong(a.duration, b.duration) }
+            SongSort.DATE -> Collections.sort(songs) { a, b -> compareInt(b.dateAdded, a.dateAdded) }
             SongSort.YEAR -> {
-                Collections.sort(songs) { a, b -> CompareUtils.compare(a.artistName, b.artistName) }
-                Collections.sort(songs) { a, b -> CompareUtils.compare(a.albumName, b.albumName) }
+                Collections.sort(songs) { a, b -> compareString(a.artistName, b.artistName) }
+                Collections.sort(songs) { a, b -> compareString(a.albumName, b.albumName) }
                 Collections.sort(songs) { a, b -> a.compareTo(b) }
-                Collections.sort(songs) { a, b -> CompareUtils.compareInt(b.year, a.year) }
+                Collections.sort(songs) { a, b -> compareInt(b.year, a.year) }
             }
             SongSort.ALBUM_NAME -> {
-                Collections.sort(songs) { a, b -> CompareUtils.compare(a.artistName, b.artistName) }
-                Collections.sort(songs) { a, b -> CompareUtils.compareInt(a.track, b.track) }
-                Collections.sort(songs) { a, b -> CompareUtils.compareInt(a.discNumber, b.discNumber) }
-                Collections.sort(songs) { a, b -> CompareUtils.compare(a.albumName, b.albumName) }
+                Collections.sort(songs) { a, b -> compareString(a.artistName, b.artistName) }
+                Collections.sort(songs) { a, b -> compareInt(a.track, b.track) }
+                Collections.sort(songs) { a, b -> compareInt(a.discNumber, b.discNumber) }
+                Collections.sort(songs) { a, b -> compareString(a.albumName, b.albumName) }
             }
             SongSort.ARTIST_NAME -> {
-                Collections.sort(songs) { a, b -> CompareUtils.compare(a.albumName, b.albumName) }
-                Collections.sort(songs) { a, b -> CompareUtils.compareInt(a.track, b.track) }
-                Collections.sort(songs) { a, b -> CompareUtils.compareInt(a.discNumber, b.discNumber) }
-                Collections.sort(songs) { a, b -> CompareUtils.compare(a.artistName, b.artistName) }
+                Collections.sort(songs) { a, b -> compareString(a.albumName, b.albumName) }
+                Collections.sort(songs) { a, b -> compareInt(a.track, b.track) }
+                Collections.sort(songs) { a, b -> compareInt(a.discNumber, b.discNumber) }
+                Collections.sort(songs) { a, b -> compareString(a.artistName, b.artistName) }
             }
         }
     }
@@ -305,15 +305,15 @@ object SortManager {
     fun sortArtists(artists: List<Artist>) {
         when (artistSortOrder) {
             ArtistSort.DEFAULT -> Collections.sort(artists) { a, b -> a.compareTo(b) }
-            ArtistSort.NAME -> Collections.sort(artists) { a, b -> CompareUtils.compare(a.name, b.name) }
+            ArtistSort.NAME -> Collections.sort(artists) { a, b -> compareString(a.name, b.name) }
         }
     }
 
     fun sortFolders(folders: List<Folder>) {
         when (folderSortOrder) {
-            FolderSort.DEFAULT -> Collections.sort(folders) { a, b -> CompareUtils.compare(a.title, b.title) }
-            FolderSort.NAME -> Collections.sort(folders) { a, b -> CompareUtils.compare(a.title, b.title) }
-            FolderSort.SONG_COUNT -> Collections.sort(folders) { a, b -> CompareUtils.compareInt(a.songCount, b.songCount) }
+            FolderSort.DEFAULT -> Collections.sort(folders) { a, b -> compareString(a.title, b.title) }
+            FolderSort.NAME -> Collections.sort(folders) { a, b -> compareString(a.title, b.title) }
+            FolderSort.SONG_COUNT -> Collections.sort(folders) { a, b -> compareInt(a.songCount, b.songCount) }
         }
     }
 

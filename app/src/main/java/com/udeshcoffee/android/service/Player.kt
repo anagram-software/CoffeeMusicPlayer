@@ -1,26 +1,41 @@
 package com.udeshcoffee.android.service
 
 import android.content.ContentUris
-import android.media.AudioManager
-import android.media.MediaPlayer
-import android.os.PowerManager
 import android.provider.MediaStore
 import android.util.Log
 import android.widget.Toast
+import com.google.android.exoplayer2.*
+import com.google.android.exoplayer2.Player
+import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory
+import com.google.android.exoplayer2.extractor.ExtractorsFactory
+import com.google.android.exoplayer2.source.ExtractorMediaSource
+import com.google.android.exoplayer2.source.TrackGroupArray
+import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection
+import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
+import com.google.android.exoplayer2.trackselection.TrackSelectionArray
+import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter
+import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
+import com.google.android.exoplayer2.util.Util
 import com.udeshcoffee.android.model.Song
 import io.reactivex.Observable
 import io.reactivex.schedulers.Schedulers
 import java.util.*
 
+
 /**
- * Created by Udesh Kumarasinghe on 8/22/2017.
- */
+* Created by Udesh Kumarasinghe on 8/22/2017.
+*/
 
-class Player(private val musicService: MusicService) : MediaPlayer.OnPreparedListener, MediaPlayer.OnCompletionListener, MediaPlayer.OnErrorListener {
+class Player(private val musicService: MusicService): Player.EventListener {
 
-    private val TAG = "Player1997"
+    companion object {
+        private const val TAG = "Player1997"
+    }
 
-    private var mPlayer = MediaPlayer()
+    private var mPlayer: SimpleExoPlayer
+    private lateinit var dataSourceFactory: DefaultDataSourceFactory
+    private lateinit var extractorsFactory: ExtractorsFactory
+
     private var isPrepared = false
     private var shouldPlay = true
     private var pausedTime: Int = 0
@@ -28,11 +43,12 @@ class Player(private val musicService: MusicService) : MediaPlayer.OnPreparedLis
     private var currentVolume = 1.0f
 
     init {
-        mPlayer.setWakeMode(musicService, PowerManager.PARTIAL_WAKE_LOCK)
-        mPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC)
-        mPlayer.setOnCompletionListener(this)
-        mPlayer.setOnErrorListener(this)
-        mPlayer.setOnPreparedListener(this)
+        val bandwidthMeter = DefaultBandwidthMeter()
+        val trackSelectionFactory = AdaptiveTrackSelection.Factory(bandwidthMeter)
+        val trackSelector = DefaultTrackSelector(trackSelectionFactory)
+
+        mPlayer = ExoPlayerFactory.newSimpleInstance(musicService, trackSelector)
+        mPlayer.addListener(this)
     }
 
     fun initSong(song: Song, shouldPlay:Boolean, startPos: Int){
@@ -40,57 +56,78 @@ class Player(private val musicService: MusicService) : MediaPlayer.OnPreparedLis
         this.song = song
         this.pausedTime = startPos
         this.shouldPlay = shouldPlay
-        mPlayer.reset()
+        mPlayer.stop()
 
         val trackUri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, song.id)
         try {
-            mPlayer.setDataSource(musicService.applicationContext, trackUri)
-            mPlayer.prepareAsync()
-            Log.d(TAG, "preparingAsync")
+            dataSourceFactory = DefaultDataSourceFactory(musicService, Util.getUserAgent(musicService, "mediaPlayerSample"))
+            extractorsFactory = DefaultExtractorsFactory()
+            val mediaSource = ExtractorMediaSource(trackUri, dataSourceFactory, extractorsFactory, null, null)
+            isPrepared = false
+            mPlayer.prepare(mediaSource)
         } catch (e: Exception) {
             Log.e(TAG, "Error setting data source", e)
             Toast.makeText(musicService.applicationContext, "Error", Toast.LENGTH_SHORT).show()
         }
     }
 
-    override fun onError(p0: MediaPlayer?, p1: Int, p2: Int): Boolean {
-        return false
+    override fun onPlaybackParametersChanged(playbackParameters: PlaybackParameters?) {}
+
+    override fun onSeekProcessed() {
+        Log.d(TAG, "onSeekProcessed")
     }
 
-    override fun onCompletion(p0: MediaPlayer?) {
-        updatePlayCount()
-        musicService.gotoNextOnFinish()
+    override fun onTracksChanged(trackGroups: TrackGroupArray?, trackSelections: TrackSelectionArray?) {}
+
+    override fun onPlayerError(error: ExoPlaybackException?) {}
+
+    override fun onLoadingChanged(isLoading: Boolean) {
+        Log.d(TAG, "onLoadingChanged $isLoading")
     }
 
-    override fun onPrepared(p0: MediaPlayer?) {
-        isPrepared = true
-        musicService.duration = mPlayer.duration.toLong()
-        mPlayer.seekTo(pausedTime)
-        musicService.notifyManger.notifyChange(MusicService.InternalIntents.METADATA_CHANGED, true)
-        if (shouldPlay) {
-            musicService.play()
-        } else {
-            musicService.notifyManger.notifyChange(MusicService.InternalIntents.PLAYBACK_STATE_CHANGED, true)
+    override fun onPositionDiscontinuity(reason: Int) {
+        Log.d(TAG, "onPositionDiscontinuity")
+    }
+
+    override fun onRepeatModeChanged(repeatMode: Int) {}
+
+    override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {}
+
+    override fun onTimelineChanged(timeline: Timeline?, manifest: Any?) {}
+
+    override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
+
+        Log.d(TAG, "onPlayerStateChanged $playWhenReady $playbackState")
+        when (playbackState) {
+            ExoPlayer.STATE_READY -> {
+                if (!isPrepared) {
+                    isPrepared = true
+                    musicService.notifyManger.notifyChange(MusicService.InternalIntents.METADATA_CHANGED, true)
+                    musicService.duration = mPlayer.duration
+                    mPlayer.seekTo(pausedTime.toLong())
+                    if (shouldPlay) {
+                        musicService.play()
+                    } else {
+                        musicService.notifyManger.notifyChange(MusicService.InternalIntents.PLAYBACK_STATE_CHANGED, true)
+                    }
+                }
+            }
+            ExoPlayer.STATE_ENDED -> {
+                updatePlayCount()
+                musicService.gotoNextOnFinish()
+            }
         }
     }
 
     fun start() {
         try {
-            mPlayer.setVolume(0.0f, 0.0f)
-            if (isPrepared) {
-                mPlayer.start()
-                if (musicService.isFading)
-                    fadeIn()
-                else
-                    mPlayer.setVolume(1.0f, 1.0f)
-            } else {
-                mPlayer.prepare()
-                mPlayer.start()
-                if (musicService.isFading)
-                    fadeIn()
-                else
-                    mPlayer.setVolume(1.0f, 1.0f)
-            }
+            mPlayer.playWhenReady = true
+            mPlayer.volume = 0.0f
+            if (musicService.isFading)
+                fadeIn()
+            else
+                mPlayer.volume = 1.0f
+
             musicService.notifyManger.notifyChange(MusicService.InternalIntents.PLAYBACK_STATE_CHANGED, true)
         } catch (e: RuntimeException) {
             Log.e(TAG, "Error pausing MultiPlayer: " + e.localizedMessage)
@@ -99,11 +136,11 @@ class Player(private val musicService: MusicService) : MediaPlayer.OnPreparedLis
 
     fun stop() {
         try {
+            isPrepared = false
             if (isPlaying())
                 pausedTime = getPosition().toInt()
             mPlayer.stop()
             musicService.notifyManger.notifyChange(MusicService.InternalIntents.PLAYBACK_STATE_CHANGED, false)
-            isPrepared = false
         } catch (e: IllegalStateException) {
             Log.e(TAG, "Error stopping MultiPlayer: " + e.localizedMessage)
         }
@@ -114,6 +151,7 @@ class Player(private val musicService: MusicService) : MediaPlayer.OnPreparedLis
      */
     fun release() {
         stop()
+        mPlayer.removeListener(this)
         mPlayer.release()
     }
 
@@ -123,12 +161,12 @@ class Player(private val musicService: MusicService) : MediaPlayer.OnPreparedLis
                 pausedTime = getPosition().toInt()
                 if (musicService.isFading) {
                     fadeOut({
-                        mPlayer.pause()
+                        mPlayer.playWhenReady = false
                         musicService.notifyManger
                                 .notifyChange(MusicService.InternalIntents.PLAYBACK_STATE_CHANGED, true)
                     })
                 } else {
-                    mPlayer.pause()
+                    mPlayer.playWhenReady = false
                     musicService.notifyManger
                             .notifyChange(MusicService.InternalIntents.PLAYBACK_STATE_CHANGED, true)
                 }
@@ -139,19 +177,10 @@ class Player(private val musicService: MusicService) : MediaPlayer.OnPreparedLis
 
     }
 
-    fun getDuration(): Long {
-        return try {
-            mPlayer.duration.toLong()
-        } catch (ignored: IllegalStateException) {
-            0
-        }
-
-    }
-
     fun getPosition(): Long {
         return try {
             if (isPlaying())
-                mPlayer.currentPosition.toLong()
+                mPlayer.currentPosition
             else
                 pausedTime.toLong()
         } catch (ignored: IllegalStateException) {
@@ -162,7 +191,7 @@ class Player(private val musicService: MusicService) : MediaPlayer.OnPreparedLis
 
     fun seekTo(whereto: Long): Long {
         try {
-            mPlayer.seekTo(whereto.toInt())
+            mPlayer.seekTo(whereto)
             if (!isPlaying())
                 pausedTime = whereto.toInt()
         } catch (e: IllegalStateException) {
@@ -174,7 +203,7 @@ class Player(private val musicService: MusicService) : MediaPlayer.OnPreparedLis
 
     fun isPlaying(): Boolean {
         return try {
-            mPlayer.isPlaying
+            mPlayer.playWhenReady
         } catch (ignored: IllegalStateException) {
             false
         }
@@ -195,14 +224,14 @@ class Player(private val musicService: MusicService) : MediaPlayer.OnPreparedLis
     // Fade In / Out
 
     private fun fadeIn() {
-        val FADE_DURATION = 500 //The duration of the fade
+        val fadeDuration = 500 //The duration of the fade
         //The amount of time between volume changes. The smaller this is, the smoother the fade
-        val FADE_INTERVAL = 50
-        val MAX_VOLUME = 1 //The volume will increase from 0 to 1
+        val fadeInterval = 50
+        val maxVolume = 1 //The volume will increase from 0 to 1
         currentVolume = 0f
-        val numberOfSteps = FADE_DURATION / FADE_INTERVAL //Calculate the number of fade steps
+        val numberOfSteps = fadeDuration / fadeInterval //Calculate the number of fade steps
         //Calculate by how much the volume changes each step
-        val deltaVolume = MAX_VOLUME / numberOfSteps.toFloat()
+        val deltaVolume = maxVolume / numberOfSteps.toFloat()
 
         //Create a new Timer and Timer task to run the fading outside the main UI thread
         val timer = Timer(true)
@@ -212,25 +241,25 @@ class Player(private val musicService: MusicService) : MediaPlayer.OnPreparedLis
                 if (currentVolume >= 1f) {
                     timer.cancel()
                     timer.purge()
-                    mPlayer.setVolume(1f, 1f)
+                    mPlayer.volume = 1f
                 } else {
-                    mPlayer.setVolume(currentVolume, currentVolume)
+                    mPlayer.volume = currentVolume
                     currentVolume += deltaVolume
                 }
             }
         }
 
-        timer.schedule(timerTask, FADE_INTERVAL.toLong(), FADE_INTERVAL.toLong())
+        timer.schedule(timerTask, fadeInterval.toLong(), fadeInterval.toLong())
     }
 
     private fun fadeOut(callback: (() -> Unit)? = null) {
-        val FADE_DURATION = 250 //The duration of the fade
+        val fadeDuration = 250 //The duration of the fade
         //The amount of time between volume changes. The smaller this is, the smoother the fade
-        val FADE_INTERVAL = 50
-        val MAX_VOLUME = 1 //The volume will increase from 0 to 1
-        val numberOfSteps = FADE_DURATION / FADE_INTERVAL //Calculate the number of fade steps
+        val fadeInterval = 50
+        val maxVolume = 1 //The volume will increase from 0 to 1
+        val numberOfSteps = fadeDuration / fadeInterval //Calculate the number of fade steps
         //Calculate by how much the volume changes each step
-        val deltaVolume = MAX_VOLUME / numberOfSteps.toFloat()
+        val deltaVolume = maxVolume / numberOfSteps.toFloat()
 
         //Create a new Timer and Timer task to run the fading outside the main UI thread
         val timer = Timer(true)
@@ -240,16 +269,16 @@ class Player(private val musicService: MusicService) : MediaPlayer.OnPreparedLis
                 if (currentVolume <= 0f) {
                     timer.cancel()
                     timer.purge()
-                    mPlayer.setVolume(0f, 0f)
+                    mPlayer.volume = 0f
                     callback?.let { it() }
                 } else {
-                    mPlayer.setVolume(currentVolume, currentVolume)
+                    mPlayer.volume = currentVolume
                     currentVolume -= deltaVolume
                 }
             }
         }
 
-        timer.schedule(timerTask, FADE_INTERVAL.toLong(), FADE_INTERVAL.toLong())
+        timer.schedule(timerTask, fadeInterval.toLong(), fadeInterval.toLong())
     }
 
     private fun updatePlayCount() {

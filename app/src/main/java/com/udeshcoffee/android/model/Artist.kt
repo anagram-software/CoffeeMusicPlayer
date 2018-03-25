@@ -2,12 +2,12 @@ package com.udeshcoffee.android.model
 
 import android.annotation.SuppressLint
 import android.os.Parcelable
-import com.udeshcoffee.android.utils.CompareUtils
+import com.udeshcoffee.android.utils.compareString
 import kotlinx.android.parcel.Parcelize
 
 /**
- * Created by Udathari on 8/22/2017.
- */
+* Created by Udathari on 8/22/2017.
+*/
 @SuppressLint("ParcelCreator")
 @Parcelize
 data class Artist(val id:Long, val name:String): Parcelable {
@@ -16,6 +16,6 @@ data class Artist(val id:Long, val name:String): Parcelable {
     //var albumCount: Int = 0
 
     operator fun compareTo(artist: Artist): Int {
-        return CompareUtils.compare(this.name, artist.name)
+        return compareString(this.name, artist.name)
     }
 }

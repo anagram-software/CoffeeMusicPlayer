@@ -25,8 +25,8 @@ import com.udeshcoffee.android.data.model.*
 /**
  * The Room Database that contains the Task table.
  */
-@Database(entities = arrayOf( SongStat::class, AlbumStat::class, ArtistStat::class, Bio::class, EQPreset::class,
-        Favorite::class, Lyric::class), version = 6)
+@Database(entities = [(SongStat::class), (AlbumStat::class), (ArtistStat::class), (Bio::class), (
+        EQPreset::class), (Favorite::class), (Lyric::class)], version = 6, exportSchema = false)
 abstract class LocalDatabase : RoomDatabase() {
 
     abstract fun dataDao(): DataDao
