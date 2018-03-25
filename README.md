@@ -7,7 +7,7 @@
 
 Coffee Music Player a simple yet powerful music player for a special music experience. Available on [PlayStore][5]
 
-![](static/screenshot.png)
+![](static/screenshot1.png)
 
 Special features
 ----------------
