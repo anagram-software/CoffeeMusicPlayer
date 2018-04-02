@@ -1,6 +1,6 @@
 package com.udeshcoffee.android.ui.player.lyrics
 
-import com.udeshcoffee.android.api.genius.Result
+import com.udeshcoffee.android.data.remote.genius.Result
 import com.udeshcoffee.android.ui.BasePresenter
 import com.udeshcoffee.android.ui.BaseView
 

@@ -3,11 +3,11 @@ package com.udeshcoffee.android.data.remote
 import com.annimon.stream.Collectors
 import com.annimon.stream.Stream
 import com.udeshcoffee.android.data.remote.genius.Response
-import com.udeshcoffee.android.api.genius.SearchService
-import com.udeshcoffee.android.api.itunes.ITunesService
-import com.udeshcoffee.android.api.itunes.SearchResponse
-import com.udeshcoffee.android.api.lastfm.ArtistResponse
-import com.udeshcoffee.android.api.lastfm.LastFMService
+import com.udeshcoffee.android.data.remote.genius.SearchService
+import com.udeshcoffee.android.data.remote.itunes.ITunesService
+import com.udeshcoffee.android.data.remote.itunes.SearchResponse
+import com.udeshcoffee.android.data.remote.lastfm.ArtistResponse
+import com.udeshcoffee.android.data.remote.lastfm.LastFMService
 import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -109,7 +109,7 @@ object RemoteDataSource {
         return retrofit.create<SearchService>(SearchService::class.java)
     }
 
-    fun searchGenius(song: String, artist: String, shouldCheckEqual: Boolean): Observable<com.udeshcoffee.android.api.genius.SearchResponse> {
+    fun searchGenius(song: String, artist: String, shouldCheckEqual: Boolean): Observable<com.udeshcoffee.android.data.remote.genius.SearchResponse> {
         return getGeniusSearchService(true).search(song)
                 .map {
                     return@map filterGeniusSearch(it, song, artist, shouldCheckEqual)
@@ -119,7 +119,7 @@ object RemoteDataSource {
                 .take(1)
     }
 
-    fun searchGeniusSynchronous(song: String, artist: String): com.udeshcoffee.android.api.genius.SearchResponse? {
+    fun searchGeniusSynchronous(song: String, artist: String): com.udeshcoffee.android.data.remote.genius.SearchResponse? {
         val call = getGeniusSearchService(false).searchSynchronous(song)
         return try {
             filterGeniusSearch(call.execute().body(), song, artist, true)
@@ -128,8 +128,8 @@ object RemoteDataSource {
         }
     }
 
-    private fun filterGeniusSearch(searchResponse: com.udeshcoffee.android.api.genius.SearchResponse?,
-                                   title: String, artist: String, shouldCheckEqual: Boolean): com.udeshcoffee.android.api.genius.SearchResponse {
+    private fun filterGeniusSearch(searchResponse: com.udeshcoffee.android.data.remote.genius.SearchResponse?,
+                                   title: String, artist: String, shouldCheckEqual: Boolean): com.udeshcoffee.android.data.remote.genius.SearchResponse {
         val hits = Stream.of(searchResponse?.response?.hits)
                 .filter { it.result.primary_artist.name.contains(artist, true) }
                 .collect(Collectors.toList())
@@ -139,7 +139,7 @@ object RemoteDataSource {
         } else {
             Response(equalHits)
         }
-        return com.udeshcoffee.android.api.genius.SearchResponse(response)
+        return com.udeshcoffee.android.data.remote.genius.SearchResponse(response)
     }
 
     fun loadGenius(path: String): Observable<String?> {

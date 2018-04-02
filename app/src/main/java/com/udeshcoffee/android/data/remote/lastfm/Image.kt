@@ -1,4 +1,4 @@
-package com.udeshcoffee.android.api.lastfm
+package com.udeshcoffee.android.data.remote.lastfm
 
 import com.google.gson.annotations.SerializedName
 

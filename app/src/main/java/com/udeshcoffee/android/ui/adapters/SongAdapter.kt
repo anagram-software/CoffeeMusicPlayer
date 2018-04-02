@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import com.simplecityapps.recyclerview_fastscroll.views.FastScrollRecyclerView
 import com.udeshcoffee.android.R
+import com.udeshcoffee.android.interfaces.OnItemSelectListener
 import com.udeshcoffee.android.interfaces.OnSongItemClickListener
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.ui.viewholders.AlbumSongViewHolder
@@ -17,12 +18,10 @@ import io.reactivex.functions.Consumer
  * Created by Udesh on 2/18/2017.
  */
 
-class SongAdapter(val dataType: Int, val hasShuffle: Boolean) : RecyclerView.Adapter<RecyclerView.ViewHolder>(),
+class SongAdapter(private val dataType: Int, private val hasShuffle: Boolean) : RecyclerView.Adapter<RecyclerView.ViewHolder>(),
         FastScrollRecyclerView.SectionedAdapter, Consumer<List<Song>>{
 
-    val TAG = "SongAdapter"
-
-    private var mDataset: List<Song>? = ArrayList()
+    private var mDataset: List<Song> = ArrayList()
     private var context: Context? = null
     var currentSong: Int = 0
         private set
@@ -33,23 +32,45 @@ class SongAdapter(val dataType: Int, val hasShuffle: Boolean) : RecyclerView.Ada
             checkCurrentSong()
         }
 
-    companion object {
-        val ITEM_TYPE_NORMAL = 0
-        val ITEM_TYPE_ALBUM_ITEM = 1
-        private val ITEM_TYPE_SHAFFLE = 2
+    // Selection
+    var isSelection: Boolean = false
+        set(value) {
+            if (!value)
+                selected.clear()
+            field = value
+        }
+    private var selected = ArrayList<Song>()
+    private var selectListener = object : OnItemSelectListener{
+        override fun onSelectItem(postion: Int) {
+            selected.add(mDataset[postion])
+            notifyItemChanged(if (hasShuffle) postion + 1 else postion)
+        }
+
+        override fun onDeselectItem(postion: Int) {
+            selected.remove(mDataset[postion])
+            notifyItemChanged(if (hasShuffle) postion + 1 else postion)
+        }
     }
 
-    override fun accept(songs: List<Song>?) {
+    companion object {
+        private const val TAG = "SongAdapter"
+
+        const val ITEM_TYPE_NORMAL = 0
+        const val ITEM_TYPE_ALBUM_ITEM = 1
+        const val ITEM_TYPE_SHUFFLE = 2
+    }
+
+    override fun accept(songs: List<Song>) {
         this.mDataset = songs
         notifyDataSetChanged()
         checkCurrentSong()
-        Log.d(TAG, songs?.size.toString())
+        Log.d(TAG, songs.size.toString())
     }
 
-    fun checkCurrentSong() {
+    private fun checkCurrentSong() {
         if (currentId.toInt() != -1) {
-            for (e in mDataset!!.indices) {
-                if (mDataset!![e].id == currentId) {
+            for (e in mDataset.indices) {
+                if (mDataset[e].id == currentId) {
                     val prevSong = currentSong
                     if (prevSong != -1) {
                         notifyItemChanged(prevSong + 1)
@@ -67,7 +88,7 @@ class SongAdapter(val dataType: Int, val hasShuffle: Boolean) : RecyclerView.Ada
 
     override fun getItemViewType(position: Int): Int {
         return if (hasShuffle && position == 0) {
-            ITEM_TYPE_SHAFFLE
+            ITEM_TYPE_SHUFFLE
         } else {
             dataType
         }
@@ -75,7 +96,7 @@ class SongAdapter(val dataType: Int, val hasShuffle: Boolean) : RecyclerView.Ada
 
     override fun getSectionName(position: Int): String = when {
         position == 0 -> "#"
-        position != -1 -> Character.toString(mDataset!![position - 1].title[0]).toUpperCase()
+        position != -1 -> Character.toString(mDataset[position - 1].title[0]).toUpperCase()
         else -> ""
     }
 
@@ -91,7 +112,7 @@ class SongAdapter(val dataType: Int, val hasShuffle: Boolean) : RecyclerView.Ada
 
     // Provide a suitable constructor (depends on the kind of dataset)
     init {
-        mDataset = ArrayList<Song>()
+        mDataset = ArrayList()
         currentSong = -1
         currentId = -1
     }
@@ -113,8 +134,8 @@ class SongAdapter(val dataType: Int, val hasShuffle: Boolean) : RecyclerView.Ada
                 AlbumSongViewHolder(context!!, songView, listener) // view holder for normal items
             }
             else -> {
-                val shaffleView = inflater.inflate(R.layout.shuffle, parent, false)
-                ShuffleViewHolder(shaffleView) // view holder for header items
+                val shuffleView = inflater.inflate(R.layout.shuffle, parent, false)
+                ShuffleViewHolder(shuffleView) // view holder for header items
             }
         }
     }
@@ -122,33 +143,35 @@ class SongAdapter(val dataType: Int, val hasShuffle: Boolean) : RecyclerView.Ada
     // Replace the contents of a view (invoked by the layout manager)
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, pos: Int) {
         var position = pos
-        // - get element from your dataset at this position
-        // - replace the contents of the view with that element
         val itemType = getItemViewType(position)
 
         if (hasShuffle)
             position--
 
         if (itemType == ITEM_TYPE_NORMAL) {
-            (holder as SongViewHolder).bindData(mDataset!![position], currentSong == position)
+            if (!isSelection)
+                (holder as SongViewHolder).bindData(mDataset[position], currentSong == position)
+            else {
+                (holder as SongViewHolder).bindData(mDataset[position], currentSong == position)
+            }
         } else if (itemType == ITEM_TYPE_ALBUM_ITEM) {
-            (holder as AlbumSongViewHolder).bindData(mDataset!![position], currentSong == position)
+            (holder as AlbumSongViewHolder).bindData(mDataset[position], currentSong == position)
         }
     }
 
     // Return the size of your dataset (invoked by the layout manager)
-    override fun getItemCount(): Int = if (mDataset!!.isNotEmpty()) {
+    override fun getItemCount(): Int = if (mDataset.isNotEmpty()) {
         if (hasShuffle)
-            mDataset!!.size + 1
+            mDataset.size + 1
         else
-            mDataset!!.size
+            mDataset.size
     } else 0
 
     fun getItem(pos: Int): Song {
-        return mDataset!![pos]
+        return mDataset[pos]
     }
 
     val songCount: Int
-        get() = mDataset!!.size
+        get() = mDataset.size
 
 }

@@ -1,8 +1,8 @@
 package com.udeshcoffee.android.data
 
 import android.util.Log
-import com.udeshcoffee.android.api.itunes.SearchResponse
-import com.udeshcoffee.android.api.lastfm.ArtistResponse
+import com.udeshcoffee.android.data.remote.itunes.SearchResponse
+import com.udeshcoffee.android.data.remote.lastfm.ArtistResponse
 import com.udeshcoffee.android.data.local.LocalDataSource
 import com.udeshcoffee.android.data.model.EQPreset
 import com.udeshcoffee.android.data.model.Favorite
@@ -32,7 +32,7 @@ class DataRepository(
                 .take(1)
     }
 
-    fun searchLyrics(title: String, artist: String, shouldCheckEqual: Boolean): Single<com.udeshcoffee.android.api.genius.SearchResponse> =
+    fun searchLyrics(title: String, artist: String, shouldCheckEqual: Boolean): Single<com.udeshcoffee.android.data.remote.genius.SearchResponse> =
             remoteDataSource.searchGenius(title, artist, shouldCheckEqual)
                     .singleOrError()
 

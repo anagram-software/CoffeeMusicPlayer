@@ -1,5 +1,6 @@
 package com.udeshcoffee.android.ui.player.lyrics
 
+import android.content.Context
 import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.support.v7.widget.LinearLayoutManager
@@ -14,8 +15,9 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import com.udeshcoffee.android.R
-import com.udeshcoffee.android.api.genius.Result
+import com.udeshcoffee.android.data.remote.genius.Result
 import com.udeshcoffee.android.interfaces.OnItemClickListener
+import com.udeshcoffee.android.ui.MiniPlayerActivity
 import com.udeshcoffee.android.ui.adapters.LyricAdapter
 import com.udeshcoffee.android.ui.dialogs.CustomLyricDialog
 import com.udeshcoffee.android.ui.dialogs.SearchSongDialog
@@ -59,6 +61,7 @@ class LyricsFragment : Fragment(), LyricsContract.View {
             errorLayout = findViewById(R.id.lyric_error)
             progressLayout = findViewById(R.id.lyric_progress)
             lyricLayout = findViewById(R.id.lyric)
+            (activity as MiniPlayerActivity).setSlidingView(lyricLayout)
             multipleLayout = findViewById(R.id.lyric_multiple)
 
             toolbar = findViewById(R.id.lyric_toolbar)
@@ -106,6 +109,10 @@ class LyricsFragment : Fragment(), LyricsContract.View {
         }
 
         return root
+    }
+
+    override fun onAttach(context: Context?) {
+        super.onAttach(context)
     }
 
     override fun onResume() {

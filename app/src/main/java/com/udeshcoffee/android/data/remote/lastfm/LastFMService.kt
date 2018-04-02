@@ -1,5 +1,6 @@
-package com.udeshcoffee.android.api.lastfm
+package com.udeshcoffee.android.data.remote.lastfm
 
+import com.udeshcoffee.android.data.remote.lastfm.ArtistResponse
 import io.reactivex.Observable
 import retrofit2.http.GET
 import retrofit2.http.Query

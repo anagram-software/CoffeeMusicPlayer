@@ -1,23 +1,21 @@
-<?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/widget_layout_medium"
+    android:id="@+id/widget_layout_big"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:padding="@dimen/widget_margin"
-    tools:ignore="ContentDescription">
+    android:layout_height="match_parent"
+    android:padding="@dimen/widget_margin">
 
     <RelativeLayout
         android:id="@+id/widget_layout_holder"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/colorPrimary">
+        android:background="@color/colorPrimary"
+        android:padding="4dp">
 
         <ImageView
             android:id="@+id/album_art"
             android:layout_width="96dp"
             android:layout_height="96dp"
-            android:scaleType="fitStart"
+            android:scaleType="centerCrop"
             android:src="@drawable/default_art" />
 
         <LinearLayout
@@ -34,6 +32,8 @@
                 android:id="@+id/text1"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
+                android:layout_marginLeft="8dp"
+                android:layout_marginRight="8dp"
                 android:layout_weight="1"
                 android:ellipsize="end"
                 android:fadingEdge="horizontal"
@@ -44,6 +44,20 @@
                 android:id="@+id/text2"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
+                android:layout_marginLeft="8dp"
+                android:layout_marginRight="8dp"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:fadingEdge="horizontal"
+                android:maxLines="1"
+                android:text="@string/info_artist" />
+
+            <TextView
+                android:id="@+id/text3"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_marginLeft="8dp"
+                android:layout_marginRight="8dp"
                 android:layout_weight="1"
                 android:ellipsize="end"
                 android:fadingEdge="horizontal"
@@ -55,10 +69,7 @@
             android:id="@+id/buttons"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_alignParentBottom="true"
-            android:layout_below="@+id/text"
-            android:layout_toEndOf="@+id/album_art"
-            android:layout_toRightOf="@+id/album_art"
+            android:layout_below="@+id/album_art"
             android:orientation="horizontal"
             android:weightSum="3">
 
@@ -87,4 +98,5 @@
                 android:src="@drawable/ic_next" />
         </LinearLayout>
     </RelativeLayout>
+
 </RelativeLayout>

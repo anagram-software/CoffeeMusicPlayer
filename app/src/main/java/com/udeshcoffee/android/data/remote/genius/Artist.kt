@@ -1,4 +1,4 @@
-package com.udeshcoffee.android.api.genius
+package com.udeshcoffee.android.data.remote.genius
 
 /**
  * Created by Udathari on 10/10/2017.

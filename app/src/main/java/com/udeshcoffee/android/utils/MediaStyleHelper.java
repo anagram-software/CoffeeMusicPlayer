@@ -39,7 +39,8 @@ public class MediaStyleHelper {
         stopIntent.setAction(MusicService.Companion.getACTION_STOP());
         PendingIntent stopPendingIntent = PendingIntent.getService(context, 0, stopIntent, 0);
 
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(context);
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(
+                context);
         builder
                 .setContentTitle(description.getTitle())
                 .setContentText(description.getSubtitle())

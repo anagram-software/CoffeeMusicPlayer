@@ -26,7 +26,7 @@ import java.util.*
 * Created by Udesh Kumarasinghe on 8/22/2017.
 */
 
-class Player(private val musicService: MusicService): Player.EventListener {
+class Player(private val musicService: MusicService): Player.DefaultEventListener() {
 
     companion object {
         private const val TAG = "Player1997"
@@ -34,7 +34,7 @@ class Player(private val musicService: MusicService): Player.EventListener {
 
     private var mPlayer: SimpleExoPlayer
     private lateinit var dataSourceFactory: DefaultDataSourceFactory
-    private lateinit var extractorsFactory: ExtractorsFactory
+    private lateinit var extractorsFactory: DefaultExtractorsFactory
 
     private var isPrepared = false
     private var shouldPlay = true
@@ -51,18 +51,25 @@ class Player(private val musicService: MusicService): Player.EventListener {
         mPlayer.addListener(this)
     }
 
+    private fun initSongAgain() {
+        this.song?.let { initSong(it, true, pausedTime) }
+    }
+
     fun initSong(song: Song, shouldPlay:Boolean, startPos: Int){
         Log.d(TAG, "preparing" + song.title)
         this.song = song
         this.pausedTime = startPos
         this.shouldPlay = shouldPlay
+        mPlayer.playWhenReady = false
         mPlayer.stop()
 
         val trackUri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, song.id)
         try {
             dataSourceFactory = DefaultDataSourceFactory(musicService, Util.getUserAgent(musicService, "mediaPlayerSample"))
             extractorsFactory = DefaultExtractorsFactory()
-            val mediaSource = ExtractorMediaSource(trackUri, dataSourceFactory, extractorsFactory, null, null)
+            val mediaSource = ExtractorMediaSource.Factory(dataSourceFactory)
+                    .setExtractorsFactory(extractorsFactory)
+                    .createMediaSource(trackUri)
             isPrepared = false
             mPlayer.prepare(mediaSource)
         } catch (e: Exception) {
@@ -71,32 +78,11 @@ class Player(private val musicService: MusicService): Player.EventListener {
         }
     }
 
-    override fun onPlaybackParametersChanged(playbackParameters: PlaybackParameters?) {}
-
-    override fun onSeekProcessed() {
-        Log.d(TAG, "onSeekProcessed")
-    }
-
-    override fun onTracksChanged(trackGroups: TrackGroupArray?, trackSelections: TrackSelectionArray?) {}
-
     override fun onPlayerError(error: ExoPlaybackException?) {}
 
-    override fun onLoadingChanged(isLoading: Boolean) {
-        Log.d(TAG, "onLoadingChanged $isLoading")
-    }
-
-    override fun onPositionDiscontinuity(reason: Int) {
-        Log.d(TAG, "onPositionDiscontinuity")
-    }
-
-    override fun onRepeatModeChanged(repeatMode: Int) {}
-
-    override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {}
-
-    override fun onTimelineChanged(timeline: Timeline?, manifest: Any?) {}
+    override fun onTimelineChanged(timeline: Timeline?, manifest: Any?, reason: Int) {}
 
     override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
-
         Log.d(TAG, "onPlayerStateChanged $playWhenReady $playbackState")
         when (playbackState) {
             ExoPlayer.STATE_READY -> {
@@ -113,22 +99,28 @@ class Player(private val musicService: MusicService): Player.EventListener {
                 }
             }
             ExoPlayer.STATE_ENDED -> {
-                updatePlayCount()
-                musicService.gotoNextOnFinish()
+                if (playWhenReady) {
+                    updatePlayCount()
+                    musicService.gotoNextOnFinish()
+                }
             }
         }
     }
 
     fun start() {
         try {
-            mPlayer.playWhenReady = true
-            mPlayer.volume = 0.0f
-            if (musicService.isFading)
-                fadeIn()
-            else
-                mPlayer.volume = 1.0f
+            if (isPrepared) {
+                mPlayer.volume = 0.0f
+                mPlayer.playWhenReady = true
+                if (musicService.isFading)
+                    fadeIn()
+                else
+                    mPlayer.volume = 1.0f
 
-            musicService.notifyManger.notifyChange(MusicService.InternalIntents.PLAYBACK_STATE_CHANGED, true)
+                musicService.notifyManger.notifyChange(MusicService.InternalIntents.PLAYBACK_STATE_CHANGED, true)
+            } else {
+                initSongAgain()
+            }
         } catch (e: RuntimeException) {
             Log.e(TAG, "Error pausing MultiPlayer: " + e.localizedMessage)
         }
@@ -139,6 +131,7 @@ class Player(private val musicService: MusicService): Player.EventListener {
             isPrepared = false
             if (isPlaying())
                 pausedTime = getPosition().toInt()
+            mPlayer.playWhenReady = false
             mPlayer.stop()
             musicService.notifyManger.notifyChange(MusicService.InternalIntents.PLAYBACK_STATE_CHANGED, false)
         } catch (e: IllegalStateException) {

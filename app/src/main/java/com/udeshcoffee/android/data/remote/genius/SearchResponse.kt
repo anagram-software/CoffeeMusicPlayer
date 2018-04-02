@@ -1,7 +1,4 @@
-package com.udeshcoffee.android.api.genius
-
-import com.udeshcoffee.android.data.remote.genius.Response
-
+package com.udeshcoffee.android.data.remote.genius
 /**
  * Created by Udathari on 9/15/2017.
  */
