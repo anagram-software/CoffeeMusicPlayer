@@ -1,4 +1,4 @@
-package com.udeshcoffee.android.api.itunes
+package com.udeshcoffee.android.data.remote.itunes
 
 import com.google.gson.annotations.SerializedName
 

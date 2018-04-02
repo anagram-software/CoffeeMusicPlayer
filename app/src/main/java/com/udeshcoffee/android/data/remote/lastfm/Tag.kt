@@ -1,4 +1,4 @@
-package com.udeshcoffee.android.api.lastfm
+package com.udeshcoffee.android.data.remote.lastfm
 
 /**
  * Created by Udathari on 9/15/2017.

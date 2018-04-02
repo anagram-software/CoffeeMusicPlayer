@@ -26,6 +26,7 @@ import org.koin.standalone.KoinComponent
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
+import java.io.OutputStream
 
 /**
 * Created by Udathari on 9/28/2017.
@@ -238,7 +239,7 @@ class EditorPresenter(
                 val scaledBitmap = Bitmap.createScaledBitmap(it, 500, 500, false)
 
                 val stream = ByteArrayOutputStream()
-                scaledBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+                scaledBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream as OutputStream?)
 
                 val byteArray = stream.toByteArray()
 

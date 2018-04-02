@@ -14,7 +14,7 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import com.udeshcoffee.android.R
-import com.udeshcoffee.android.api.genius.Result
+import com.udeshcoffee.android.data.remote.genius.Result
 import com.udeshcoffee.android.interfaces.OnItemClickListener
 import com.udeshcoffee.android.ui.adapters.LyricAdapter
 import com.udeshcoffee.android.ui.dialogs.CustomLyricDialog

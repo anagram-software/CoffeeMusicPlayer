@@ -5,7 +5,7 @@ import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import com.udeshcoffee.android.R
-import com.udeshcoffee.android.api.genius.Result
+import com.udeshcoffee.android.data.remote.genius.Result
 import com.udeshcoffee.android.interfaces.OnItemClickListener
 import com.udeshcoffee.android.ui.viewholders.LyricViewHolder
 import io.reactivex.functions.Consumer

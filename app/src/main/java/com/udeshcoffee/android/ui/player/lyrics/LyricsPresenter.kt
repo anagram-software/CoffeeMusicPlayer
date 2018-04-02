@@ -5,7 +5,7 @@ import android.content.SharedPreferences
 import android.util.Log
 import com.cantrowitz.rxbroadcast.RxBroadcast
 import com.udeshcoffee.android.App
-import com.udeshcoffee.android.api.genius.Result
+import com.udeshcoffee.android.data.remote.genius.Result
 import com.udeshcoffee.android.data.DataRepository
 import com.udeshcoffee.android.data.model.Lyric
 import com.udeshcoffee.android.extensions.getService

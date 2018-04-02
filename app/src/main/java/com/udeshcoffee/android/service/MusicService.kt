@@ -394,7 +394,7 @@ class MusicService : Service() {
         Log.d(TAG, "initSub")
     }
 
-    fun initSong(position: Int, shouldPlay: Boolean, startPos: Int) {
+    private fun initSong(position: Int, shouldPlay: Boolean, startPos: Int) {
         if (position >= list.size || position < 0)
             return
         playPosition = position

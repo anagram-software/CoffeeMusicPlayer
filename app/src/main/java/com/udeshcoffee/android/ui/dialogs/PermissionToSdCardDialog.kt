@@ -7,6 +7,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.support.v4.app.DialogFragment
+import android.util.Log
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.ui.main.editor.EditorFragment
 
@@ -22,11 +23,12 @@ class PermissionToSdCardDialog: DialogFragment() {
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
+        Log.d("Permission", "onCreateDialog")
         val builder = AlertDialog.Builder(context)
 
-        val view = layoutInflater.inflate(R.layout.dialog_permission_to_sdcard, null)
+//        val view = layoutInflater.inflate(R.layout.dialog_permission_to_sdcard, null)
 
-        builder.setView(view)
+//        builder.setView(view)
         builder.setTitle(R.string.grant_permission)
                 .setNegativeButton(R.string.action_cancel){_,_ ->
                     (targetFragment as EditorFragment).finish()

@@ -25,27 +25,25 @@ import com.udeshcoffee.android.service.MusicService.InternalIntents
 import com.udeshcoffee.android.ui.main.MainActivity
 import com.udeshcoffee.android.utils.ArtworkURI
 import com.udeshcoffee.android.utils.MediaStyleHelper
-import com.udeshcoffee.android.widget.MediumWidgetProvider
+import com.udeshcoffee.android.widget.BigAppWidget
+import com.udeshcoffee.android.widget.MediumAppWidget
 
 /**
- * Created by Udesh Kumarasinghe on 8/22/2017.
- */
+* Created by Udesh Kumarasinghe on 8/22/2017.
+*/
 class NotifyManager(val service: MusicService) {
 
-    val TAG = "NotifyManager"
-
-    private val NOTIFY_ID = 1998
-    var mContext = service.applicationContext
-    var channel: NotificationChannel? = null
-    val metadatBuilder = MediaMetadataCompat.Builder()
-    val playbackBuilder = PlaybackStateCompat.Builder()
+    private var mContext = service.applicationContext
+    private var channel: NotificationChannel? = null
+    private val metadataBuilder = MediaMetadataCompat.Builder()
+    private val playbackBuilder = PlaybackStateCompat.Builder()
 
     init {
         channel = createNotificationChannel()
     }
 
     fun notifyChange(what: String, createNotification: Boolean) {
-        Log.d(TAG, "notifyChange what: $what, createNotification: $createNotification")
+        Log.d(Companion.TAG, "notifyChange what: $what, createNotification: $createNotification")
         when (what) {
             InternalIntents.METADATA_CHANGED -> {
                 updateMetaData()
@@ -53,7 +51,7 @@ class NotifyManager(val service: MusicService) {
                     createNotification(service.isPlaying())
             }
             InternalIntents.PLAYBACK_STATE_CHANGED -> {
-                updatelaybackState()
+                updatePlaybackState()
                 if (createNotification)
                     createNotification(service.isPlaying())
                 else
@@ -65,44 +63,45 @@ class NotifyManager(val service: MusicService) {
     }
 
     fun notifyWidgets(what: String) {
-        MediumWidgetProvider.instance?.notifyChange(service, what)
+        MediumAppWidget.getInstance().notifyChange(service.applicationContext, what, service.currentSong(), service.isPlaying())
+        BigAppWidget.getInstance().notifyChange(service.applicationContext, what, service.currentSong(), service.isPlaying())
     }
 
     private fun updateMetaData() {
-        Log.d(TAG, "updateMetaData")
+        Log.d(Companion.TAG, "updateMetaData")
         val currentSong = service.currentSong() ?: return
         val uri = ContentUris.withAppendedId(ArtworkURI, currentSong.albumId)
 
-        metadatBuilder.putString(MediaMetadataCompat.METADATA_KEY_ARTIST, currentSong.artistName)
+        metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_ARTIST, currentSong.artistName)
                 .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, currentSong.albumName)
                 .putString(MediaMetadataCompat.METADATA_KEY_TITLE, currentSong.title)
                 .putString(MediaMetadataCompat.METADATA_KEY_ART_URI, uri.toString())
                 .putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, uri.toString())
 
-        service.mediaSession.setMetadata(metadatBuilder.build())
+        service.mediaSession.setMetadata(metadataBuilder.build())
 
         Glide.with(mContext).asBitmap()
                 .load(ContentUris.withAppendedId(ArtworkURI, currentSong.albumId))
                 .into(object : SimpleTarget<Bitmap>(320, 320) {
                     override fun onResourceReady(resource: Bitmap?, transition: Transition<in Bitmap>?) {
-                        metadatBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, resource)
-                        metadatBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, resource)
-                        service.mediaSession.setMetadata(metadatBuilder.build())
+                        metadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, resource)
+                        metadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, resource)
+                        service.mediaSession.setMetadata(metadataBuilder.build())
                         createNotification(service.isPlaying())
                     }
 
                     override fun onLoadFailed(errorDrawable: Drawable?) {
                         super.onLoadFailed(errorDrawable)
-                        metadatBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, null)
-                        metadatBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, null)
-                        service.mediaSession.setMetadata(metadatBuilder.build())
+                        metadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, null)
+                        metadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, null)
+                        service.mediaSession.setMetadata(metadataBuilder.build())
                         createNotification(service.isPlaying())
                     }
                 })
     }
 
-    private fun updatelaybackState() {
-        Log.d(TAG, "updatelaybackState")
+    private fun updatePlaybackState() {
+        Log.d(Companion.TAG, "updatelaybackState")
         service.mediaSession.let {
             val isPlaying = service.isPlaying()
             if (isPlaying) {
@@ -122,7 +121,7 @@ class NotifyManager(val service: MusicService) {
 
 
     private fun createNotification(isPlay: Boolean) {
-        Log.d(TAG, "createNotification isPlay:$isPlay")
+        Log.d(Companion.TAG, "createNotification isPlay:$isPlay")
 
         val builder = MediaStyleHelper.from(service, service.mediaSession)
 
@@ -170,10 +169,10 @@ class NotifyManager(val service: MusicService) {
         //Build the notification object.
         val notification = builder.build()
 
-        NotificationManagerCompat.from(service).notify(NOTIFY_ID, notification)
+        NotificationManagerCompat.from(service).notify(Companion.NOTIFY_ID, notification)
 
         if (isPlay) {
-            service.startForeground(NOTIFY_ID, notification)
+            service.startForeground(Companion.NOTIFY_ID, notification)
         } else {
             service.stopForeground(false)
         }
@@ -200,8 +199,13 @@ class NotifyManager(val service: MusicService) {
     }
 
     private fun removeNotification(){
-        NotificationManagerCompat.from(mContext).cancel(NOTIFY_ID)
+        NotificationManagerCompat.from(mContext).cancel(Companion.NOTIFY_ID)
         service.stopForeground(true)
+    }
+
+    companion object {
+        private const val NOTIFY_ID = 1998
+        private const val TAG = "NotifyManager"
     }
 
 }

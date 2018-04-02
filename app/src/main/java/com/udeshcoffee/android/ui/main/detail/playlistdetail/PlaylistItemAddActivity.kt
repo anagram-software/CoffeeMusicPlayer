@@ -12,6 +12,7 @@ import android.widget.Toast
 import com.simplecityapps.recyclerview_fastscroll.views.FastScrollRecyclerView
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.data.MediaRepository
+import com.udeshcoffee.android.interfaces.OnItemSelectListener
 import com.udeshcoffee.android.ui.adapters.PlaylistAddAdapter
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
@@ -55,7 +56,7 @@ class PlaylistItemAddActivity : AppCompatActivity() {
 
         songView.layoutManager = LinearLayoutManager(this)
         songView.adapter = addAdapter
-        addAdapter!!.setOnSelectListener(object : PlaylistAddAdapter.OnItemSelectListener {
+        addAdapter!!.listener = object : OnItemSelectListener {
             override fun onSelectItem(postion: Int) {
                 addToPlaylist(addAdapter!!.getItem(postion).id)
             }
@@ -63,7 +64,7 @@ class PlaylistItemAddActivity : AppCompatActivity() {
             override fun onDeselectItem(postion: Int) {
                 deletePlaylistTracks(addAdapter!!.getItem(postion).id)
             }
-        })
+        }
     }
 
     override fun onResume() {

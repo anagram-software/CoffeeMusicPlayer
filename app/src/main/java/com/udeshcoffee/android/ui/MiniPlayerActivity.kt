@@ -25,8 +25,8 @@ import io.reactivex.disposables.Disposable
 import org.koin.android.ext.android.inject
 
 /**
-* Created by Udathari on 8/25/2017.
-*/
+ * Created by Udathari on 8/25/2017.
+ */
 
 open class MiniPlayerActivity : BaseActivity() {
 
@@ -119,7 +119,8 @@ open class MiniPlayerActivity : BaseActivity() {
     }
 
     fun openNowPlay(){
-        slidingPanel.panelState = SlidingUpPanelLayout.PanelState.EXPANDED
+        if (slidingPanel.panelState == SlidingUpPanelLayout.PanelState.COLLAPSED)
+            slidingPanel.panelState = SlidingUpPanelLayout.PanelState.EXPANDED
     }
 
     fun closeNowPlay(){

@@ -143,6 +143,8 @@
     <string name="folder_sort">Folder Sort</string>
     <string name="song_sort">Song Sort</string>
     <string name="action_sort_song_count">Song Count</string>
+    <string name="appwidget_text">EXAMPLE</string>
+    <string name="add_widget">Add widget</string>
 
     // New
 

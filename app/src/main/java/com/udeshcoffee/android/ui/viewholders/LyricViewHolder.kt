@@ -4,7 +4,7 @@ import android.support.v7.widget.RecyclerView
 import android.view.View
 import android.widget.TextView
 import com.udeshcoffee.android.R
-import com.udeshcoffee.android.api.genius.Result
+import com.udeshcoffee.android.data.remote.genius.Result
 import com.udeshcoffee.android.interfaces.OnItemClickListener
 
 /**

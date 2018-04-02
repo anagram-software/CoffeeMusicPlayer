@@ -13,6 +13,7 @@ import android.widget.TextView;
 import com.simplecityapps.recyclerview_fastscroll.views.FastScrollRecyclerView;
 import com.udeshcoffee.android.R;
 import com.udeshcoffee.android.extensions.ArtExtensionsKt;
+import com.udeshcoffee.android.interfaces.OnItemSelectListener;
 import com.udeshcoffee.android.model.Song;
 
 import java.util.ArrayList;
@@ -29,7 +30,7 @@ public class PlaylistAddAdapter extends RecyclerView.Adapter<PlaylistAddAdapter.
     private List<Song> mDataset;
     private List<Integer> selected;
     private Context context;
-    private OnItemSelectListener listener;
+    public OnItemSelectListener listener;
     private TextView count;
 
     @Override
@@ -42,11 +43,6 @@ public class PlaylistAddAdapter extends RecyclerView.Adapter<PlaylistAddAdapter.
     @Override
     public String getSectionName(int position) {
         return Character.toString(mDataset.get(position).getTitle().charAt(0));
-    }
-
-    public interface OnItemSelectListener{
-        void onSelectItem(int postion);
-        void onDeselectItem(int postion);
     }
 
     // Provide a reference to the views for each data item
@@ -150,7 +146,4 @@ public class PlaylistAddAdapter extends RecyclerView.Adapter<PlaylistAddAdapter.
         return mDataset.get(pos);
     }
 
-    public void setOnSelectListener(OnItemSelectListener listener) {
-        this.listener = listener;
-    }
 }

@@ -1,4 +1,4 @@
-package com.udeshcoffee.android.api.itunes
+package com.udeshcoffee.android.data.remote.itunes
 import io.reactivex.Observable
 import retrofit2.http.GET
 import retrofit2.http.Query

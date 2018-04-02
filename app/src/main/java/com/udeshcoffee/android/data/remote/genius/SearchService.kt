@@ -1,5 +1,6 @@
-package com.udeshcoffee.android.api.genius
+package com.udeshcoffee.android.data.remote.genius
 
+import com.udeshcoffee.android.data.remote.genius.SearchResponse
 import io.reactivex.Observable
 import retrofit2.Call
 import retrofit2.http.GET
