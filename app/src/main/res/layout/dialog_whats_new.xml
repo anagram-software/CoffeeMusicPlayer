@@ -13,13 +13,13 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
             android:gravity="center_vertical"
-            android:text="Version 2.0.8"
+            android:text="Version 2.0.9"
             android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Folder Browser Sorting - Sort songs and folders in the folder browser."
+            android:text="Bug Fixes."
             android:drawableLeft="@drawable/ic_new_releases_white_24dp"
             android:drawableStart="@drawable/ic_new_releases_white_24dp"
             android:drawablePadding="8dp"

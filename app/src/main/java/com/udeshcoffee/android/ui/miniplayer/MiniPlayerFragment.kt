@@ -88,7 +88,6 @@ class MiniPlayerFragment : Fragment(), MiniPlayerContract.View {
     }
 
     override fun setPlayOrPause(isPlay: Boolean) {
-        Log.d(TAG, "idplay" + isPlay)
         if (isPlay) {
             playPause.setImageResource(R.drawable.ic_play)
         } else {

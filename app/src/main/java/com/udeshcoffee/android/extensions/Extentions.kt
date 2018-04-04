@@ -1,5 +1,6 @@
 package com.udeshcoffee.android.extensions
 
+import android.arch.lifecycle.AndroidViewModel
 import android.content.ContentResolver
 import android.content.ServiceConnection
 import android.graphics.Color
@@ -60,12 +61,13 @@ fun AppCompatActivity.unbindFromService(token: ServiceConnectionToken) {
     ServiceConnectionUtil.unbind(token)
 }
 
-//  Extension to get service from presenters
-fun AppCompatActivity.getService(): MusicService? = ServiceConnectionUtil.binder?.service?.get()
-
 fun FragmentActivity.openDrawer() {
     (this as MainActivity).openDrawerLayout()
 }
+
+fun AppCompatActivity.getService(): MusicService? = ServiceConnectionUtil.binder?.service?.get()
+
+fun AndroidViewModel.getService(): MusicService? = ServiceConnectionUtil.binder?.service?.get()
 
 /* Presenter */
 

@@ -11,7 +11,8 @@
         android:layout_height="72dp"
         android:layout_marginLeft="@dimen/activity_horizontal_margin"
         android:layout_marginRight="@dimen/activity_horizontal_margin"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="8dp"
         android:paddingTop="@dimen/status_bar_height"
         android:scaleType="fitStart"
         android:src="@drawable/logo" />

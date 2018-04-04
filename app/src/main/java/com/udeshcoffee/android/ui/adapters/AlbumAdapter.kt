@@ -23,8 +23,8 @@ class AlbumAdapter(val dataType: Int) : RecyclerView.Adapter<RecyclerView.ViewHo
     var listener: OnGridItemClickListener? = null
 
     companion object {
-        val ITEM_TYPE_NORMAL = 0
-        val ITEM_TYPE_MINI = 1
+        const val ITEM_TYPE_NORMAL = 0
+        const val ITEM_TYPE_MINI = 1
     }
 
     override fun accept(p0: List<Album>) {
@@ -67,9 +67,6 @@ class AlbumAdapter(val dataType: Int) : RecyclerView.Adapter<RecyclerView.ViewHo
     fun getItem(pos: Int): Album {
         return mDataset!![pos]
     }
-
-    val albumList: ArrayList<Album>
-        get() = mDataset as ArrayList<Album>
 
     override fun getItemCount(): Int {
         return mDataset!!.size

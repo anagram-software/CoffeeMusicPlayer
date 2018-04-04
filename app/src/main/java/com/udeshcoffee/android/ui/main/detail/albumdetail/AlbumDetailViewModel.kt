@@ -1,5 +1,8 @@
 package com.udeshcoffee.android.ui.main.detail.albumdetail
 
+import android.app.Application
+import android.arch.lifecycle.AndroidViewModel
+import android.arch.lifecycle.MutableLiveData
 import android.content.IntentFilter
 import com.cantrowitz.rxbroadcast.RxBroadcast
 import com.udeshcoffee.android.App
@@ -11,28 +14,34 @@ import com.udeshcoffee.android.extensions.queueSong
 import com.udeshcoffee.android.extensions.shuffle
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.service.MusicService
+import com.udeshcoffee.android.utils.SingleLiveEvent
 import com.udeshcoffee.android.utils.SortManager
+import com.udeshcoffee.android.utils.ToastMessage
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
-import org.koin.standalone.KoinComponent
 import java.util.*
 
-/**
-* Created by Udathari on 9/12/2017.
-*/
-class AlbumDetailPresenter(
+class AlbumDetailViewModel(
+        application: Application,
         private val mediaRepository: MediaRepository,
         private val dataRepository: DataRepository
-): AlbumDetailContract.Presenter, KoinComponent {
-
+): AndroidViewModel(application) {
     private var disposable: Disposable? = null
     private var broadcastDisposable: Disposable? = null
 
-    override var albumId: Long = -1
-    override lateinit var view: AlbumDetailContract.View
+    private var albumId: Long = -1
+    val currentSongId = MutableLiveData<Long>()
+    val songs = MutableLiveData<List<Song>>()
 
-    override fun start() {
+    // Events
+    val showFavoriteToast = ToastMessage()
+    val showAddToPlaylistDialog = SingleLiveEvent<List<Song>>()
+    val showSongLongDialog = SingleLiveEvent<Song>()
+
+    fun start(albumId: Long) {
+        this.albumId = albumId
+
         fetchData()
 
         val filter = IntentFilter()
@@ -43,15 +52,14 @@ class AlbumDetailPresenter(
                 .subscribe {
                     when(it.action){
                         MusicService.InternalIntents.METADATA_CHANGED -> {
-                            val id = service?.currentSong()?.id ?: -1
-                            view.setCurrentSong(id)
+                            currentSongId.value = service?.currentSong()?.id ?: -1
                         }
                     }
                 }
-        service?.currentSong()?.id?.let { view.setCurrentSong(it) }
+        currentSongId.value = service?.currentSong()?.id ?: -1
     }
 
-    override fun stop() {
+    fun stop() {
         dispose()
 
         broadcastDisposable?.let {
@@ -67,7 +75,7 @@ class AlbumDetailPresenter(
         }
     }
 
-    override fun fetchData() {
+    fun fetchData() {
         dispose()
         disposable = mediaRepository.getAlbumSongs(albumId)
                 .map({ songs ->
@@ -82,53 +90,56 @@ class AlbumDetailPresenter(
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe{
-                    songs -> view.populateItems(songs)
+                    songs.value = it
                 }
     }
 
-    override fun playClick(songs: ArrayList<Song>) {
-        playSong(0, songs, true)
+    fun playClick() {
+        songs.value?.let { playSong(0, it, true) }
     }
 
-    override fun playNextClick(songs: ArrayList<Song>) {
-        queueSong(songs, true)
+    fun playNextClick() {
+        songs.value?.let { queueSong(it, true) }
     }
 
-    override fun queueClick(songs: ArrayList<Song>) {
-        queueSong(songs, false)
+    fun queueClick() {
+        songs.value?.let { queueSong(it, false) }
     }
 
-    override fun addToFavoritesClick(songs: ArrayList<Song>) {
-        if (songs.size > 0) {
-            dataRepository.addToFavorites(songs)
-            view.showFavoritesToast(true)
-        } else {
-            view.showFavoritesToast(false)
+    fun addToFavoritesClick() {
+        songs.value?.let {
+            if (it.isNotEmpty()) {
+                dataRepository.addToFavorites(it)
+                showFavoriteToast.setMessage("Added to favorites")
+            } else {
+                showFavoriteToast.setMessage("Removed from favorites")
+            }
         }
     }
 
-    override fun addToPlaylistClick(songs: ArrayList<Song>) {
-        view.showAddToPlaylistDialog(songs)
+    fun addToPlaylistClick() {
+        songs.value?.let { showAddToPlaylistDialog.value = it }
     }
 
-    override fun itemClicked(position: Int, allItems: List<Song>) {
-        playSong(position, allItems, true)
+    fun itemClicked(position: Int) {
+        songs.value?.let { playSong(position, it, true) }
     }
 
-    override fun itemLongClicked(item: Song) {
-        view.showSongLongDialog(item)
+    fun itemLongClicked(position: Int) {
+        songs.value?.let { showSongLongDialog.value = it[position] }
     }
 
-    override fun shuffleClicked(allItems: List<Song>) {
-        shuffle(allItems)
+    fun shuffleClicked() {
+        songs.value?.let { shuffle(it) }
     }
 
-    override var sortOrder: Int
+    var sortOrder: Int
         get() = SortManager.albumSongsSortOrder
-        set(value) {SortManager.albumSongsSortOrder = value}
+        set(value) {
+            SortManager.albumSongsSortOrder = value}
 
-    override var sortAscending: Boolean
+    var sortAscending: Boolean
         get() = SortManager.albumSongsAscending
-        set(value) {SortManager.albumSongsAscending = value}
-
+        set(value) {
+            SortManager.albumSongsAscending = value}
 }

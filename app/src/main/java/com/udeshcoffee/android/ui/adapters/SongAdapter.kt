@@ -32,25 +32,25 @@ class SongAdapter(private val dataType: Int, private val hasShuffle: Boolean) : 
             checkCurrentSong()
         }
 
-    // Selection
-    var isSelection: Boolean = false
-        set(value) {
-            if (!value)
-                selected.clear()
-            field = value
-        }
-    private var selected = ArrayList<Song>()
-    private var selectListener = object : OnItemSelectListener{
-        override fun onSelectItem(postion: Int) {
-            selected.add(mDataset[postion])
-            notifyItemChanged(if (hasShuffle) postion + 1 else postion)
-        }
-
-        override fun onDeselectItem(postion: Int) {
-            selected.remove(mDataset[postion])
-            notifyItemChanged(if (hasShuffle) postion + 1 else postion)
-        }
-    }
+//    TODO - Selection
+//    var isSelection: Boolean = false
+//        set(value) {
+//            if (!value)
+//                selected.clear()
+//            field = value
+//        }
+//    private var selected = ArrayList<Song>()
+//    private var selectListener = object : OnItemSelectListener{
+//        override fun onSelectItem(postion: Int) {
+//            selected.add(mDataset[postion])
+//            notifyItemChanged(if (hasShuffle) postion + 1 else postion)
+//        }
+//
+//        override fun onDeselectItem(postion: Int) {
+//            selected.remove(mDataset[postion])
+//            notifyItemChanged(if (hasShuffle) postion + 1 else postion)
+//        }
+//    }
 
     companion object {
         private const val TAG = "SongAdapter"
@@ -149,11 +149,7 @@ class SongAdapter(private val dataType: Int, private val hasShuffle: Boolean) : 
             position--
 
         if (itemType == ITEM_TYPE_NORMAL) {
-            if (!isSelection)
-                (holder as SongViewHolder).bindData(mDataset[position], currentSong == position)
-            else {
-                (holder as SongViewHolder).bindData(mDataset[position], currentSong == position)
-            }
+            (holder as SongViewHolder).bindData(mDataset[position], currentSong == position)
         } else if (itemType == ITEM_TYPE_ALBUM_ITEM) {
             (holder as AlbumSongViewHolder).bindData(mDataset[position], currentSong == position)
         }

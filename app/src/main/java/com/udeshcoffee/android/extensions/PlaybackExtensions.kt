@@ -1,5 +1,6 @@
 package com.udeshcoffee.android.extensions
 
+import android.arch.lifecycle.AndroidViewModel
 import android.support.v4.app.DialogFragment
 import android.support.v4.app.Fragment
 import com.udeshcoffee.android.model.Song
@@ -28,6 +29,12 @@ fun <T> BasePresenter<T>.playSong(position: Int, allItems: List<Song>, shouldPla
 }
 
 fun Fragment.playSong(position: Int, allItems: List<Song>, shouldPlay: Boolean) {
+    if (allItems.isNotEmpty()) {
+        playSongLogic(position, allItems, shouldPlay)
+    }
+}
+
+fun AndroidViewModel.playSong(position: Int, allItems: List<Song>, shouldPlay: Boolean) {
     if (allItems.isNotEmpty()) {
         playSongLogic(position, allItems, shouldPlay)
     }
@@ -68,12 +75,27 @@ fun DialogFragment.queueSong(allItems: List<Song>, isNext: Boolean) {
     }
 }
 
+fun AndroidViewModel.queueSong(allItems: List<Song>, isNext: Boolean) {
+    if (allItems.isNotEmpty()) {
+        queueSongLogic(allItems, isNext)
+    }
+}
+
 // Shuffle and play
 fun <T> BasePresenter<T>.shuffle(allItems: List<Song>) {
     if (allItems.isNotEmpty()) {
         val tempList = allItems.toMutableList() as ArrayList<Song>
         if (tempList.size > 1)
-            Collections.shuffle(tempList)
+            tempList.shuffle()
+        playSongLogic(0, tempList, true)
+    }
+}
+
+fun AndroidViewModel.shuffle(allItems: List<Song>) {
+    if (allItems.isNotEmpty()) {
+        val tempList = allItems.toMutableList() as ArrayList<Song>
+        if (tempList.size > 1)
+            tempList.shuffle()
         playSongLogic(0, tempList, true)
     }
 }

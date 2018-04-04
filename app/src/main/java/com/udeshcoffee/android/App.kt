@@ -16,7 +16,7 @@ import org.koin.android.ext.android.startKoin
 */
 class App : MultiDexApplication() {
 
-//    val mediaRepository by inject<MediaRepository>()
+    val mediaRepository by inject<MediaRepository>()
 
     override fun onCreate() {
         super.onCreate()
@@ -25,20 +25,21 @@ class App : MultiDexApplication() {
 
         TagOptionSingleton.getInstance().isAndroid = true
 
-//        cleanGenres()
+        cleanGenres()
     }
 
     override fun onLowMemory() {
+
         super.onLowMemory()
         Glide.get(this).clearMemory()
     }
 
-//    private fun cleanGenres() {
-//        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
-//            return
-//
-//        mediaRepository.cleanGenres()
-//    }
+    private fun cleanGenres() {
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
+            return
+
+        mediaRepository.cleanGenres()
+    }
 
     companion object {
 

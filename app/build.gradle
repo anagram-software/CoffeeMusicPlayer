@@ -15,7 +15,7 @@ android {
         minSdkVersion 16
         targetSdkVersion 27
         versionCode 30
-        versionName '2.0.8'
+        versionName '2.0.9'
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
         multiDexEnabled = true
@@ -57,6 +57,9 @@ dependencies {
     implementation "com.android.support:preference-v14:$support_version"
     implementation 'com.android.support:multidex:1.0.3'
 
+    // Arch
+    implementation "android.arch.lifecycle:extensions:1.1.1"
+
     // Room
     implementation 'android.arch.persistence.room:runtime:1.0.0'
     implementation 'android.arch.persistence.room:rxjava2:1.0.0'
@@ -89,14 +92,13 @@ dependencies {
     implementation files('libs/jaudiotagger-2.0.4-SNAPSHOT.jar')
 
     // ExoPlayer
-    implementation project(':exoplayer-library-core')
-    implementation project(':exoplayer-extension-flac')
+    implementation 'com.google.android.exoplayer:exoplayer-core:2.7.2'
 
     // KTX
     implementation 'androidx.core:core-ktx:0.2'
 
     // Koin
-    implementation 'org.koin:koin-android:0.9.0'
+    implementation 'org.koin:koin-android-architecture:0.9.1'
 
     // Other
     implementation 'com.simplecityapps:recyclerview-fastscroll:1.0.16'

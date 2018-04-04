@@ -25,7 +25,7 @@
             android:layout_marginTop="4dp"
             android:layout_toEndOf="@+id/album_art"
             android:layout_toRightOf="@+id/album_art"
-            android:gravity="center_vertical"
+            android:paddingTop="8dp"
             android:orientation="vertical">
 
             <TextView
@@ -38,7 +38,8 @@
                 android:ellipsize="end"
                 android:fadingEdge="horizontal"
                 android:maxLines="1"
-                android:text="@string/info_title" />
+                android:text="@string/info_title"
+                android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
 
             <TextView
                 android:id="@+id/text2"
@@ -50,7 +51,8 @@
                 android:ellipsize="end"
                 android:fadingEdge="horizontal"
                 android:maxLines="1"
-                android:text="@string/info_artist" />
+                android:text="@string/info_album"
+                android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
 
             <TextView
                 android:id="@+id/text3"
@@ -62,7 +64,8 @@
                 android:ellipsize="end"
                 android:fadingEdge="horizontal"
                 android:maxLines="1"
-                android:text="@string/info_artist" />
+                android:text="@string/info_artist"
+                android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
         </LinearLayout>
 
         <LinearLayout

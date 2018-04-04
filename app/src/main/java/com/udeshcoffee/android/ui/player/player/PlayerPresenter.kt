@@ -13,6 +13,7 @@ import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
 import org.koin.standalone.KoinComponent
+import java.util.concurrent.TimeUnit
 
 /**
  * Created by Udathari on 8/25/2017.
@@ -117,7 +118,7 @@ class PlayerPresenter(private val sharedPreferences: SharedPreferences,
 
     private fun setProgress(){
         disposeProgress()
-        progressDisposable = getService()?.getProgressObservarable(100)
+        progressDisposable = getService()?.getProgressObservable()
                 ?.subscribe{
                     if (!isSeeking)
                         view.setProgress(it)
@@ -134,7 +135,8 @@ class PlayerPresenter(private val sharedPreferences: SharedPreferences,
 
     private fun setCurrent(){
         disposeCurrent()
-        currentDisposable = getService()?.getProgressObservarable(1000)
+        currentDisposable = getService()?.getProgressObservable()
+                ?.debounce(1000, TimeUnit.MILLISECONDS)
                 ?.subscribe{
                     view.setCurrent(it)
                 }

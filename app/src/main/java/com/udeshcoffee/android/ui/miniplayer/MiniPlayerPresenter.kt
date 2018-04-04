@@ -4,6 +4,7 @@ import android.content.IntentFilter
 import com.cantrowitz.rxbroadcast.RxBroadcast
 import com.udeshcoffee.android.App
 import com.udeshcoffee.android.extensions.getService
+import com.udeshcoffee.android.extensions.playSong
 import com.udeshcoffee.android.service.MusicService
 import io.reactivex.disposables.Disposable
 import org.koin.standalone.KoinComponent
@@ -18,7 +19,7 @@ class MiniPlayerPresenter(): MiniPlayerContract.Presenter, KoinComponent {
     override lateinit var view: MiniPlayerContract.View
 
     var broadcastDisposable: Disposable? = null
-    var progressDisposable: Disposable? = null
+    private var progressDisposable: Disposable? = null
 
     override var isPlaying: Boolean = false
 
@@ -89,16 +90,21 @@ class MiniPlayerPresenter(): MiniPlayerContract.Presenter, KoinComponent {
     }
 
     override fun setPlaying(){
-        isPlaying = getService()?.isPlaying() ?: false
-        if (isPlaying) {
-            setProgress()
+        getService()?.let {
+            isPlaying = it.isPlaying()
+            if (isPlaying)
+                setProgress()
+            else {
+                disposeProgress()
+                view.setProgress(it.currentPosition)
+            }
         }
         view.setPlayOrPause(!isPlaying)
     }
 
     override fun setProgress() {
         disposeProgress()
-        progressDisposable = getService()?.getProgressObservarable(100)
+        progressDisposable = getService()?.getProgressObservable()
                 ?.subscribe {
                     view.setProgress(it)
                 }

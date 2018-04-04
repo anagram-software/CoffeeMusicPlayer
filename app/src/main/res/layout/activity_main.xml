@@ -16,7 +16,7 @@
             android:gravity="bottom"
             app:umanoPanelHeight="@dimen/mini_player_height"
             app:umanoShadowHeight="4dp"
-            app:umanoParallaxOffset="10dp">
+            app:umanoParallaxOffset="8dp">
 
             <FrameLayout
                 android:id="@+id/main_container"

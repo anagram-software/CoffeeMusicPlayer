@@ -1,5 +1,6 @@
 package com.udeshcoffee.android.utils
 
+import android.content.ComponentCallbacks
 import android.content.ContentResolver
 import android.content.ContentUris
 import android.content.Context
@@ -82,13 +83,28 @@ fun loadCoolCardView(context: Context,
     }
 }
 
-fun loadAlbumArtwork(context: Context, id: Long, imageView: ImageView){
+fun loadAlbumArtwork(context: Context, id: Long, imageView: ImageView, animate: Boolean = true,
+                     callback: ((success: Boolean) -> Unit)? = null){
     val uri = ContentUris.withAppendedId(ArtworkURI, id)
     if (uri != null) {
-        Glide.with(context)
+        val glide = Glide.with(context)
                 .load(uri)
                 .apply(RequestOptions().placeholder(R.drawable.ic_album_white_24dp))
-                .transition(DrawableTransitionOptions.withCrossFade(250))
+        if (animate)
+            glide.transition(DrawableTransitionOptions.withCrossFade(250))
+        glide.listener(object : RequestListener<Drawable>{
+            override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<Drawable>?,
+                                      isFirstResource: Boolean): Boolean {
+                callback?.let { it(false) }
+                return false
+            }
+
+            override fun onResourceReady(resource: Drawable?, model: Any?, target: Target<Drawable>?,
+                                         dataSource: DataSource?, isFirstResource: Boolean): Boolean {
+                callback?.let { it(true) }
+                return false
+            }
+        })
                 .into(imageView)
     }
 }

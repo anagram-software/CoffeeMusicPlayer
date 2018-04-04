@@ -6,7 +6,9 @@ import android.content.Context
 import android.database.Cursor
 import android.net.Uri
 import android.provider.MediaStore
+import android.util.Log
 import androidx.content.contentValuesOf
+import androidx.database.getStringOrNull
 import com.annimon.stream.Collectors
 import com.annimon.stream.Stream
 import com.udeshcoffee.android.data.local.LocalDataSource
@@ -179,16 +181,17 @@ class MediaRepository constructor (
         return genre
     }
 
-    fun getGenreSongCount(genreId: Long): Observable<Int>? {
+    private fun getGenreSongCount(genreId: Long): Int? {
         val cursor = contentResolver.query(
                 MediaStore.Audio.Genres.Members.getContentUri("external", genreId),
-                arrayOf(MediaStore.Audio.Genres.Members.AUDIO_ID),
+                arrayOf(MediaStore.Audio.Media.TITLE),
                 null,
                 null,
                 null)
-        var count: Observable<Int>? = null
+        var count = 0
         if (cursor != null) {
-            count = Observable.just(cursor.count)
+            cursor.moveToFirst()
+            count = cursor.count
 
             cursor.close()
         }
@@ -200,23 +203,22 @@ class MediaRepository constructor (
                 .subscribeOn(Schedulers.io())
                 .observeOn(Schedulers.newThread())
                 .take(1)
-                .flatMapIterable{it -> it}
-                .concatMap{Observable.just(it).delay(250, TimeUnit.MILLISECONDS)}
-                // Since this is called on app launch, let's delay to allow more important tasks to complete.
                 .delaySubscription(2500, TimeUnit.MILLISECONDS)
+                .flatMapIterable{it -> it}
+//                .concatMap{Observable.just(it).delay(250, TimeUnit.MILLISECONDS)}
                 .subscribe{
-                    getGenreSongCount(it.id)
-                            ?.firstOrError()
-                            ?.subscribe{ numSongs ->
-                                if (numSongs == 0) {
-                                    try {
-                                        contentResolver.delete(MediaStore.Audio.Genres.EXTERNAL_CONTENT_URI,
-                                                MediaStore.Audio.Genres._ID + " == " + it.id, null);
-                                    } catch (e: Exception) {
-                                        //Don't care if we couldn't delete this uri.
-                                    }
-                                }
-                            }
+                    val count = getGenreSongCount(it.id)
+                    Log.d("cleanGenres", "subscribe ${it.name} $count")
+                    if (count == 0) {
+                        Log.d("cleanGenres", "delete ${it.name}")
+                        try {
+                            contentResolver.delete(MediaStore.Audio.Genres.EXTERNAL_CONTENT_URI,
+                                    MediaStore.Audio.Genres._ID + " == " + it.id, null);
+                        } catch (e: Exception) {
+                            //Don't care if we couldn't delete this uri.
+                        }
+
+                    }
                 }
     }
 
@@ -390,7 +392,7 @@ class MediaRepository constructor (
         val query = songQuery.copy(
                 selection = songQuery.selection + " AND (" + MediaStore.Audio.Media.DATA + " LIKE ? AND "
                         + MediaStore.Audio.Media.DATA + " NOT LIKE ?)",
-                args = arrayOf(path + "%", path + "%/%")
+                args = arrayOf("$path%", "$path%/%")
         )
         return briteContentResolver
                 .createQuery(query.uri, query.projection, query.selection, query.args, query.sort, false)

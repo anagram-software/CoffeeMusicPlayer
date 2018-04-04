@@ -26,6 +26,12 @@
     <android.support.v7.preference.PreferenceCategory android:title="PLAYBACK">
 
         <CheckBoxPreference
+            android:key="pref_new_player"
+            android:title="Use ExoPlayer (Experimental)"
+            android:summary="@string/pref_new_player"
+            android:defaultValue="false" />
+
+        <CheckBoxPreference
             android:key="pref_call"
             android:title="On Call"
             android:enabled="false"

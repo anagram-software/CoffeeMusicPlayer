@@ -3,8 +3,6 @@ package com.udeshcoffee.android.di
 import android.preference.PreferenceManager
 import com.udeshcoffee.android.ui.main.detail.artistdetail.ArtistDetailContract
 import com.udeshcoffee.android.ui.main.detail.genredetail.GenreDetailContract
-import com.udeshcoffee.android.ui.main.detail.albumdetail.AlbumDetailContract
-import com.udeshcoffee.android.ui.main.detail.albumdetail.AlbumDetailPresenter
 import com.udeshcoffee.android.ui.main.detail.artistdetail.ArtistDetailPresenter
 import com.udeshcoffee.android.ui.main.detail.genredetail.GenreDetailPresenter
 import com.udeshcoffee.android.ui.main.detail.playlistdetail.PlaylistDetailContract
@@ -56,8 +54,6 @@ val commonModule = applicationContext {
     factory { LyricsPresenter(get(), get()) as LyricsContract.Presenter }
 
     // Detail
-    factory { AlbumDetailPresenter(get(), get()) as AlbumDetailContract.Presenter }
-
     factory { ArtistDetailPresenter(get(), get()) as ArtistDetailContract.Presenter }
 
     factory { GenreDetailPresenter(get(), get()) as GenreDetailContract.Presenter }

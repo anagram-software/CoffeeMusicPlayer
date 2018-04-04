@@ -3,7 +3,7 @@
     android:initialLayout="@layout/widget_big"
     android:minHeight="110dp"
     android:minWidth="180dp"
-    android:previewImage="@drawable/example_appwidget_preview"
+    android:previewImage="@drawable/preview_big_widget"
     android:resizeMode="horizontal"
     android:updatePeriodMillis="86400000"
     android:configure="com.udeshcoffee.android.widget.AppWidgetConfigureActivity"/>

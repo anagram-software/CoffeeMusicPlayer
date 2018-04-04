@@ -118,6 +118,10 @@ class SettingsActivity: AppCompatActivity() {
 
         override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String) {
             when (key) {
+                PreferenceUtil.PREF_NEW_PLAYER -> {
+                    val pref = findPreference(key) as CheckBoxPreference
+                    pref.summary = resources.getString(R.string.pref_new_player) + " Restart to affect the changes."
+                }
                 PreferenceUtil.PREF_APP_START -> {
                     val pref = findPreference(key) as ListPreference
                     pref.summary = pref.entry

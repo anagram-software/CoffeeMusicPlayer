@@ -40,6 +40,8 @@ class AlbumViewHolder(val context: Context, itemView: View, val listener: OnGrid
         currentItem.loadArtwork(context, artView)
         titleView.text = currentItem.title
 
+        ViewCompat.setTransitionName(artView, currentItem.id.toString())
+
         subtitleView.text = DopeUtil.countToSongCount(currentItem.songCount)
     }
 

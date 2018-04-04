@@ -87,22 +87,22 @@ class MainActivity : MiniPlayerActivity(), NavigationView.OnNavigationItemSelect
             }
         }
 
-        try {
-            //current version
-            val packageInfo = packageManager.getPackageInfo(packageName, 0)
-            val versionCode = packageInfo.versionCode
-
-            //version where changelog has been viewed
-            val lastViewWhatsNew = sharedPreferences.getInt(PreferenceUtil.LAST_VIEWED_WHATS_NEW, 0)
-            if (lastViewWhatsNew == 0) {
-                sharedPreferences.edit { putInt(PreferenceUtil.LAST_VIEWED_WHATS_NEW, versionCode) }
-            } else if (lastViewWhatsNew < versionCode) {
-                sharedPreferences.edit { putInt(PreferenceUtil.LAST_VIEWED_WHATS_NEW, versionCode) }
-                WhatsNewDialog.create().show(supportFragmentManager, "WhatsNewDialog")
-            }
-        } catch (e: PackageManager.NameNotFoundException) {
-            Log.w(TAG,"Unable to get version code.")
-        }
+//        try {
+//            //current version
+//            val packageInfo = packageManager.getPackageInfo(packageName, 0)
+//            val versionCode = packageInfo.versionCode
+//
+//            //version where changelog has been viewed
+//            val lastViewWhatsNew = sharedPreferences.getInt(PreferenceUtil.LAST_VIEWED_WHATS_NEW, 0)
+//            if (lastViewWhatsNew == 0) {
+//                sharedPreferences.edit { putInt(PreferenceUtil.LAST_VIEWED_WHATS_NEW, versionCode) }
+//            } else if (lastViewWhatsNew < versionCode) {
+//                sharedPreferences.edit { putInt(PreferenceUtil.LAST_VIEWED_WHATS_NEW, versionCode) }
+//                WhatsNewDialog.create().show(supportFragmentManager, "WhatsNewDialog")
+//            }
+//        } catch (e: PackageManager.NameNotFoundException) {
+//            Log.w(TAG,"Unable to get version code.")
+//        }
 
         intent?.let {
             handleIntent(it)

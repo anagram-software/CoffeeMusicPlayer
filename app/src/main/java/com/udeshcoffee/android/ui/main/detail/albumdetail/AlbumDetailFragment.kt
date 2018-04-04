@@ -1,12 +1,17 @@
 package com.udeshcoffee.android.ui.main.detail.albumdetail
 
+import android.arch.lifecycle.Observer
+import android.os.Build
 import android.os.Bundle
 import android.support.design.widget.AppBarLayout
 import android.support.v4.app.Fragment
+import android.support.v4.view.ViewCompat
 import android.support.v7.app.ActionBar
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.Toolbar
+import android.transition.Fade
+import android.transition.TransitionInflater
 import android.view.*
 import android.widget.ImageView
 import android.widget.TextView
@@ -22,19 +27,17 @@ import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.recyclerview.EmptyRecyclerView
 import com.udeshcoffee.android.ui.adapters.SongAdapter
 import com.udeshcoffee.android.ui.main.MainActivity
+import com.udeshcoffee.android.ui.transitions.DetailsTransition
 import com.udeshcoffee.android.utils.SortManager
 import com.udeshcoffee.android.utils.loadAlbumArtwork
 import org.koin.android.ext.android.inject
 
-
 /**
 * Created by Udathari on 9/12/2017.
 */
-class AlbumDetailFragment: Fragment(), AlbumDetailContract.View, AppBarLayout.OnOffsetChangedListener {
+class AlbumDetailFragment: Fragment(), AppBarLayout.OnOffsetChangedListener {
 
-    val TAG = "AlbumDetailFragment"
-
-    override val presenter: AlbumDetailContract.Presenter by inject()
+    val viewModel: AlbumDetailViewModel by inject()
 
     private var mIsTheTitleVisible = false
     private var mIsTheTitleContainerVisible = true
@@ -44,21 +47,23 @@ class AlbumDetailFragment: Fragment(), AlbumDetailContract.View, AppBarLayout.On
     private lateinit var expandedTitle: TextView
     private lateinit var expandedSubtitle: TextView
 
-    var albumId: Long = -1
-
-    lateinit var songAdpt: SongAdapter
+    private lateinit var songAdpt: SongAdapter
     private lateinit var detailImage: ImageView
     var actionBar: ActionBar? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        val root = inflater.inflate(R.layout.frag_album_detail, container, false)
+        return inflater.inflate(R.layout.frag_album_detail, container, false)
+    }
 
-        albumId = arguments!!.getLong(ARGUMENT_ID)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        postponeEnterTransition()
+
         val name = arguments!!.getString(ARGUMENT_NAME)
         val artistName = arguments!!.getString(ARGUMENT_ARTIST_NAME)
 
-        // Set up player view
-        with(root) {
+        with(view) {
             val toolbar = findViewById<Toolbar>(R.id.toolbar)
             (activity as AppCompatActivity).apply {
                 setSupportActionBar(toolbar)
@@ -73,14 +78,17 @@ class AlbumDetailFragment: Fragment(), AlbumDetailContract.View, AppBarLayout.On
             expandedTitle = findViewById(R.id.expanded_title)
             expandedTitle.text = name
             expandedSubtitle = findViewById(R.id.expanded_subtitle)
-            expandedSubtitle.visibility = View.VISIBLE
+            expandedSubtitle.visibility = android.view.View.VISIBLE
             expandedSubtitle.text = "By $artistName"
             collapsedTitle = findViewById(R.id.collapsed_title)
             collapsedTitle.text = name
             collapsedTitle.fadeOut(0)
 
             detailImage = findViewById(R.id.detail_image)
-            loadAlbumArtwork(context, albumId, detailImage)
+            ViewCompat.setTransitionName(detailImage, "${arguments!!.getLong(ARGUMENT_ID)}")
+            loadAlbumArtwork(context, arguments!!.getLong(ARGUMENT_ID), detailImage, false) {
+                startPostponedEnterTransition()
+            }
 
             actionBar?.apply {
                 setDisplayHomeAsUpEnabled(true)
@@ -93,11 +101,11 @@ class AlbumDetailFragment: Fragment(), AlbumDetailContract.View, AppBarLayout.On
             toolbarTracks.setOnMenuItemClickListener {
                 when (it.itemId) {
                     R.id.action_play -> {
-                        presenter.playClick(songAdpt.songList)
+                        viewModel.playClick()
                         true
                     }
                     R.id.action_queue -> {
-                        presenter.queueClick(songAdpt.songList)
+                        viewModel.queueClick()
                         true
                     }
                     else -> false
@@ -109,28 +117,26 @@ class AlbumDetailFragment: Fragment(), AlbumDetailContract.View, AppBarLayout.On
             songView.setEmptyView(findViewById(R.id.empty_view))
             songView.hasFixedSize()
             songView.isDrawingCacheEnabled = true
-            songView.drawingCacheQuality = View.DRAWING_CACHE_QUALITY_AUTO
+            songView.drawingCacheQuality = android.view.View.DRAWING_CACHE_QUALITY_AUTO
             songView.isNestedScrollingEnabled = false
 
             // specify an adapter (see also next example)
             songAdpt = SongAdapter(SongAdapter.ITEM_TYPE_ALBUM_ITEM, true)
             songAdpt.listener = object : OnSongItemClickListener {
                 override fun onItemClick(position: Int) {
-                    presenter.itemClicked(position, songAdpt.songList)
+                    viewModel.itemClicked(position)
                 }
 
                 override fun onItemLongClick(position: Int) {
-                    presenter.itemLongClicked(songAdpt.songList[position])
+                    viewModel.itemLongClicked(position)
                 }
 
                 override fun onShuffleClick() {
-                    presenter.shuffleClicked(songAdpt.songList)
+                    viewModel.shuffleClicked()
                 }
             }
             songView.adapter = songAdpt
         }
-
-        return root
     }
 
     override fun onOffsetChanged(appBarLayout: AppBarLayout?, verticalOffset: Int) {
@@ -150,7 +156,7 @@ class AlbumDetailFragment: Fragment(), AlbumDetailContract.View, AppBarLayout.On
 
     override fun onPrepareOptionsMenu(menu: Menu?) {
         if (menu != null) {
-            when (presenter.sortOrder) {
+            when (viewModel.sortOrder) {
                 SortManager.SongSort.ALBUM_DEFAULT -> menu.findItem(R.id.action_sort_default).isChecked = true
                 SortManager.SongSort.NAME -> menu.findItem(R.id.action_sort_title).isChecked = true
                 SortManager.SongSort.TRACK_NUMBER -> menu.findItem(R.id.action_sort_track).isChecked = true
@@ -159,7 +165,7 @@ class AlbumDetailFragment: Fragment(), AlbumDetailContract.View, AppBarLayout.On
                 SortManager.SongSort.YEAR -> menu.findItem(R.id.action_sort_year).isChecked = true
                 SortManager.SongSort.ARTIST_NAME -> menu.findItem(R.id.action_sort_artist_name).isChecked = true
             }
-            presenter.let { menu.findItem(R.id.action_sort_ascending).isChecked = it.sortAscending }
+            viewModel.let { menu.findItem(R.id.action_sort_ascending).isChecked = it.sortAscending }
         }
         super.onPrepareOptionsMenu(menu)
     }
@@ -170,67 +176,65 @@ class AlbumDetailFragment: Fragment(), AlbumDetailContract.View, AppBarLayout.On
 
         if (item?.groupId == R.id.sort_group) {
             when (item.itemId) {
-                R.id.action_sort_default -> presenter.sortOrder = SortManager.SongSort.ALBUM_DEFAULT
-                R.id.action_sort_title -> presenter.sortOrder = SortManager.SongSort.NAME
-                R.id.action_sort_track -> presenter.sortOrder = SortManager.SongSort.TRACK_NUMBER
-                R.id.action_sort_duration -> presenter.sortOrder = SortManager.SongSort.DURATION
-                R.id.action_sort_year -> presenter.sortOrder = SortManager.SongSort.YEAR
-                R.id.action_sort_date -> presenter.sortOrder = SortManager.SongSort.DATE
-                R.id.action_sort_artist_name -> presenter.sortOrder = SortManager.SongSort.ARTIST_NAME
-                R.id.action_sort_ascending -> presenter.sortAscending = !item.isChecked
+                R.id.action_sort_default -> viewModel.sortOrder = SortManager.SongSort.ALBUM_DEFAULT
+                R.id.action_sort_title -> viewModel.sortOrder = SortManager.SongSort.NAME
+                R.id.action_sort_track -> viewModel.sortOrder = SortManager.SongSort.TRACK_NUMBER
+                R.id.action_sort_duration -> viewModel.sortOrder = SortManager.SongSort.DURATION
+                R.id.action_sort_year -> viewModel.sortOrder = SortManager.SongSort.YEAR
+                R.id.action_sort_date -> viewModel.sortOrder = SortManager.SongSort.DATE
+                R.id.action_sort_artist_name -> viewModel.sortOrder = SortManager.SongSort.ARTIST_NAME
+                R.id.action_sort_ascending -> viewModel.sortAscending = !item.isChecked
             }
         } else sortChanged = false
 
         when (item?.itemId) {
             android.R.id.home -> activity?.onBackPressed()
-            R.id.action_play -> presenter.playClick(songAdpt.songList)
-            R.id.action_play_next -> presenter.playNextClick(songAdpt.songList)
-            R.id.action_queue -> presenter.queueClick(songAdpt.songList)
-            R.id.action_add_to_favorites -> presenter.addToFavoritesClick(songAdpt.songList)
-            R.id.action_add_to_playlist -> presenter.addToPlaylistClick(songAdpt.songList)
+            R.id.action_play -> viewModel.playClick()
+            R.id.action_play_next -> viewModel.playNextClick()
+            R.id.action_queue -> viewModel.queueClick()
+            R.id.action_add_to_favorites -> viewModel.addToFavoritesClick()
+            R.id.action_add_to_playlist -> viewModel.addToPlaylistClick()
         }
 
         if (sortChanged) {
-            presenter.fetchData()
+            viewModel.fetchData()
             activity?.invalidateOptionsMenu()
         }
 
         return super.onOptionsItemSelected(item)
     }
 
+    override fun onActivityCreated(savedInstanceState: Bundle?) {
+        super.onActivityCreated(savedInstanceState)
+        viewModel.apply {
+            currentSongId.observe(this@AlbumDetailFragment, Observer {
+                it?.let { songAdpt.currentId = it }
+            })
+            songs.observe(this@AlbumDetailFragment, Observer {
+                it?.let { songAdpt.accept(it) }
+            })
+
+            // Events
+            showFavoriteToast.observe(this@AlbumDetailFragment, Observer {
+                Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            })
+            showAddToPlaylistDialog.observe(this@AlbumDetailFragment, Observer {
+                it?.let { openAddToPlaylistDialog(it as ArrayList<Song>) }
+            })
+            showSongLongDialog.observe(this@AlbumDetailFragment, Observer {
+                it?.let { openSongLongDialog(it) }
+            })
+        }
+    }
+
     override fun onResume() {
         super.onResume()
-        presenter.albumId = albumId
-        presenter.view = this
-        presenter.start()
+        viewModel.start(arguments!!.getLong(ARGUMENT_ID))
     }
 
     override fun onPause() {
         super.onPause()
-        presenter.stop()
-    }
-
-    override fun populateItems(items: List<Song>) {
-        songAdpt.accept(items)
-    }
-
-    override fun setCurrentSong(id: Long) {
-        songAdpt.currentId = id
-    }
-
-    override fun showSongLongDialog(song: Song) {
-        openSongLongDialog(song)
-    }
-
-    override fun showAddToPlaylistDialog(songs: ArrayList<Song>) {
-        openAddToPlaylistDialog(songs)
-    }
-
-    override fun showFavoritesToast(isFavorite: Boolean) {
-        if (isFavorite)
-            Toast.makeText(context, "Added to favorites", Toast.LENGTH_SHORT).show()
-        else
-            Toast.makeText(context, "No songs available", Toast.LENGTH_SHORT).show()
+        viewModel.stop()
     }
 
     private fun handleToolbarTitleVisibility(percentage: Float) {
@@ -269,9 +273,9 @@ class AlbumDetailFragment: Fragment(), AlbumDetailContract.View, AppBarLayout.On
     }
 
     companion object {
-        private val ARGUMENT_ID = "ARGUMENT_ID"
-        private val ARGUMENT_NAME = "ARGUMENT_NAME"
-        private val ARGUMENT_ARTIST_NAME = "ARGUMENT_ARTIST_NAME"
+        private const val ARGUMENT_ID = "ARGUMENT_ID"
+        private const val ARGUMENT_NAME = "ARGUMENT_NAME"
+        private const val ARGUMENT_ARTIST_NAME = "ARGUMENT_ARTIST_NAME"
 
         fun create(album: Album): AlbumDetailFragment {
             val fragment = AlbumDetailFragment()
@@ -282,5 +286,7 @@ class AlbumDetailFragment: Fragment(), AlbumDetailContract.View, AppBarLayout.On
             fragment.arguments = bundle
             return fragment
         }
+
+//        private const val TAG = "AlbumDetailFragment"
     }
 }

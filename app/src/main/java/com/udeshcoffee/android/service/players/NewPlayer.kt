@@ -1,35 +1,35 @@
-package com.udeshcoffee.android.service
+package com.udeshcoffee.android.service.players
 
 import android.content.ContentUris
 import android.provider.MediaStore
 import android.util.Log
 import android.widget.Toast
-import com.google.android.exoplayer2.*
-import com.google.android.exoplayer2.Player
+import com.google.android.exoplayer2.ExoPlayer
+import com.google.android.exoplayer2.ExoPlayerFactory
+import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory
-import com.google.android.exoplayer2.extractor.ExtractorsFactory
 import com.google.android.exoplayer2.source.ExtractorMediaSource
-import com.google.android.exoplayer2.source.TrackGroupArray
 import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
-import com.google.android.exoplayer2.trackselection.TrackSelectionArray
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.util.Util
 import com.udeshcoffee.android.model.Song
-import io.reactivex.Observable
-import io.reactivex.schedulers.Schedulers
+import com.udeshcoffee.android.service.MusicService
 import java.util.*
 
 
 /**
 * Created by Udesh Kumarasinghe on 8/22/2017.
+ *
+ * This is a new Player implementation using Google's ExoPlayer currently backed down because
+ * ExoPlayer doesn't support seeking for FLAC file which doesn't have seekable metadata.
 */
 
-class Player(private val musicService: MusicService): Player.DefaultEventListener() {
+class NewPlayer(musicService: MusicService): BasePlayer(musicService), NewPlayerEventListener {
 
     companion object {
-        private const val TAG = "Player1997"
+        private const val TAG = "NewPlayer1997"
     }
 
     private var mPlayer: SimpleExoPlayer
@@ -39,7 +39,6 @@ class Player(private val musicService: MusicService): Player.DefaultEventListene
     private var isPrepared = false
     private var shouldPlay = true
     private var pausedTime: Int = 0
-    private var song: Song? = null
     private var currentVolume = 1.0f
 
     init {
@@ -55,7 +54,7 @@ class Player(private val musicService: MusicService): Player.DefaultEventListene
         this.song?.let { initSong(it, true, pausedTime) }
     }
 
-    fun initSong(song: Song, shouldPlay:Boolean, startPos: Int){
+    override fun initSong(song: Song, shouldPlay:Boolean, startPos: Int){
         Log.d(TAG, "preparing" + song.title)
         this.song = song
         this.pausedTime = startPos
@@ -78,10 +77,7 @@ class Player(private val musicService: MusicService): Player.DefaultEventListene
         }
     }
 
-    override fun onPlayerError(error: ExoPlaybackException?) {}
-
-    override fun onTimelineChanged(timeline: Timeline?, manifest: Any?, reason: Int) {}
-
+    @Suppress("DEPRECATION")
     override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
         Log.d(TAG, "onPlayerStateChanged $playWhenReady $playbackState")
         when (playbackState) {
@@ -107,7 +103,12 @@ class Player(private val musicService: MusicService): Player.DefaultEventListene
         }
     }
 
-    fun start() {
+    override fun onSeekProcessed() {
+        if (!isPlaying())
+            musicService.notifyManger.notifyChange(MusicService.InternalIntents.PLAYBACK_STATE_CHANGED, true)
+    }
+
+    override fun start() {
         try {
             if (isPrepared) {
                 mPlayer.volume = 0.0f
@@ -126,7 +127,7 @@ class Player(private val musicService: MusicService): Player.DefaultEventListene
         }
     }
 
-    fun stop() {
+    override fun stop() {
         try {
             isPrepared = false
             if (isPlaying())
@@ -142,13 +143,13 @@ class Player(private val musicService: MusicService): Player.DefaultEventListene
     /**
      * You CANNOT use this player anymore after calling release()
      */
-    fun release() {
+    override fun release() {
         stop()
         mPlayer.removeListener(this)
         mPlayer.release()
     }
 
-    fun pause() {
+    override fun pause() {
         try {
             if (isPlaying()) {
                 pausedTime = getPosition().toInt()
@@ -170,7 +171,7 @@ class Player(private val musicService: MusicService): Player.DefaultEventListene
 
     }
 
-    fun getPosition(): Long {
+    override fun getPosition(): Long {
         return try {
             if (isPlaying())
                 mPlayer.currentPosition
@@ -182,7 +183,7 @@ class Player(private val musicService: MusicService): Player.DefaultEventListene
 
     }
 
-    fun seekTo(whereto: Long): Long {
+    override fun seekTo(whereto: Long): Long {
         try {
             mPlayer.seekTo(whereto)
             if (!isPlaying())
@@ -194,7 +195,7 @@ class Player(private val musicService: MusicService): Player.DefaultEventListene
         return whereto
     }
 
-    fun isPlaying(): Boolean {
+    override fun isPlaying(): Boolean {
         return try {
             mPlayer.playWhenReady
         } catch (ignored: IllegalStateException) {
@@ -202,7 +203,7 @@ class Player(private val musicService: MusicService): Player.DefaultEventListene
         }
     }
 
-    fun getAudioSessionId(): Int {
+    override fun getAudioSessionId(): Int {
         var sessionId = 0
         try {
             sessionId = mPlayer.audioSessionId
@@ -215,46 +216,27 @@ class Player(private val musicService: MusicService): Player.DefaultEventListene
     }
 
     // Fade In / Out
-
-    private fun fadeIn() {
-        val fadeDuration = 500 //The duration of the fade
-        //The amount of time between volume changes. The smaller this is, the smoother the fade
-        val fadeInterval = 50
-        val maxVolume = 1 //The volume will increase from 0 to 1
+    override fun fadeIn() {
         currentVolume = 0f
-        val numberOfSteps = fadeDuration / fadeInterval //Calculate the number of fade steps
-        //Calculate by how much the volume changes each step
-        val deltaVolume = maxVolume / numberOfSteps.toFloat()
 
-        //Create a new Timer and Timer task to run the fading outside the main UI thread
         val timer = Timer(true)
         val timerTask = object : TimerTask() {
             override fun run() {
-                //Cancel and Purge the Timer if the desired volume has been reached
                 if (currentVolume >= 1f) {
                     timer.cancel()
                     timer.purge()
                     mPlayer.volume = 1f
                 } else {
                     mPlayer.volume = currentVolume
-                    currentVolume += deltaVolume
+                    currentVolume += FADE_IN_DELTA
                 }
             }
         }
 
-        timer.schedule(timerTask, fadeInterval.toLong(), fadeInterval.toLong())
+        timer.schedule(timerTask, FADE_INTERVAL.toLong(), FADE_INTERVAL.toLong())
     }
 
-    private fun fadeOut(callback: (() -> Unit)? = null) {
-        val fadeDuration = 250 //The duration of the fade
-        //The amount of time between volume changes. The smaller this is, the smoother the fade
-        val fadeInterval = 50
-        val maxVolume = 1 //The volume will increase from 0 to 1
-        val numberOfSteps = fadeDuration / fadeInterval //Calculate the number of fade steps
-        //Calculate by how much the volume changes each step
-        val deltaVolume = maxVolume / numberOfSteps.toFloat()
-
-        //Create a new Timer and Timer task to run the fading outside the main UI thread
+    override fun fadeOut(callback: (() -> Unit)?) {
         val timer = Timer(true)
         val timerTask = object : TimerTask() {
             override fun run() {
@@ -266,24 +248,11 @@ class Player(private val musicService: MusicService): Player.DefaultEventListene
                     callback?.let { it() }
                 } else {
                     mPlayer.volume = currentVolume
-                    currentVolume -= deltaVolume
+                    currentVolume -= FADE_OUT_DELTA
                 }
             }
         }
 
-        timer.schedule(timerTask, fadeInterval.toLong(), fadeInterval.toLong())
-    }
-
-    private fun updatePlayCount() {
-        Log.d(TAG, "updatePlayCount")
-        song?.let {
-            Observable.just(it)
-                    .observeOn(Schedulers.io())
-                    .take(1)
-                    .subscribe {
-                        Log.d(TAG, "updatePlayCount: Subscribed")
-                        musicService.dataRepository.increasePlayCount(it)
-                    }
-        }
+        timer.schedule(timerTask, FADE_INTERVAL.toLong(), FADE_INTERVAL.toLong())
     }
 }
