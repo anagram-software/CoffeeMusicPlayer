@@ -4,7 +4,6 @@ import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.support.v7.widget.GridLayoutManager
 import android.view.*
-import android.widget.Toast
 import com.bumptech.glide.Glide
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.data.MediaRepository
@@ -16,7 +15,7 @@ import com.udeshcoffee.android.interfaces.OnGridItemClickListener
 import com.udeshcoffee.android.model.Artist
 import com.udeshcoffee.android.recyclerview.EmptyRecyclerView
 import com.udeshcoffee.android.recyclerview.GridItemDecor
-import com.udeshcoffee.android.ui.adapters.ArtistAdapter
+import com.udeshcoffee.android.ui.common.adapters.ArtistAdapter
 import com.udeshcoffee.android.utils.SortManager
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable

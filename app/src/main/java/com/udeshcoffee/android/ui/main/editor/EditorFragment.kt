@@ -2,9 +2,9 @@ package com.udeshcoffee.android.ui.main.editor
 
 import android.app.Activity.RESULT_OK
 import android.app.ProgressDialog
+import android.arch.lifecycle.Observer
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.support.v4.app.Fragment
@@ -19,8 +19,8 @@ import com.udeshcoffee.android.R
 import com.udeshcoffee.android.extensions.loadArtwork
 import com.udeshcoffee.android.extensions.setRoundColor
 import com.udeshcoffee.android.model.Song
-import com.udeshcoffee.android.ui.dialogs.PermissionToSdCardDialog
-import com.udeshcoffee.android.ui.dialogs.SearchSongDialog
+import com.udeshcoffee.android.ui.common.dialogs.PermissionToSdCardDialog
+import com.udeshcoffee.android.ui.common.dialogs.SearchSongDialog
 import com.udeshcoffee.android.ui.player.lyrics.LyricsFragment
 import com.udeshcoffee.android.utils.isNetworkAvailable
 import com.udeshcoffee.android.utils.loadAlbumArtworkFromUri
@@ -28,15 +28,12 @@ import org.koin.android.ext.android.inject
 
 
 /**
-* Created by Udathari on 9/28/2017.
-*/
-class EditorFragment : Fragment(), EditorContract.View {
+ * Created by Udathari on 9/28/2017.
+ */
+class EditorFragment : Fragment() {
 
-    val TAG = "EditorFragment"
-
-    private val SELECT_IMAGE = 17775
-
-    override val presenter: EditorContract.Presenter by inject()
+    private val viewModel: EditorViewModel by inject()
+    @Suppress("DEPRECATION")
     lateinit var dialog: ProgressDialog
 
     var actionBar: ActionBar? = null
@@ -64,9 +61,10 @@ class EditorFragment : Fragment(), EditorContract.View {
 
         val song = arguments!!.getParcelable<Song>(ARGUMENT_SONG)
 
+        @Suppress("DEPRECATION")
         dialog = ProgressDialog(context)
         dialog.setOnDismissListener{
-            presenter.disposeCollectionDisposable()
+            viewModel.disposeCollectionDisposable()
         }
         view.apply {
             val toolbar = findViewById<Toolbar>(R.id.toolbar)
@@ -87,12 +85,12 @@ class EditorFragment : Fragment(), EditorContract.View {
 
             selectFromGallery = findViewById(R.id.action_select_image)
             selectFromGallery.setOnClickListener{
-                presenter.actionSelectImage()
+                showSelectImageUI()
             }
 
             reset = findViewById(R.id.action_reset)
             reset.setOnClickListener{
-                presenter.actionReset()
+                viewModel.actionReset()
             }
 
             title = findViewById(R.id.editsongtitle)
@@ -105,9 +103,7 @@ class EditorFragment : Fragment(), EditorContract.View {
             path = findViewById(R.id.editsongpath)
         }
 
-        presenter.song = song
-        presenter.view = this
-        presenter.start()
+        viewModel.start(song)
     }
 
     override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
@@ -122,10 +118,10 @@ class EditorFragment : Fragment(), EditorContract.View {
                 hideKeyboard()
             }
             R.id.action_collect_metadata -> {
-                presenter.actionSearch()
+                showSearchDialog()
             }
             R.id.action_save -> {
-                presenter.save(
+                viewModel.save(
                         title.text.toString(),
                         album.text.toString(),
                         artist.text.toString(),
@@ -142,7 +138,7 @@ class EditorFragment : Fragment(), EditorContract.View {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        presenter.stop()
+        viewModel.stop()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -156,100 +152,102 @@ class EditorFragment : Fragment(), EditorContract.View {
                                         Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
                     }
                 } else {
-                    finish()
+                    activity?.onBackPressed()
                 }
             }
-            SELECT_IMAGE -> {
-                Log.d(TAG, "onResult")
+            Companion.SELECT_IMAGE -> {
+                Log.d(Companion.TAG, "onResult")
                 if (resultCode == RESULT_OK) {
-                    Log.d(TAG, "onResult Ok")
-                    data?.data?.let { presenter.imageSelected(it) }
+                    Log.d(Companion.TAG, "onResult Ok")
+                    data?.data?.let { viewModel.imageSelected(it) }
                 }
             }
         }
     }
 
+    override fun onActivityCreated(savedInstanceState: Bundle?) {
+        super.onActivityCreated(savedInstanceState)
+        viewModel.apply {
+            reloadImage.observe(this@EditorFragment, Observer {
+                when(it) {
+                    EditorViewModel.ImageType.SONG -> {
+                        context?.let { song.value?.loadArtwork(it, albumArt) }
+                    }
+                    EditorViewModel.ImageType.URI -> {
+                        context?.let { loadAlbumArtworkFromUri(it, albumArtUri, albumArt) }
+                    }
+                    EditorViewModel.ImageType.URL -> {
+                        context?.let { loadAlbumArtworkFromUri(it, albumArtUrl, albumArt) }
+                    }
+                }
+            })
+            song.observe(this@EditorFragment, Observer {
+                title.setText(it?.title)
+                album.setText(it?.albumName)
+                artist.setText(it?.artistName)
+                year.setText(it?.year.toString())
+                trackno.setText(it?.track.toString())
+                discno.setText(it?.discNumber.toString())
+            })
+            genre.observe(this@EditorFragment, Observer {
+                this@EditorFragment.genre.setText(it)
+            })
+            path.observe(this@EditorFragment, Observer {
+                this@EditorFragment.path.setText(it)
+            })
+            resetEnabled.observe(this@EditorFragment, Observer {
+                it?.let { reset.isEnabled = it }
+            })
+            finish.observe(this@EditorFragment, Observer {
+                activity?.onBackPressed()
+            })
+            showToast.observe(this@EditorFragment, Observer {
+                Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            })
+            progressDialog.observe(this@EditorFragment, Observer {
+                if (it == null) {
+                    if (dialog.isShowing) {
+                        dialog.dismiss()
+                    }
+                } else {
+                    dialog.setMessage(it)
+                    dialog.show()
+                }
+            })
+            showPermissionDialog.observe(this@EditorFragment, Observer {
+                val takePermissionDialog = PermissionToSdCardDialog()
+                takePermissionDialog.setTargetFragment(this@EditorFragment, 0)
+                takePermissionDialog.show(fragmentManager, "PermissionToSdCardDialog")
+            })
+        }
+    }
+
     fun onSearchRequest(id: Long, title: String, artist: String) {
-        Log.d(TAG, "onSearchRequest id:$id, title:$title, artist:$artist")
+        Log.d(Companion.TAG, "onSearchRequest id:$id, title:$title, artist:$artist")
         if (isNetworkAvailable(context!!, false))
-            presenter.search(title, artist)
+            viewModel.search(title, artist)
         else
             Toast.makeText(context, "No Connection", Toast.LENGTH_SHORT).show()
     }
 
-    override fun setAlbumArt(song: Song) {
-        context?.let { song.loadArtwork(it, albumArt) }
-    }
-
-    override fun setAlbumArt(uri: Uri) {
-        context?.let { loadAlbumArtworkFromUri(it, uri, albumArt) }
-    }
-
-    override fun setAlbumArt(url: String) {
-        context?.let { loadAlbumArtworkFromUri(it, url, albumArt) }
-    }
-
-    override fun setData(title: String?, album: String?, artist: String?, genre: String?, year: String?, trackNo: Int?, discNo: Int?) {
-        title?.let { this.title.setText(it) }
-        album?.let {this.album.setText(it)}
-        artist?.let {this.artist.setText(it)}
-        genre?.let {this.genre.setText(it)}
-        year?.let {this.year.setText(it)}
-        trackNo?.let {this.trackno.setText(it.toString())}
-        discNo?.let {this.discno.setText(it.toString())}
-    }
-
-    override fun setPath(path: String) {
-        this.path.setText(path)
-    }
-
-    override fun enableDisableReset(isEnable: Boolean) {
-        reset.isEnabled = isEnable
-    }
-
-    override fun finish() {
-        activity?.onBackPressed()
-    }
-
-    override fun showSearchDialog(id:Long ,title: String, artist: String) {
+    private fun showSearchDialog() {
         if (!isNetworkAvailable(context!!, false)) {
             Toast.makeText(context, "No Connection", Toast.LENGTH_SHORT).show()
             return
         }
 
-        SearchSongDialog.create(id, title, artist).also {
-            it.setTargetFragment(this, LyricsFragment.SEARCH_LYRICS)
-            it.show(fragmentManager, "SearchLyricDialog")
-        }
-    }
-
-    override fun showToast(message: String) {
-        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-    }
-
-    override fun showHideProgressDialog(isShow: Boolean, message: String?) {
-        message?.let {
-            dialog.setMessage(it)
-        }
-        if (isShow) {
-            dialog.show()
-        } else {
-            if (dialog.isShowing) {
-                dialog.dismiss()
+        viewModel.song.value?.let {
+            SearchSongDialog.create(it.id, it.title, it.artistName).also {
+                it.setTargetFragment(this, LyricsFragment.SEARCH_LYRICS)
+                it.show(fragmentManager, "SearchLyricDialog")
             }
         }
     }
 
-    override fun showPermissionDialog() {
-        val takePermissionDialog = PermissionToSdCardDialog()
-        takePermissionDialog.setTargetFragment(this, 0)
-        takePermissionDialog.show(fragmentManager, "PermissionToSdCardDialog")
-    }
-
-    override fun showSelectImageUI() {
+    private fun showSelectImageUI() {
         val photoPickerIntent = Intent(Intent.ACTION_PICK)
         photoPickerIntent.type = "image/*"
-        startActivityForResult(photoPickerIntent, SELECT_IMAGE)
+        startActivityForResult(photoPickerIntent, Companion.SELECT_IMAGE)
     }
 
     private fun hideKeyboard() {
@@ -258,7 +256,7 @@ class EditorFragment : Fragment(), EditorContract.View {
     }
 
     companion object {
-        private val ARGUMENT_SONG = "ARGUMENT_SONG"
+        private const val ARGUMENT_SONG = "ARGUMENT_SONG"
 
         fun create(song: Song): EditorFragment {
             val fragment = EditorFragment()
@@ -267,6 +265,9 @@ class EditorFragment : Fragment(), EditorContract.View {
             fragment.arguments = bundle
             return fragment
         }
+
+        private const val TAG = "EditorFragment"
+        private const val SELECT_IMAGE = 17775
     }
 
 }

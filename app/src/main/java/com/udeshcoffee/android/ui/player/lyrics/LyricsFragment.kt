@@ -18,9 +18,9 @@ import com.udeshcoffee.android.R
 import com.udeshcoffee.android.data.remote.genius.Result
 import com.udeshcoffee.android.interfaces.OnItemClickListener
 import com.udeshcoffee.android.ui.MiniPlayerActivity
-import com.udeshcoffee.android.ui.adapters.LyricAdapter
-import com.udeshcoffee.android.ui.dialogs.CustomLyricDialog
-import com.udeshcoffee.android.ui.dialogs.SearchSongDialog
+import com.udeshcoffee.android.ui.common.adapters.LyricAdapter
+import com.udeshcoffee.android.ui.common.dialogs.CustomLyricDialog
+import com.udeshcoffee.android.ui.common.dialogs.SearchSongDialog
 import com.udeshcoffee.android.utils.isNetworkAvailable
 import org.koin.android.ext.android.inject
 

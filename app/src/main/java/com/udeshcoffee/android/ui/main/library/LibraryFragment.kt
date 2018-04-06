@@ -13,7 +13,7 @@ import android.widget.TextView
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.extensions.openDrawer
 import com.udeshcoffee.android.extensions.setRoundColor
-import com.udeshcoffee.android.ui.adapters.FragAdapter
+import com.udeshcoffee.android.ui.common.adapters.FragAdapter
 import com.udeshcoffee.android.ui.main.library.nested.AlbumFragment
 import com.udeshcoffee.android.ui.main.library.nested.ArtistFragment
 import com.udeshcoffee.android.ui.main.library.nested.GenreFragment

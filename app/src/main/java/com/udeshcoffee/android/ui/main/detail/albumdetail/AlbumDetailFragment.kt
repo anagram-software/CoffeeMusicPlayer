@@ -1,7 +1,6 @@
 package com.udeshcoffee.android.ui.main.detail.albumdetail
 
 import android.arch.lifecycle.Observer
-import android.os.Build
 import android.os.Bundle
 import android.support.design.widget.AppBarLayout
 import android.support.v4.app.Fragment
@@ -10,8 +9,6 @@ import android.support.v7.app.ActionBar
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.Toolbar
-import android.transition.Fade
-import android.transition.TransitionInflater
 import android.view.*
 import android.widget.ImageView
 import android.widget.TextView
@@ -25,9 +22,8 @@ import com.udeshcoffee.android.interfaces.OnSongItemClickListener
 import com.udeshcoffee.android.model.Album
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.recyclerview.EmptyRecyclerView
-import com.udeshcoffee.android.ui.adapters.SongAdapter
+import com.udeshcoffee.android.ui.common.adapters.SongAdapter
 import com.udeshcoffee.android.ui.main.MainActivity
-import com.udeshcoffee.android.ui.transitions.DetailsTransition
 import com.udeshcoffee.android.utils.SortManager
 import com.udeshcoffee.android.utils.loadAlbumArtwork
 import org.koin.android.ext.android.inject
@@ -124,11 +120,11 @@ class AlbumDetailFragment: Fragment(), AppBarLayout.OnOffsetChangedListener {
             songAdpt = SongAdapter(SongAdapter.ITEM_TYPE_ALBUM_ITEM, true)
             songAdpt.listener = object : OnSongItemClickListener {
                 override fun onItemClick(position: Int) {
-                    viewModel.itemClicked(position)
+                    viewModel.songItemClicked(position)
                 }
 
                 override fun onItemLongClick(position: Int) {
-                    viewModel.itemLongClicked(position)
+                    viewModel.songItemLongClicked(position)
                 }
 
                 override fun onShuffleClick() {
@@ -156,7 +152,7 @@ class AlbumDetailFragment: Fragment(), AppBarLayout.OnOffsetChangedListener {
 
     override fun onPrepareOptionsMenu(menu: Menu?) {
         if (menu != null) {
-            when (viewModel.sortOrder) {
+            when (viewModel.songSortOrder) {
                 SortManager.SongSort.ALBUM_DEFAULT -> menu.findItem(R.id.action_sort_default).isChecked = true
                 SortManager.SongSort.NAME -> menu.findItem(R.id.action_sort_title).isChecked = true
                 SortManager.SongSort.TRACK_NUMBER -> menu.findItem(R.id.action_sort_track).isChecked = true
@@ -165,7 +161,7 @@ class AlbumDetailFragment: Fragment(), AppBarLayout.OnOffsetChangedListener {
                 SortManager.SongSort.YEAR -> menu.findItem(R.id.action_sort_year).isChecked = true
                 SortManager.SongSort.ARTIST_NAME -> menu.findItem(R.id.action_sort_artist_name).isChecked = true
             }
-            viewModel.let { menu.findItem(R.id.action_sort_ascending).isChecked = it.sortAscending }
+            viewModel.let { menu.findItem(R.id.action_sort_ascending).isChecked = it.songSortAscending }
         }
         super.onPrepareOptionsMenu(menu)
     }
@@ -176,14 +172,14 @@ class AlbumDetailFragment: Fragment(), AppBarLayout.OnOffsetChangedListener {
 
         if (item?.groupId == R.id.sort_group) {
             when (item.itemId) {
-                R.id.action_sort_default -> viewModel.sortOrder = SortManager.SongSort.ALBUM_DEFAULT
-                R.id.action_sort_title -> viewModel.sortOrder = SortManager.SongSort.NAME
-                R.id.action_sort_track -> viewModel.sortOrder = SortManager.SongSort.TRACK_NUMBER
-                R.id.action_sort_duration -> viewModel.sortOrder = SortManager.SongSort.DURATION
-                R.id.action_sort_year -> viewModel.sortOrder = SortManager.SongSort.YEAR
-                R.id.action_sort_date -> viewModel.sortOrder = SortManager.SongSort.DATE
-                R.id.action_sort_artist_name -> viewModel.sortOrder = SortManager.SongSort.ARTIST_NAME
-                R.id.action_sort_ascending -> viewModel.sortAscending = !item.isChecked
+                R.id.action_sort_default -> viewModel.songSortOrder = SortManager.SongSort.ALBUM_DEFAULT
+                R.id.action_sort_title -> viewModel.songSortOrder = SortManager.SongSort.NAME
+                R.id.action_sort_track -> viewModel.songSortOrder = SortManager.SongSort.TRACK_NUMBER
+                R.id.action_sort_duration -> viewModel.songSortOrder = SortManager.SongSort.DURATION
+                R.id.action_sort_year -> viewModel.songSortOrder = SortManager.SongSort.YEAR
+                R.id.action_sort_date -> viewModel.songSortOrder = SortManager.SongSort.DATE
+                R.id.action_sort_artist_name -> viewModel.songSortOrder = SortManager.SongSort.ARTIST_NAME
+                R.id.action_sort_ascending -> viewModel.songSortAscending = !item.isChecked
             }
         } else sortChanged = false
 
@@ -197,7 +193,7 @@ class AlbumDetailFragment: Fragment(), AppBarLayout.OnOffsetChangedListener {
         }
 
         if (sortChanged) {
-            viewModel.fetchData()
+            viewModel.fetchSongs()
             activity?.invalidateOptionsMenu()
         }
 
@@ -229,7 +225,8 @@ class AlbumDetailFragment: Fragment(), AppBarLayout.OnOffsetChangedListener {
 
     override fun onResume() {
         super.onResume()
-        viewModel.start(arguments!!.getLong(ARGUMENT_ID))
+        viewModel.albumId = arguments!!.getLong(ARGUMENT_ID)
+        viewModel.start()
     }
 
     override fun onPause() {

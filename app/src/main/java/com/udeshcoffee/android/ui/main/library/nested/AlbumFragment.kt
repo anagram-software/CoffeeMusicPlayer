@@ -1,21 +1,20 @@
 package com.udeshcoffee.android.ui.main.library.nested
 
-import android.os.Build
 import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.support.v7.widget.GridLayoutManager
 import android.view.*
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.data.MediaRepository
-import com.udeshcoffee.android.extensions.*
+import com.udeshcoffee.android.extensions.navigateToDetail
+import com.udeshcoffee.android.extensions.openCollectionLongDialog
+import com.udeshcoffee.android.extensions.playSong
+import com.udeshcoffee.android.extensions.showPlayingToast
 import com.udeshcoffee.android.interfaces.OnGridItemClickListener
 import com.udeshcoffee.android.model.Album
 import com.udeshcoffee.android.recyclerview.EmptyRecyclerView
 import com.udeshcoffee.android.recyclerview.GridItemDecor
-import com.udeshcoffee.android.ui.adapters.AlbumAdapter
-import com.udeshcoffee.android.ui.main.MainActivity
-import com.udeshcoffee.android.ui.main.detail.albumdetail.AlbumDetailFragment
-import com.udeshcoffee.android.ui.transitions.DetailsTransition
+import com.udeshcoffee.android.ui.common.adapters.AlbumAdapter
 import com.udeshcoffee.android.utils.SortManager
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
@@ -63,7 +62,7 @@ class AlbumFragment : Fragment(){
 
         albumAdpt?.listener = object : OnGridItemClickListener {
             override fun onItemClick(position: Int, shareElement: View) {
-                albumAdpt?.getItem(position)?.let { showDetailUI(it, shareElement) }
+                albumAdpt?.getItem(position)?.let { showDetailUI(it) }
             }
 
             override fun onItemLongClick(position: Int) {
@@ -165,18 +164,8 @@ class AlbumFragment : Fragment(){
         }
     }
 
-    fun showDetailUI(detail: Album, sharedElement: View) {
-        activity?.supportFragmentManager?.let {
-            val fragment = AlbumDetailFragment.create(detail)
-            val transaction = it.beginTransaction()
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                transaction.addSharedElement(sharedElement, sharedElement?.transitionName)
-            }
-            transaction.replace(R.id.main_container, fragment, MainActivity.Fragments.ALBUM_DETAIL)
-                    .addToBackStack(MainActivity.Fragments.ALBUM_DETAIL)
-                    .setReorderingAllowed(true)
-                    .commit()
-        }
+    fun showDetailUI(detail: Album) {
+        activity?.supportFragmentManager?.navigateToDetail(detail)
     }
 
     companion object {

@@ -5,13 +5,12 @@ import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentManager
 import android.transition.Fade
-import android.view.View
 import android.widget.Toast
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.model.*
-import com.udeshcoffee.android.ui.dialogs.AddToPlaylistDialog
-import com.udeshcoffee.android.ui.dialogs.CollectionLongDialog
-import com.udeshcoffee.android.ui.dialogs.SongLongDialog
+import com.udeshcoffee.android.ui.common.dialogs.AddToPlaylistDialog
+import com.udeshcoffee.android.ui.common.dialogs.CollectionLongDialog
+import com.udeshcoffee.android.ui.common.dialogs.SongLongDialog
 import com.udeshcoffee.android.ui.main.MainActivity
 import com.udeshcoffee.android.ui.main.detail.albumdetail.AlbumDetailFragment
 import com.udeshcoffee.android.ui.main.detail.artistdetail.ArtistDetailFragment
@@ -31,48 +30,40 @@ import com.udeshcoffee.android.ui.main.search.SearchFragment
 
 private const val main_container = R.id.main_container
 
-fun FragmentManager.navigateToDetail(detail: Any, sharedElement: View? = null) {
+fun FragmentManager.navigateToDetail(detail: Any) {
 
     val transaction = this.beginTransaction()
 
     val fragment: Fragment
 
-    val id = when (detail) {
+    when (detail) {
         is Album -> {
             fragment = AlbumDetailFragment.create(detail)
             transaction.replace(main_container, fragment, MainActivity.Fragments.ALBUM_DETAIL)
                     .addToBackStack(MainActivity.Fragments.ALBUM_DETAIL)
-            detail.id
         }
         is Artist -> {
             fragment = ArtistDetailFragment.create(detail)
             transaction.replace(main_container, fragment, MainActivity.Fragments.ARTIST_DETAIL)
                     .addToBackStack(MainActivity.Fragments.ARTIST_DETAIL)
-            detail.id
         }
         is Genre -> {
             fragment = GenreDetailFragment.create(detail)
             transaction.replace(main_container, fragment, MainActivity.Fragments.GENRE_DETAIL)
                     .addToBackStack(MainActivity.Fragments.GENRE_DETAIL)
-            detail.id
         }
         is Playlist -> {
             fragment = PlaylistDetailFragment.create(detail)
             transaction.replace(main_container, fragment, MainActivity.Fragments.PLAYLIST_DETAIL)
                     .addToBackStack(MainActivity.Fragments.PLAYLIST_DETAIL)
-            detail.id
         }
         else -> throw IllegalArgumentException("Illegal detail")
     }
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-//        sharedElement?.let { transaction.addSharedElement(sharedElement, "$id") }
-//        fragment.sharedElementEnterTransition = DetailsTransition()
         fragment.enterTransition = Fade()
         fragment.exitTransition = Fade()
-//        fragment.sharedElementReturnTransition = DetailsTransition()
     }
-    transaction.setReorderingAllowed(true)
     transaction.commit()
 }
 

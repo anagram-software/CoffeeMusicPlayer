@@ -1,5 +1,6 @@
 package com.udeshcoffee.android.ui.main.search
 
+import android.arch.lifecycle.Observer
 import android.content.Context
 import android.os.Bundle
 import android.support.v4.app.Fragment
@@ -24,14 +25,11 @@ import com.udeshcoffee.android.extensions.openSongLongDialog
 import com.udeshcoffee.android.extensions.showPlayingToast
 import com.udeshcoffee.android.interfaces.OnGridItemClickListener
 import com.udeshcoffee.android.interfaces.OnSongItemClickListener
-import com.udeshcoffee.android.model.Album
-import com.udeshcoffee.android.model.Artist
-import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.recyclerview.EmptyRecyclerView
 import com.udeshcoffee.android.recyclerview.MiniGridItemDecor
-import com.udeshcoffee.android.ui.adapters.AlbumAdapter
-import com.udeshcoffee.android.ui.adapters.ArtistAdapter
-import com.udeshcoffee.android.ui.adapters.SongAdapter
+import com.udeshcoffee.android.ui.common.adapters.AlbumAdapter
+import com.udeshcoffee.android.ui.common.adapters.ArtistAdapter
+import com.udeshcoffee.android.ui.common.adapters.SongAdapter
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import org.koin.android.ext.android.inject
@@ -40,10 +38,9 @@ import java.util.concurrent.TimeUnit
 /**
 * Created by Udathari on 9/12/2017.
 */
-class SearchFragment : Fragment(), SearchContract.View {
-    val TAG = "SearchFragment"
+class SearchFragment : Fragment() {
 
-    override val presenter: SearchContract.Presenter by inject()
+    private val viewModel: SearchViewModelDetail by inject()
 
     private lateinit var songAdpt: SongAdapter
     private lateinit var albumAdpt: AlbumAdapter
@@ -52,7 +49,6 @@ class SearchFragment : Fragment(), SearchContract.View {
     private lateinit var songs: TextView
     private lateinit var albums: TextView
     private lateinit var artists: TextView
-
 
     private lateinit var imm: InputMethodManager
 
@@ -97,29 +93,28 @@ class SearchFragment : Fragment(), SearchContract.View {
                     .skip(1)
                     .debounce(200, TimeUnit.MILLISECONDS)
                     .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe({ searchViewQueryTextEvent -> presenter.search(searchViewQueryTextEvent.queryText().toString()) }))
+                    .subscribe({ searchViewQueryTextEvent -> viewModel.search(searchViewQueryTextEvent.queryText().toString()) }))
 
             // Album View
             val albumView = findViewById<RecyclerView>(R.id.album_recycler_view)
             albumView.layoutManager = LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
             albumView.addItemDecoration(MiniGridItemDecor(resources.getDimensionPixelSize(R.dimen.activity_horizontal_margin), resources.getDimensionPixelSize(R.dimen.mini_grid_spacing)))
-            // specify an adapter (see also next example)
             albumAdpt = AlbumAdapter(AlbumAdapter.ITEM_TYPE_MINI)
             albumAdpt.listener = object : OnGridItemClickListener {
                 override fun onItemClick(position: Int, shareElement: View) {
 
-                    presenter.albumItemClicked(position)
+                    viewModel.albumItemClicked(position)
                 }
 
                 override fun onItemOptionClick(position: Int) {
                     albumAdpt.getItem(position).let {
                         showPlayingToast(it)
-                        presenter.albumItemOptionClicked(it)
+                        viewModel.albumItemOptionClicked(position)
                     }
                 }
 
                 override fun onItemLongClick(position: Int) {
-                    presenter.albumItemLongClicked(albumAdpt.getItem(position))
+                    viewModel.albumItemLongClicked(position)
                 }
             }
             albumView.adapter = albumAdpt
@@ -132,18 +127,18 @@ class SearchFragment : Fragment(), SearchContract.View {
             artistAdpt = ArtistAdapter(ArtistAdapter.ITEM_TYPE_MINI, Glide.with(context), false)
             artistAdpt.listener = object : OnGridItemClickListener {
                 override fun onItemClick(position: Int, shareElement: View) {
-                    presenter.artistItemClicked(position)
+                    viewModel.artistItemClicked(position)
                 }
 
                 override fun onItemOptionClick(position: Int) {
                     artistAdpt.getItem(position).let {
                         showPlayingToast(it)
-                        presenter.artistItemOptionClicked(it)
+                        viewModel.artistItemOptionClicked(position)
                     }
                 }
 
                 override fun onItemLongClick(position: Int) {
-                    presenter.artistItemLongClicked(artistAdpt.getItem(position))
+                    viewModel.artistItemLongClicked(position)
                 }
             }
             artistView.adapter = artistAdpt
@@ -161,13 +156,11 @@ class SearchFragment : Fragment(), SearchContract.View {
             songAdpt = SongAdapter(SongAdapter.ITEM_TYPE_NORMAL, false)
             songAdpt.listener = object : OnSongItemClickListener {
                 override fun onItemClick(position: Int) {
-                    val tempList = ArrayList<Song>()
-                    tempList.add(songAdpt.getItem(position))
-                    presenter.itemClicked(0, tempList)
+                    viewModel.songItemClicked(position)
                 }
 
                 override fun onItemLongClick(position: Int) {
-                    presenter.itemLongClicked(songAdpt.songList[position])
+                    viewModel.songItemLongClicked(position)
                 }
 
                 override fun onShuffleClick() {
@@ -188,71 +181,70 @@ class SearchFragment : Fragment(), SearchContract.View {
         return super.onOptionsItemSelected(item)
     }
 
+    override fun onActivityCreated(savedInstanceState: Bundle?) {
+        super.onActivityCreated(savedInstanceState)
+        viewModel.apply {
+            currentSongId.observe(this@SearchFragment, Observer {
+                it?.let { songAdpt.currentId = it }
+            })
+            songs.observe(this@SearchFragment, Observer {
+                it?.let {
+                    songAdpt.accept(it)
+                    if (it.isEmpty())
+                        this@SearchFragment.songs.visibility = View.GONE
+                    else
+                        this@SearchFragment.songs.visibility = View.VISIBLE
+                }
+            })
+            albums.observe(this@SearchFragment, Observer {
+                it?.let {
+                    albumAdpt.accept(it)
+                    if (it.isEmpty())
+                        this@SearchFragment.albums.visibility = View.GONE
+                    else
+                        this@SearchFragment.albums.visibility = View.VISIBLE
+                }
+            })
+            artists.observe(this@SearchFragment, Observer {
+                it?.let {
+                    artistAdpt.accept(it)
+                    if (it.isEmpty())
+                        this@SearchFragment.artists.visibility = View.GONE
+                    else
+                        this@SearchFragment.artists.visibility = View.VISIBLE
+                }
+            })
+
+            // Events
+            showSongLongDialog.observe(this@SearchFragment, Observer {
+                it?.let { openSongLongDialog(it) }
+            })
+            showCollectionLongDialog.observe(this@SearchFragment, Observer {
+                it?.let { openCollectionLongDialog(it.first, it.second) }
+            })
+            showAlbum.observe(this@SearchFragment, Observer {
+                it?.let { fragmentManager?.navigateToDetail(it) }
+            })
+            showArtist.observe(this@SearchFragment, Observer {
+                it?.let { fragmentManager?.navigateToDetail(it) }
+            })
+        }
+    }
+
     override fun onResume() {
         super.onResume()
-        presenter.view = this
-        presenter.start()
+        viewModel.start()
     }
 
     override fun onPause() {
         super.onPause()
-        presenter.stop()
+        viewModel.stop()
         imm.hideSoftInputFromWindow(view?.windowToken, 0)
     }
 
     override fun onDestroy() {
         super.onDestroy()
         searchDisposable.dispose()
-    }
-
-    override fun populateItems(items: List<Song>) {
-        songAdpt.accept(items)
-        if (items.isEmpty())
-            songs.visibility = View.GONE
-        else
-            songs.visibility = View.VISIBLE
-    }
-
-    override fun populateAlbumItems(items: List<Album>) {
-        albumAdpt.accept(items)
-        if (items.isEmpty())
-            albums.visibility = View.GONE
-        else
-            albums.visibility = View.VISIBLE
-    }
-
-    override fun populateArtistItems(items: List<Artist>) {
-        artistAdpt.accept(items)
-        if (items.isEmpty())
-            artists.visibility = View.GONE
-        else
-            artists.visibility = View.VISIBLE
-    }
-
-    override fun setCurrentSong(id: Long) {
-        songAdpt.currentId = id
-    }
-
-    override fun showAlbum(position: Int) {
-        val detail = albumAdpt.getItem(position)
-        fragmentManager?.navigateToDetail(detail)
-    }
-
-    override fun showArtist(position: Int) {
-        val detail = artistAdpt.getItem(position)
-        fragmentManager?.navigateToDetail(detail)
-    }
-
-    override fun showAddToPlaylistDialog(songs: ArrayList<Song>) {}
-
-    override fun showFavoritesToast(isFavorite: Boolean) {}
-
-    override fun showSongLongDialog(song: Song) {
-        openSongLongDialog(song)
-    }
-
-    override fun showCollectionLongDialog(title: String, songs: List<Song>) {
-        openCollectionLongDialog(title, songs)
     }
 
     companion object {

@@ -17,9 +17,9 @@ import com.udeshcoffee.android.interfaces.OnItemClickListener
 import com.udeshcoffee.android.model.Playlist
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.recyclerview.EmptyRecyclerView
-import com.udeshcoffee.android.ui.adapters.PlaylistAdapter
-import com.udeshcoffee.android.ui.dialogs.CollectionLongDialog
-import com.udeshcoffee.android.ui.dialogs.NewPlaylistDialog
+import com.udeshcoffee.android.ui.common.adapters.PlaylistAdapter
+import com.udeshcoffee.android.ui.common.dialogs.CollectionLongDialog
+import com.udeshcoffee.android.ui.common.dialogs.NewPlaylistDialog
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers

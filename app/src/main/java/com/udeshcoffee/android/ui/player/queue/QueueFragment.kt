@@ -1,5 +1,6 @@
 package com.udeshcoffee.android.ui.player.queue
 
+import android.arch.lifecycle.Observer
 import android.os.Build
 import android.os.Bundle
 import android.support.v4.app.Fragment
@@ -7,33 +8,30 @@ import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.support.v7.widget.Toolbar
 import android.support.v7.widget.helper.ItemTouchHelper
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.RelativeLayout
 import com.udeshcoffee.android.R
+import com.udeshcoffee.android.extensions.openAddToPlaylistDialog
+import com.udeshcoffee.android.extensions.openSongLongDialog
 import com.udeshcoffee.android.interfaces.OnDragableItemListener
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.recyclerview.ItemTouchHelperCallback
 import com.udeshcoffee.android.ui.MiniPlayerActivity
-import com.udeshcoffee.android.ui.adapters.DragableAdapter
-import com.udeshcoffee.android.ui.dialogs.AddToPlaylistDialog
+import com.udeshcoffee.android.ui.common.adapters.DragableAdapter
 import com.udeshcoffee.android.utils.DopeUtil
 import org.koin.android.ext.android.inject
-import java.util.*
 
 /**
 * Created by Udathari on 9/16/2017.
 */
-class QueueFragment: Fragment(), QueueContract.View {
+class QueueFragment: Fragment() {
 
-    val TAG = "QueueFragment"
+    private lateinit var adapter: DragableAdapter
+    private lateinit var recyclerView: RecyclerView
 
-    var adapter: DragableAdapter? = null
-    lateinit var recyclerView: RecyclerView
-
-    override val presenter: QueueContract.Presenter by inject()
+    private val viewModel: QueueViewModel by inject()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         postponeEnterTransition()
@@ -57,38 +55,37 @@ class QueueFragment: Fragment(), QueueContract.View {
                 setOnMenuItemClickListener {
                     when(it.itemId) {
                         R.id.action_add_to_playlist -> {
-                            presenter.addToPlaylist()
+                            viewModel.addToPlaylist()
                         }
                         R.id.action_close -> {
-                            presenter.closeQueue()
+                            viewModel.closeQueue()
                         }
                         R.id.action_clear_queue -> {
-                            presenter.clearQueue()
+                            viewModel.clearQueue()
                         }
                     }
                     return@setOnMenuItemClickListener false
                 }
             }
 
-            recyclerView = findViewById<RecyclerView>(R.id.queue_recyclerview)
-            // specify an adapter (see also next example)
+            recyclerView = findViewById(R.id.queue_recyclerview)
             adapter = DragableAdapter(true)
 
             // Touch Handler
             val itemHelper = ItemTouchHelper(ItemTouchHelperCallback(
-                    { fromPosition, toPosition -> adapter!!.onItemMove(fromPosition, toPosition) },
+                    { fromPosition, toPosition -> adapter.onItemMove(fromPosition, toPosition) },
                     { fromPosition, toPosition ->
                         if (fromPosition != toPosition) {
-                            presenter.itemMoved(fromPosition, toPosition)
+                            viewModel.itemMoved(fromPosition, toPosition)
                         }
                     },
-                    { presenter.itemRemoved(it) })
+                    { viewModel.itemRemoved(it) })
             )
             itemHelper.attachToRecyclerView(recyclerView)
 
-            adapter?.listener = object : OnDragableItemListener{
+            adapter.listener = object : OnDragableItemListener{
                 override fun onItemClick(position: Int) {
-                    presenter.itemClicked(position)
+                    viewModel.queueItemClicked(position)
                 }
 
                 override fun onItemLongClick(position: Int) {}
@@ -104,56 +101,47 @@ class QueueFragment: Fragment(), QueueContract.View {
             recyclerView.isDrawingCacheEnabled = true
             recyclerView.drawingCacheQuality = View.DRAWING_CACHE_QUALITY_AUTO
             recyclerView.adapter = adapter
-
         }
 
         return root
     }
 
+    override fun onActivityCreated(savedInstanceState: Bundle?) {
+        super.onActivityCreated(savedInstanceState)
+        viewModel.apply {
+            currentSongId.observe(this@QueueFragment, Observer {
+                it?.let { adapter.currentId = it }
+            })
+            songs.observe(this@QueueFragment, Observer {
+                it?.let { adapter.accept(it) }
+            })
+
+            // Events
+            showSongLongDialog.observe(this@QueueFragment, Observer {
+                it?.let { openSongLongDialog(it) }
+            })
+            showPlayerUI.observe(this@QueueFragment, Observer {
+                (activity as MiniPlayerActivity).showPlayer()
+            })
+            scrollTo.observe(this@QueueFragment, Observer {
+                it?.let { it1 -> recyclerView.scrollToPosition(it1) }
+            })
+            hideNowPlay.observe(this@QueueFragment, Observer {
+                (activity as MiniPlayerActivity).hideNowPlay()
+            })
+            showAddToPlaylist.observe(this@QueueFragment, Observer {
+                it?.let { openAddToPlaylistDialog(it as ArrayList<Song>) }
+            })
+        }
+    }
+
     override fun onStart() {
         super.onStart()
-        presenter.view = this
-        presenter.start()
+        viewModel.start()
     }
 
     override fun onStop() {
         super.onStop()
-        presenter.stop()
+        viewModel.stop()
     }
-
-    override fun showQueue(songs: List<Song>) {
-        Log.d(TAG, "showQueue: ${songs.size}")
-        adapter?.accept(songs)
-    }
-
-    override fun showPlayerUI() {
-        (activity as MiniPlayerActivity).showPlayer()
-    }
-
-    override fun scrollTo(position: Int) {
-        recyclerView.scrollToPosition(position)
-    }
-
-    override fun setCurrentSong(position: Int, refreshAll: Boolean) {
-        adapter?.currentSong = position
-        if (refreshAll)
-            adapter?.notifyDataSetChanged()
-        else {
-            adapter?.notifyItemChanged(position)
-        }
-    }
-
-    override fun hideOnClearQueue() {
-        (activity as MiniPlayerActivity).hideNowPlay()
-    }
-
-    override fun showAddToPlaylistUI(songs: List<Song>) {
-        val addToPlaylistDialog = AddToPlaylistDialog()
-        val bundle = Bundle()
-        bundle.putParcelableArrayList(AddToPlaylistDialog.ARGUMENT_SONGS, songs as ArrayList<Song>)
-        addToPlaylistDialog.arguments = bundle
-        addToPlaylistDialog.show(fragmentManager, "AddToPlaylistDialog")
-    }
-
-
 }

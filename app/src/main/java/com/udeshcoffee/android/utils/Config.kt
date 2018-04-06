@@ -1,6 +1,6 @@
 package com.udeshcoffee.android.utils
 
-import androidx.net.toUri
+import androidx.core.net.toUri
 
 /**
 * Created by Udathari on 8/25/2017.

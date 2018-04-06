@@ -45,7 +45,7 @@ open class MiniPlayerActivity : BaseActivity() {
     // State
     private var controlBackSongId: Long = -1
 
-    lateinit var broadcastDisposable: Disposable
+    private lateinit var broadcastDisposable: Disposable
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,12 +58,12 @@ open class MiniPlayerActivity : BaseActivity() {
         slidingPanel.addPanelSlideListener(object : SlidingUpPanelLayout.PanelSlideListener {
             override fun onPanelSlide(panel: View?, slideOffset: Float) {
                 if (slideOffset <= 0.2f) {
-                    miniPlayerFragment.presenter.setAlpha(1f)
+                    miniPlayerFragment.setAlpha(1f)
                 } else if (slideOffset > 0.2f && slideOffset <= 0.6f) {
-                    miniPlayerFragment.presenter.setVisibility(View.VISIBLE)
-                    miniPlayerFragment.presenter.setAlpha(1 - (slideOffset - 0.2f) / 0.4f)
+                    miniPlayerFragment.setVisibility(View.VISIBLE)
+                    miniPlayerFragment.setAlpha(1 - (slideOffset - 0.2f) / 0.4f)
                 } else if (slideOffset > 0.6f) {
-                    miniPlayerFragment.presenter.setVisibility(View.INVISIBLE)
+                    miniPlayerFragment.setVisibility(View.INVISIBLE)
                 }
             }
 
@@ -75,8 +75,8 @@ open class MiniPlayerActivity : BaseActivity() {
                 }
 
                 if (newState == SlidingUpPanelLayout.PanelState.COLLAPSED) {
-                    miniPlayerFragment.presenter.setVisibility(View.VISIBLE)
-                    miniPlayerFragment.presenter.setAlpha(1f)
+                    miniPlayerFragment.setVisibility(View.VISIBLE)
+                    miniPlayerFragment.setAlpha(1f)
                 }
             }
 

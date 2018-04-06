@@ -1,5 +1,6 @@
 package com.udeshcoffee.android.ui.main.detail.genredetail
 
+import android.arch.lifecycle.Observer
 import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.support.v7.app.ActionBar
@@ -13,27 +14,24 @@ import com.udeshcoffee.android.R
 import com.udeshcoffee.android.extensions.*
 import com.udeshcoffee.android.interfaces.OnGridItemClickListener
 import com.udeshcoffee.android.interfaces.OnSongItemClickListener
-import com.udeshcoffee.android.model.Album
 import com.udeshcoffee.android.model.Genre
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.recyclerview.EmptyRecyclerView
 import com.udeshcoffee.android.recyclerview.MiniGridItemDecor
-import com.udeshcoffee.android.ui.adapters.AlbumAdapter
-import com.udeshcoffee.android.ui.adapters.SongAdapter
+import com.udeshcoffee.android.ui.common.adapters.AlbumAdapter
+import com.udeshcoffee.android.ui.common.adapters.SongAdapter
 import com.udeshcoffee.android.utils.SortManager
 import org.koin.android.ext.android.inject
 
 /**
 * Created by Udathari on 9/12/2017.
 */
-class GenreDetailFragment: Fragment(), GenreDetailContract.View {
+class GenreDetailFragment: Fragment() {
 
-    override val presenter: GenreDetailContract.Presenter by inject()
+    private val viewModel: GenreDetailViewModel by inject()
 
-    var genreId: Long = -1
-
-    lateinit var songAdpt: SongAdapter
-    lateinit var albumAdpt: AlbumAdapter
+    private lateinit var songAdpt: SongAdapter
+    private lateinit var albumAdpt: AlbumAdapter
 
     private lateinit var toolbarSongs: Toolbar
     private lateinit var toolbarAlbums: Toolbar
@@ -43,7 +41,6 @@ class GenreDetailFragment: Fragment(), GenreDetailContract.View {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val root = inflater.inflate(R.layout.frag_genre_detail, container, false)
 
-        genreId = arguments!!.getLong(ARGUMENT_ID)
         val name = arguments!!.getString(ARGUMENT_NAME)
 
         with(root) {
@@ -66,11 +63,11 @@ class GenreDetailFragment: Fragment(), GenreDetailContract.View {
             toolbarSongs.setOnMenuItemClickListener {
                 when (it.itemId) {
                     R.id.action_play -> {
-                        presenter.playClick(songAdpt.songList)
+                        viewModel.playClick()
                         true
                     }
                     R.id.action_queue -> {
-                        presenter.queueClick(songAdpt.songList)
+                        viewModel.queueClick()
                         true
                     }
                     else -> false
@@ -90,15 +87,15 @@ class GenreDetailFragment: Fragment(), GenreDetailContract.View {
             songAdpt = SongAdapter(SongAdapter.ITEM_TYPE_NORMAL, true)
             songAdpt.listener = object : OnSongItemClickListener {
                 override fun onItemClick(position: Int) {
-                    presenter.itemClicked(position, songAdpt.songList)
+                    viewModel.songItemClicked(position)
                 }
 
                 override fun onItemLongClick(position: Int) {
-                    presenter.itemLongClicked(songAdpt.songList[position])
+                    viewModel.songItemLongClicked(position)
                 }
 
                 override fun onShuffleClick() {
-                    presenter.shuffleClicked(songAdpt.songList)
+                    viewModel.shuffleClicked()
                 }
             }
             songView.adapter = songAdpt
@@ -113,18 +110,18 @@ class GenreDetailFragment: Fragment(), GenreDetailContract.View {
             albumAdpt = AlbumAdapter(AlbumAdapter.ITEM_TYPE_MINI)
             albumAdpt.listener = object : OnGridItemClickListener {
                 override fun onItemClick(position: Int, shareElement: View) {
-                    presenter.albumItemClicked(position)
+                    viewModel.albumItemClicked(position)
                 }
 
                 override fun onItemOptionClick(position: Int) {
                     albumAdpt.getItem(position).let {
                         showPlayingToast(it)
-                        presenter.albumItemOptionClicked(it)
+                        viewModel.albumItemOptionClicked(position)
                     }
                 }
 
                 override fun onItemLongClick(position: Int) {
-                    presenter.albumItemLongClicked(albumAdpt.getItem(position))
+                    viewModel.albumItemLongClicked(position)
                 }
             }
             albumView.adapter = albumAdpt
@@ -140,7 +137,7 @@ class GenreDetailFragment: Fragment(), GenreDetailContract.View {
 
     override fun onPrepareOptionsMenu(menu: Menu?) {
         if (menu != null) {
-            when (presenter.sortOrder) {
+            when (viewModel.songSortOrder) {
                 SortManager.SongSort.DEFAULT -> menu.findItem(R.id.action_sort_default).isChecked = true
                 SortManager.SongSort.NAME -> menu.findItem(R.id.action_sort_title).isChecked = true
                 SortManager.SongSort.TRACK_NUMBER -> menu.findItem(R.id.action_sort_track).isChecked = true
@@ -149,12 +146,12 @@ class GenreDetailFragment: Fragment(), GenreDetailContract.View {
                 SortManager.SongSort.YEAR -> menu.findItem(R.id.action_sort_year).isChecked = true
                 SortManager.SongSort.ALBUM_NAME -> menu.findItem(R.id.action_sort_album_name).isChecked = true
             }
-            when (presenter.albumSortOrder) {
+            when (viewModel.albumSortOrder) {
                 SortManager.AlbumSort.DEFAULT -> menu.findItem(R.id.action_sort_album_default).isChecked = true
                 SortManager.AlbumSort.NAME -> menu.findItem(R.id.action_sort_album_title).isChecked = true
                 SortManager.AlbumSort.YEAR -> menu.findItem(R.id.action_sort_album_year).isChecked = true
             }
-            presenter.let { menu.findItem(R.id.action_sort_ascending).isChecked = it.sortAscending
+            viewModel.let { menu.findItem(R.id.action_sort_ascending).isChecked = it.songSortAscending
                 menu.findItem(R.id.action_sort_album_ascending).isChecked = it.albumSortAscending }
         }
         super.onPrepareOptionsMenu(menu)
@@ -166,105 +163,105 @@ class GenreDetailFragment: Fragment(), GenreDetailContract.View {
 
         if (item?.groupId == R.id.sort_album) {
             when (item.itemId) {
-                R.id.action_sort_album_default -> presenter.albumSortOrder = SortManager.AlbumSort.DEFAULT
-                R.id.action_sort_album_title -> presenter.albumSortOrder = SortManager.AlbumSort.NAME
-                R.id.action_sort_album_year -> presenter.albumSortOrder = SortManager.AlbumSort.YEAR
-                R.id.action_sort_album_ascending -> presenter.albumSortAscending = !item.isChecked
+                R.id.action_sort_album_default -> viewModel.albumSortOrder = SortManager.AlbumSort.DEFAULT
+                R.id.action_sort_album_title -> viewModel.albumSortOrder = SortManager.AlbumSort.NAME
+                R.id.action_sort_album_year -> viewModel.albumSortOrder = SortManager.AlbumSort.YEAR
+                R.id.action_sort_album_ascending -> viewModel.albumSortAscending = !item.isChecked
             }
         } else albumSortChanged = false
 
         if (item?.groupId == R.id.sort_song) {
             when (item.itemId) {
-                R.id.action_sort_default -> presenter.sortOrder = SortManager.SongSort.DEFAULT
-                R.id.action_sort_title -> presenter.sortOrder = SortManager.SongSort.NAME
-                R.id.action_sort_track -> presenter.sortOrder = SortManager.SongSort.TRACK_NUMBER
-                R.id.action_sort_duration -> presenter.sortOrder = SortManager.SongSort.DURATION
-                R.id.action_sort_year -> presenter.sortOrder = SortManager.SongSort.YEAR
-                R.id.action_sort_date -> presenter.sortOrder = SortManager.SongSort.DATE
-                R.id.action_sort_album_name -> presenter.sortOrder = SortManager.SongSort.ALBUM_NAME
-                R.id.action_sort_ascending -> presenter.sortAscending = !item.isChecked
+                R.id.action_sort_default -> viewModel.songSortOrder = SortManager.SongSort.DEFAULT
+                R.id.action_sort_title -> viewModel.songSortOrder = SortManager.SongSort.NAME
+                R.id.action_sort_track -> viewModel.songSortOrder = SortManager.SongSort.TRACK_NUMBER
+                R.id.action_sort_duration -> viewModel.songSortOrder = SortManager.SongSort.DURATION
+                R.id.action_sort_year -> viewModel.songSortOrder = SortManager.SongSort.YEAR
+                R.id.action_sort_date -> viewModel.songSortOrder = SortManager.SongSort.DATE
+                R.id.action_sort_album_name -> viewModel.songSortOrder = SortManager.SongSort.ALBUM_NAME
+                R.id.action_sort_ascending -> viewModel.songSortAscending = !item.isChecked
             }
         } else sortChanged = false
 
         when (item?.itemId) {
             android.R.id.home -> activity?.onBackPressed()
-            R.id.action_play -> presenter.playClick(songAdpt.songList)
-            R.id.action_play_next -> presenter.playNextClick(songAdpt.songList)
-            R.id.action_queue -> presenter.queueClick(songAdpt.songList)
-            R.id.action_add_to_favorites -> presenter.addToFavoritesClick(songAdpt.songList)
-            R.id.action_add_to_playlist -> presenter.addToPlaylistClick(songAdpt.songList)
+            R.id.action_play -> viewModel.playClick()
+            R.id.action_play_next -> viewModel.playNextClick()
+            R.id.action_queue -> viewModel.queueClick()
+            R.id.action_add_to_favorites -> viewModel.addToFavoritesClick()
+            R.id.action_add_to_playlist -> viewModel.addToPlaylistClick()
         }
 
         if (albumSortChanged) {
-            presenter.fetchAlbums()
+            viewModel.fetchAlbums()
             activity?.invalidateOptionsMenu()
         }
 
         if (sortChanged) {
-            presenter.fetchSongs()
+            viewModel.fetchSongs()
             activity?.invalidateOptionsMenu()
         }
 
         return super.onOptionsItemSelected(item)
     }
 
+    override fun onActivityCreated(savedInstanceState: Bundle?) {
+        super.onActivityCreated(savedInstanceState)
+        viewModel.apply {
+            currentSongId.observe(this@GenreDetailFragment, Observer {
+                it?.let { songAdpt.currentId = it }
+            })
+            songs.observe(this@GenreDetailFragment, Observer {
+                it?.let {
+                    songAdpt.accept(it)
+                    if (it.isEmpty()) {
+                        toolbarSongs.visibility = View.GONE
+                    }
+                }
+            })
+            albums.observe(this@GenreDetailFragment, Observer {
+                it?.let {
+                    albumAdpt.accept(it)
+                    if (it.isEmpty()) {
+                        toolbarAlbums.visibility = View.GONE
+                    }
+                }
+            })
+
+            // Events
+            showFavoriteToast.observe(this@GenreDetailFragment, Observer {
+                Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            })
+            showAddToPlaylistDialog.observe(this@GenreDetailFragment, Observer {
+                it?.let { openAddToPlaylistDialog(it as ArrayList<Song>) }
+            })
+            showSongLongDialog.observe(this@GenreDetailFragment, Observer {
+                it?.let { openSongLongDialog(it) }
+            })
+            showCollectionLongDialog.observe(this@GenreDetailFragment, Observer {
+                it?.let { openCollectionLongDialog(it.first, it.second) }
+            })
+            showAlbum.observe(this@GenreDetailFragment, Observer {
+                it?.let { fragmentManager?.navigateToDetail(it) }
+            })
+        }
+    }
+
+
     override fun onResume() {
         super.onResume()
-        presenter.genreId = genreId
-        presenter.view = this
-        presenter.start()
+        viewModel.genreId = arguments!!.getLong(ARGUMENT_ID)
+        viewModel.start()
     }
 
     override fun onPause() {
         super.onPause()
-        presenter.stop()
-    }
-
-    override fun populateItems(items: List<Song>) {
-        songAdpt.accept(items)
-        if (items.isEmpty()) {
-            toolbarSongs.visibility = View.GONE
-        }
-    }
-
-    override fun populateAlbumItems(items: List<Album>) {
-        albumAdpt.accept(items)
-        if (items.isEmpty()) {
-            toolbarAlbums.visibility = View.GONE
-        }
-    }
-
-    override fun setCurrentSong(id: Long) {
-        songAdpt.currentId = id
-    }
-
-    override fun showAlbum(position: Int) {
-        val detail = albumAdpt.getItem(position)
-        fragmentManager?.navigateToDetail(detail)
-    }
-
-    override fun showSongLongDialog(song: Song) {
-        openSongLongDialog(song)
-    }
-
-    override fun showAddToPlaylistDialog(songs: ArrayList<Song>) {
-        openAddToPlaylistDialog(songs)
-    }
-
-    override fun showFavoritesToast(isFavorite: Boolean) {
-        if (isFavorite)
-            Toast.makeText(context, "Added to favorites", Toast.LENGTH_SHORT).show()
-        else
-            Toast.makeText(context, "No songs available", Toast.LENGTH_SHORT).show()
-    }
-
-    override fun showCollectionLongDialog(title: String, songs: List<Song>) {
-       openCollectionLongDialog(title, songs)
+        viewModel.stop()
     }
 
     companion object {
-        private val ARGUMENT_ID = "ARGUMENT_ID"
-        private val ARGUMENT_NAME = "ARGUMENT_NAME"
+        private const val ARGUMENT_ID = "ARGUMENT_ID"
+        private const val ARGUMENT_NAME = "ARGUMENT_NAME"
 
         fun create(genre: Genre): GenreDetailFragment {
             val fragment = GenreDetailFragment()

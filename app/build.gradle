@@ -95,7 +95,7 @@ dependencies {
     implementation 'com.google.android.exoplayer:exoplayer-core:2.7.2'
 
     // KTX
-    implementation 'androidx.core:core-ktx:0.2'
+    implementation 'androidx.core:core-ktx:0.3'
 
     // Koin
     implementation 'org.koin:koin-android-architecture:0.9.1'

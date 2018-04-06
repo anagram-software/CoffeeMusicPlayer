@@ -4,23 +4,24 @@ import android.database.Cursor
 import android.os.Parcelable
 import android.provider.MediaStore
 import com.udeshcoffee.android.utils.compareString
+import kotlinx.android.parcel.IgnoredOnParcel
 import kotlinx.android.parcel.Parcelize
 
 /**
 * Created by Udathari on 8/22/2017.
 */
 @Parcelize
-class Song(val id:Long, val title:String,
+data class Song(val id:Long, val title:String,
            val albumId:Long, val albumName:String,
            val artistId:Long, val artistName:String,
            val duration:Long, val year:Int,
            val dateAdded:Int, val dateModified: Long,
            var track:Int): Parcelable {
 
-    @Transient var discNumber : Int = 0
-    @Transient var playlistSongId: Long = 0
-    @Transient var playcount: Int = 0
-    @Transient var lastplayed: Int = 0
+    @IgnoredOnParcel var discNumber : Int = 0
+    @IgnoredOnParcel var playlistSongId: Long = 0
+    @IgnoredOnParcel var playcount: Int = 0
+    @IgnoredOnParcel var lastplayed: Int = 0
 
     init {
         if (track >= 1000){

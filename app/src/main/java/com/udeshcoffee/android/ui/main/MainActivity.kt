@@ -2,7 +2,6 @@ package com.udeshcoffee.android.ui.main
 
 import android.content.ComponentName
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.IBinder
@@ -13,11 +12,9 @@ import android.support.v4.widget.DrawerLayout
 import android.util.Log
 import android.view.Gravity
 import android.view.MenuItem
-import androidx.content.edit
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.extensions.*
 import com.udeshcoffee.android.ui.MiniPlayerActivity
-import com.udeshcoffee.android.ui.dialogs.WhatsNewDialog
 import com.udeshcoffee.android.ui.main.library.LibraryFragment
 import com.udeshcoffee.android.ui.settings.SettingsActivity
 import com.udeshcoffee.android.utils.PreferenceUtil

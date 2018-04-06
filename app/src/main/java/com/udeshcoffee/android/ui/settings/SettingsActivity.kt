@@ -21,7 +21,7 @@ import android.widget.TextView
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.service.CollectionService
 import com.udeshcoffee.android.extensions.setRoundColor
-import com.udeshcoffee.android.ui.dialogs.WhatsNewDialog
+import com.udeshcoffee.android.ui.common.dialogs.WhatsNewDialog
 import com.udeshcoffee.android.utils.PreferenceUtil
 
 /**

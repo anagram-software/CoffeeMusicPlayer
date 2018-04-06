@@ -1,5 +1,6 @@
 package com.udeshcoffee.android.ui.main.library.nested.folder
 
+import android.arch.lifecycle.Observer
 import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.support.v7.widget.LinearLayoutManager
@@ -9,30 +10,24 @@ import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
 import com.udeshcoffee.android.R
-import com.udeshcoffee.android.extensions.openAddToPlaylistDialog
+import com.udeshcoffee.android.extensions.openCollectionLongDialog
 import com.udeshcoffee.android.extensions.openSongLongDialog
 import com.udeshcoffee.android.interfaces.OnItemClickListener
-import com.udeshcoffee.android.model.Folder
-import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.recyclerview.EmptyRecyclerView
-import com.udeshcoffee.android.ui.adapters.FolderAdapter
-import com.udeshcoffee.android.ui.dialogs.CollectionLongDialog
+import com.udeshcoffee.android.ui.common.adapters.FolderAdapter
 import com.udeshcoffee.android.utils.SortManager
-import io.reactivex.Observable
 import org.koin.android.ext.android.inject
 
 /**
 * Created by Udathari on 8/27/2017.
 */
 
-class FolderFragment : Fragment(), FolderContract.View {
+class FolderFragment : Fragment() {
 
-    val TAG = "FolderFragment"
+    private val viewModel: FolderViewModel by inject()
 
-    override val presenter: FolderContract.Presenter by inject()
-
-    internal var adapter: FolderAdapter? = null
-    lateinit var path: TextView
+    private lateinit var adapter: FolderAdapter
+    private lateinit var path: TextView
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
             inflater.inflate(R.layout.frag_folder, container, false)
@@ -58,27 +53,25 @@ class FolderFragment : Fragment(), FolderContract.View {
             itemView.drawingCacheQuality = View.DRAWING_CACHE_QUALITY_AUTO
             itemView.isNestedScrollingEnabled = false
 
-            adapter?.songClickListener = object : OnItemClickListener {
+            adapter.songClickListener = object : OnItemClickListener {
                 override fun onItemClick(position: Int) {
-                    // Change position to match songsets position
-                    val pos = position - adapter?.folderSet?.size!!
-                    adapter?.let { presenter.itemClicked(pos, it.songSet) }
+                    val pos = position - adapter.folderSet.size
+                    viewModel.songItemClicked(pos)
                 }
 
                 override fun onItemLongClick(position: Int) {
-                    // Change position to match songsets position
-                    val pos = position - adapter?.folderSet?.size!!
-                    adapter?.let { presenter.itemLongClicked(it.songSet[pos]) }
+                    val pos = position - adapter.folderSet.size
+                    viewModel.songItemLongClicked(pos)
                 }
             }
 
-            adapter?.folderClickListener = object : OnItemClickListener {
+            adapter.folderClickListener = object : OnItemClickListener {
                 override fun onItemClick(position: Int) {
-                    adapter?.let { presenter.folderItemClicked(it.folderSet[position], layoutManager.findLastVisibleItemPosition()) }
+                    viewModel.folderItemClicked(position, layoutManager.findLastVisibleItemPosition())
                 }
 
                 override fun onItemLongClick(position: Int) {
-                    adapter?.let { presenter.folderItemLongClicked(it.folderSet[position]) }
+                    viewModel.folderItemLongClicked(position)
                 }
             }
 
@@ -86,21 +79,18 @@ class FolderFragment : Fragment(), FolderContract.View {
 
             // Actions
             val actionUp = findViewById<ImageButton>(R.id.folder_up)
-            actionUp.setOnClickListener { presenter.upClicked() }
+            actionUp.setOnClickListener { viewModel.upClicked() }
 
             val actionPlay = findViewById<Button>(R.id.folder_play)
-            actionPlay.setOnClickListener { adapter?.songSet?.let { it1 -> presenter.playClick(it1) } }
+            actionPlay.setOnClickListener { viewModel.playClick() }
 
             val actionQueue = findViewById<Button>(R.id.folder_queue)
-            actionQueue.setOnClickListener { adapter?.songSet?.let { it1 -> presenter.queueClick(it1) } }
+            actionQueue.setOnClickListener { viewModel.queueClick() }
         }
-
-        presenter.view = this
-        presenter.start()
+        viewModel.start()
     }
 
     // Sorting
-
     override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
         inflater?.inflate(R.menu.folder_menu, menu)
         super.onCreateOptionsMenu(menu, inflater)
@@ -108,7 +98,7 @@ class FolderFragment : Fragment(), FolderContract.View {
 
     override fun onPrepareOptionsMenu(menu: Menu?) {
         if (menu != null) {
-            when (presenter.sortOrder) {
+            when (viewModel.songSortOrder) {
                 SortManager.SongSort.DEFAULT -> menu.findItem(R.id.action_sort_default).isChecked = true
                 SortManager.SongSort.NAME -> menu.findItem(R.id.action_sort_title).isChecked = true
                 SortManager.SongSort.TRACK_NUMBER -> menu.findItem(R.id.action_sort_track).isChecked = true
@@ -118,13 +108,13 @@ class FolderFragment : Fragment(), FolderContract.View {
                 SortManager.SongSort.ALBUM_NAME -> menu.findItem(R.id.action_sort_album_name).isChecked = true
                 SortManager.SongSort.ARTIST_NAME -> menu.findItem(R.id.action_sort_artist_name).isChecked = true
             }
-            when (presenter.folderSortOrder) {
+            when (viewModel.folderSortOrder) {
                 SortManager.FolderSort.DEFAULT -> menu.findItem(R.id.action_sort_folder_default).isChecked = true
                 SortManager.FolderSort.NAME -> menu.findItem(R.id.action_sort_folder_title).isChecked = true
                 SortManager.FolderSort.SONG_COUNT -> menu.findItem(R.id.action_sort_folder_song_count).isChecked = true
             }
-            menu.findItem(R.id.action_sort_ascending).isChecked = presenter.sortAscending
-            menu.findItem(R.id.action_sort_folder_ascending).isChecked = presenter.folderSortAscending
+            menu.findItem(R.id.action_sort_ascending).isChecked = viewModel.songSortAscending
+            menu.findItem(R.id.action_sort_folder_ascending).isChecked = viewModel.folderSortAscending
         }
         super.onPrepareOptionsMenu(menu)
     }
@@ -135,92 +125,76 @@ class FolderFragment : Fragment(), FolderContract.View {
 
         if (item?.groupId == R.id.sort_folder) {
             when (item.itemId) {
-                R.id.action_sort_folder_default -> presenter.folderSortOrder = SortManager.AlbumSort.DEFAULT
-                R.id.action_sort_folder_title-> presenter.folderSortOrder = SortManager.AlbumSort.NAME
-                R.id.action_sort_folder_song_count -> presenter.folderSortOrder = SortManager.AlbumSort.YEAR
-                R.id.action_sort_folder_ascending -> presenter.folderSortAscending = !item.isChecked
+                R.id.action_sort_folder_default -> viewModel.folderSortOrder = SortManager.AlbumSort.DEFAULT
+                R.id.action_sort_folder_title-> viewModel.folderSortOrder = SortManager.AlbumSort.NAME
+                R.id.action_sort_folder_song_count -> viewModel.folderSortOrder = SortManager.AlbumSort.YEAR
+                R.id.action_sort_folder_ascending -> viewModel.folderSortAscending = !item.isChecked
             }
         } else folderSortChanged = false
 
         when (item?.itemId) {
-            R.id.action_sort_default -> presenter.sortOrder = SortManager.SongSort.DEFAULT
-            R.id.action_sort_title -> presenter.sortOrder = SortManager.SongSort.NAME
-            R.id.action_sort_track -> presenter.sortOrder = SortManager.SongSort.TRACK_NUMBER
-            R.id.action_sort_duration -> presenter.sortOrder = SortManager.SongSort.DURATION
-            R.id.action_sort_year -> presenter.sortOrder = SortManager.SongSort.YEAR
-            R.id.action_sort_date -> presenter.sortOrder = SortManager.SongSort.DATE
-            R.id.action_sort_album_name -> presenter.sortOrder = SortManager.SongSort.ALBUM_NAME
-            R.id.action_sort_artist_name -> presenter.sortOrder = SortManager.SongSort.ARTIST_NAME
-            R.id.action_sort_ascending -> { presenter.sortAscending = !item.isChecked }
+            R.id.action_sort_default -> viewModel.songSortOrder = SortManager.SongSort.DEFAULT
+            R.id.action_sort_title -> viewModel.songSortOrder = SortManager.SongSort.NAME
+            R.id.action_sort_track -> viewModel.songSortOrder = SortManager.SongSort.TRACK_NUMBER
+            R.id.action_sort_duration -> viewModel.songSortOrder = SortManager.SongSort.DURATION
+            R.id.action_sort_year -> viewModel.songSortOrder = SortManager.SongSort.YEAR
+            R.id.action_sort_date -> viewModel.songSortOrder = SortManager.SongSort.DATE
+            R.id.action_sort_album_name -> viewModel.songSortOrder = SortManager.SongSort.ALBUM_NAME
+            R.id.action_sort_artist_name -> viewModel.songSortOrder = SortManager.SongSort.ARTIST_NAME
+            R.id.action_sort_ascending -> { viewModel.songSortAscending = !item.isChecked }
             else -> sortChanged = false
         }
 
         if (folderSortChanged) {
-            presenter.checkSortAndFetchFolders()
+            viewModel.checkSortAndFetchFolders()
             activity?.invalidateOptionsMenu()
         }
 
         if (sortChanged) {
-            presenter.fetchSongs()
+            viewModel.fetchSongs()
             activity?.invalidateOptionsMenu()
         }
 
         return super.onOptionsItemSelected(item)
     }
 
+
+    override fun onActivityCreated(savedInstanceState: Bundle?) {
+        super.onActivityCreated(savedInstanceState)
+        viewModel.apply {
+            currentSongId.observe(this@FolderFragment, Observer {
+                it?.let { adapter.currentId = it }
+            })
+            path.observe(this@FolderFragment, Observer {
+                it?.let { this@FolderFragment.path.text = it }
+            })
+            songs.observe(this@FolderFragment, Observer {
+                it?.let {
+                    adapter.accept(songs = it)
+                }
+            })
+            folders.observe(this@FolderFragment, Observer {
+                it?.let {
+                    adapter.accept(folders = it)
+                }
+            })
+
+            // Events
+            showToast.observe(this@FolderFragment, Observer {
+                Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            })
+            showSongLongDialog.observe(this@FolderFragment, Observer {
+                it?.let { openSongLongDialog(it) }
+            })
+            showCollectionLongDialog.observe(this@FolderFragment, Observer {
+                it?.let { openCollectionLongDialog(it.first, it.second) }
+            })
+        }
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
-        presenter.stop()
-    }
-
-    override fun setPath(path: String) {
-        this.path.text = path
-    }
-
-    override fun showHideLoading(show: Boolean) {
-    }
-
-    override fun showErrorToast(error: String) {
-        Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
-    }
-
-    override fun populateItems(items: List<Folder>, scrollTo: Int) {
-        adapter?.accept(folders = items)
-    }
-
-    override fun populateItems(items: List<Song>) {
-        adapter?.accept(songs = items)
-    }
-
-    override fun setCurrentSong(id: Long) {
-        adapter?.currentId = id
-    }
-
-    override fun showSongLongDialog(song: Song) {
-        openSongLongDialog(song)
-    }
-
-    override fun showAddToPlaylistDialog(songs: ArrayList<Song>) {
-        openAddToPlaylistDialog(songs)
-    }
-
-    override fun showFavoritesToast(isFavorite: Boolean) {
-        if (isFavorite)
-            Toast.makeText(context, "Added to favorites", Toast.LENGTH_SHORT).show()
-        else
-            Toast.makeText(context, "No songs available", Toast.LENGTH_SHORT).show()
-    }
-
-    override fun showCollectionLongDialog(title: String, items: Observable<List<Song>>) {
-        items.take(1)
-                .subscribe({ songs ->
-                    val mDialog = CollectionLongDialog()
-                    val bundle = Bundle()
-                    bundle.putString(CollectionLongDialog.ARGUMENT_TITLE, title)
-                    bundle.putParcelableArrayList(CollectionLongDialog.ARGUMENT_SONGS, songs as ArrayList<Song>)
-                    mDialog.arguments = bundle
-                    mDialog.show(fragmentManager, "CollectionLongDialog")
-                })
+        viewModel.stop()
     }
 
     companion object {

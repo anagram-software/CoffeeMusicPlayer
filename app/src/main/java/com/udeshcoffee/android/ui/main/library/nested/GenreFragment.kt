@@ -13,7 +13,7 @@ import com.udeshcoffee.android.extensions.openCollectionLongDialog
 import com.udeshcoffee.android.interfaces.OnItemClickListener
 import com.udeshcoffee.android.model.Genre
 import com.udeshcoffee.android.recyclerview.EmptyRecyclerView
-import com.udeshcoffee.android.ui.adapters.GenreAdapter
+import com.udeshcoffee.android.ui.common.adapters.GenreAdapter
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import org.koin.android.ext.android.inject

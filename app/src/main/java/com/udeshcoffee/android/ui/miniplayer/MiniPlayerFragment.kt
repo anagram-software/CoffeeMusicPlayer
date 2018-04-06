@@ -1,8 +1,8 @@
 package com.udeshcoffee.android.ui.miniplayer
 
+import android.arch.lifecycle.Observer
 import android.os.Bundle
 import android.support.v4.app.Fragment
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -21,18 +21,16 @@ import org.koin.android.ext.android.inject
 /**
 * Created by Udathari on 8/25/2017.
 */
-class MiniPlayerFragment : Fragment(), MiniPlayerContract.View {
+class MiniPlayerFragment : Fragment() {
 
-    val TAG = "MiniPlayerFragment"
+    private val viewModel: MiniPlayerViewModel by inject()
 
-    override val presenter: MiniPlayerContract.Presenter by inject()
-
-    lateinit var title: TextView
-    lateinit var subtitle: TextView
-    lateinit var art: ImageView
-    lateinit var playPause: ImageButton
-    lateinit var progress: ProgressBar
-    lateinit var layout: FadableLayout
+    private lateinit var title: TextView
+    private lateinit var subtitle: TextView
+    private lateinit var art: ImageView
+    private lateinit var playPause: ImageButton
+    private lateinit var progress: ProgressBar
+    private lateinit var layout: FadableLayout
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
@@ -44,58 +42,63 @@ class MiniPlayerFragment : Fragment(), MiniPlayerContract.View {
             subtitle = findViewById(R.id.mini_player_subtitle)
             art = findViewById(R.id.mini_player_art)
             layout = findViewById(R.id.mini_player_layout)
-            layout.setOnClickListener { presenter.openNowPlay() }
+            layout.setOnClickListener { showNowPlayUI() }
             playPause = findViewById(R.id.mini_player_playpause)
-            playPause.setOnClickListener { presenter.playPauseToggle() }
+            playPause.setOnClickListener { viewModel.playPauseToggle() }
             progress = findViewById(R.id.mini_player_progress)
         }
 
         return root
     }
 
+    override fun onActivityCreated(savedInstanceState: Bundle?) {
+        super.onActivityCreated(savedInstanceState)
+        viewModel.apply {
+            duration.observe(this@MiniPlayerFragment, Observer {
+                it?.let { this@MiniPlayerFragment.progress.max = it.toInt() }
+            })
+            progress.observe(this@MiniPlayerFragment, Observer {
+                it?.let { this@MiniPlayerFragment.progress.progress = it.toInt() }
+            })
+            currentSong.observe(this@MiniPlayerFragment, Observer {
+                it?.let {
+                    (activity as MiniPlayerActivity).initNowPlay()
+                    title.text = it.title
+                    subtitle.text = String.format("%s • %s", it.artistName, it.albumName)
+                    it.loadArtwork(context!!, art, layout)
+                }
+            })
+            isPlaying.observe(this@MiniPlayerFragment, Observer {
+                it?.let {
+                    if (!it) {
+                        playPause.setImageResource(R.drawable.ic_play)
+                    } else {
+                        playPause.setImageResource(R.drawable.ic_pause)
+                    }
+                }
+            })
+        }
+    }
+
     override fun onResume() {
         super.onResume()
-        presenter.view = this
-        presenter.start()
+        viewModel.start()
     }
 
     override fun onPause() {
         super.onPause()
-        presenter.stop()
+        viewModel.stop()
     }
 
-    override fun initProgress(max: Long) {
-        progress.max = max.toInt()
-    }
-
-    override fun setProgress(duration: Long) {
-        progress.progress = duration.toInt()
-    }
-
-    override fun setDetails(song: Song) {
-        (activity as MiniPlayerActivity).initNowPlay()
-        title.text = song.title
-        subtitle.text = String.format("%s • %s", song.artistName, song.albumName)
-        song.loadArtwork(context!!, art, layout)
-    }
-
-    override fun setAlpha(alpha: Float) {
+    fun setAlpha(alpha: Float) {
         layout.alpha = alpha
     }
 
-    override fun setVisibility(visibility: Int) {
+    fun setVisibility(visibility: Int) {
         layout.visibility = visibility
     }
 
-    override fun setPlayOrPause(isPlay: Boolean) {
-        if (isPlay) {
-            playPause.setImageResource(R.drawable.ic_play)
-        } else {
-            playPause.setImageResource(R.drawable.ic_pause)
-        }
-    }
-
-    override fun showNowPlayUI() {
+    private fun showNowPlayUI() {
         (activity as MiniPlayerActivity).openNowPlay()
     }
 

@@ -7,8 +7,8 @@ import android.database.Cursor
 import android.net.Uri
 import android.provider.MediaStore
 import android.util.Log
-import androidx.content.contentValuesOf
-import androidx.database.getStringOrNull
+import androidx.core.content.contentValuesOf
+import androidx.core.database.getStringOrNull
 import com.annimon.stream.Collectors
 import com.annimon.stream.Stream
 import com.udeshcoffee.android.data.local.LocalDataSource

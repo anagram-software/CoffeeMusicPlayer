@@ -25,9 +25,9 @@ import com.udeshcoffee.android.model.Album
 import com.udeshcoffee.android.model.Artist
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.recyclerview.MiniGridItemDecor
-import com.udeshcoffee.android.ui.adapters.AlbumAdapter
-import com.udeshcoffee.android.ui.adapters.ArtistAdapter
-import com.udeshcoffee.android.ui.adapters.SongAdapter
+import com.udeshcoffee.android.ui.common.adapters.AlbumAdapter
+import com.udeshcoffee.android.ui.common.adapters.ArtistAdapter
+import com.udeshcoffee.android.ui.common.adapters.SongAdapter
 import com.udeshcoffee.android.ui.main.MainActivity
 import com.udeshcoffee.android.utils.PreferenceUtil
 import com.udeshcoffee.android.utils.loadCoolCardView

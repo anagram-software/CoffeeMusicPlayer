@@ -14,8 +14,8 @@ import com.h6ah4i.android.widget.verticalseekbar.VerticalSeekBarWrapper
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.extensions.openDrawer
 import com.udeshcoffee.android.extensions.setRoundColor
-import com.udeshcoffee.android.ui.dialogs.DeleteEQDialog
-import com.udeshcoffee.android.ui.dialogs.SaveEQDialog
+import com.udeshcoffee.android.ui.common.dialogs.DeleteEQDialog
+import com.udeshcoffee.android.ui.common.dialogs.SaveEQDialog
 import org.koin.android.ext.android.inject
 
 /**
