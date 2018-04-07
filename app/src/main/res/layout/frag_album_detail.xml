@@ -10,16 +10,40 @@
     <include layout="@layout/detail_app_bar" />
 
     <android.support.v4.widget.NestedScrollView
+        android:id="@+id/nsv"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:fillViewport="true"
+        android:overScrollMode="never"
         app:layout_behavior="android.support.design.widget.AppBarLayout$ScrollingViewBehavior">
 
         <!-- Specific -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical">
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingTop="200dp">
+
+            <TextView
+                android:id="@+id/expanded_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/activity_horizontal_margin"
+                android:layout_marginLeft="@dimen/activity_horizontal_margin"
+                android:layout_marginRight="@dimen/activity_horizontal_margin"
+                android:fontFamily="@font/roboto_regular"
+                android:singleLine="true"
+                android:text="@string/info_album"
+                android:textAppearance="@style/TextAppearance.AppCompat.Headline" />
+
+            <TextView
+                android:id="@+id/expanded_subtitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="@dimen/activity_horizontal_margin"
+                android:layout_marginRight="@dimen/activity_horizontal_margin"
+                android:text="@string/info_album"
+                android:singleLine="true" />
 
             <android.support.v7.widget.Toolbar
                 android:id="@+id/toolbar_tracks"
@@ -31,7 +55,7 @@
             <com.udeshcoffee.android.recyclerview.EmptyRecyclerView
                 android:id="@+id/album_detail_recycler_view"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
+                android:layout_height="wrap_content"
                 android:nestedScrollingEnabled="false"
                 app:fastScrollPopupBgColor="@color/colorAccent"
                 app:fastScrollPopupTextColor="@android:color/primary_text_dark"
@@ -39,7 +63,6 @@
 
             <include layout="@layout/empty_view" />
         </LinearLayout>
-
     </android.support.v4.widget.NestedScrollView>
 
 </android.support.design.widget.CoordinatorLayout>

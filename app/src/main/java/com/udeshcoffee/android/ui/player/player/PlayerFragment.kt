@@ -218,7 +218,7 @@ class PlayerFragment : Fragment() {
             })
             playPosition.observe(this@PlayerFragment, Observer {
                 it?.let {
-                    this@PlayerFragment.queueSize.text = String.format("%d / %d", it, queue.value?.size ?: 0)
+                    this@PlayerFragment.queueSize.text = String.format("%d / %d", it + 1, queue.value?.size ?: 0)
                     if (playerArtPagerAdapter.isNotifyDatasetChangedCalled && playerArtPagerAdapter.count > 0)
                         art.setCurrentItem(it, true)
                 }

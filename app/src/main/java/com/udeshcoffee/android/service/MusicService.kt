@@ -495,8 +495,14 @@ class MusicService : Service() {
 
     fun getProgressObservable(): Observable<Long>{
         return Observable.interval(100, TimeUnit.MILLISECONDS)
-                .publish()
-                .refCount()
+                .map { currentPosition }
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .doOnNext { Log.d(TAG, "getCurrentPosition") }
+    }
+
+    fun getCurrentObservable(): Observable<Long>{
+        return Observable.interval(1000, TimeUnit.MILLISECONDS)
                 .map { currentPosition }
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())

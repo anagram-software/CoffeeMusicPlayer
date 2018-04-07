@@ -21,11 +21,8 @@ import com.udeshcoffee.android.utils.PreferenceUtil
 import io.reactivex.Single
 import java.util.concurrent.TimeUnit
 
-
 class MainActivity : MiniPlayerActivity(), NavigationView.OnNavigationItemSelectedListener,
         FragmentManager.OnBackStackChangedListener{
-
-    override val TAG = "MainActivity"
 
     object Fragments {
         const val FAVORITES = "favorites"
@@ -47,6 +44,9 @@ class MainActivity : MiniPlayerActivity(), NavigationView.OnNavigationItemSelect
         const val ALPHA_ANIMATIONS_DURATION = 200
     }
 
+    private lateinit var drawer: NavigationView
+    private lateinit var drawerLayout: DrawerLayout
+
     private var loadListOnConnection = false
     private var pendingUri: Uri? = null
     private var mainContentItem : Int? = null
@@ -59,7 +59,10 @@ class MainActivity : MiniPlayerActivity(), NavigationView.OnNavigationItemSelect
         setContentView(R.layout.activity_main)
         super.onCreate(savedInstanceState)
 
+        drawer = findViewById(R.id.navigation)
         drawer.setNavigationItemSelectedListener(this)
+        drawerLayout = findViewById(R.id.drawer_layout)
+
         prefAppStart = sharedPreferences.getString(PreferenceUtil.PREF_APP_START, "${PreferenceUtil.APP_START_LIB}").toInt()
 
         // Mini Player Fragment
@@ -287,6 +290,27 @@ class MainActivity : MiniPlayerActivity(), NavigationView.OnNavigationItemSelect
             getService()?.loadLastListAndInit()
             loadListOnConnection = false
         }
+    }
+
+    override fun onPlayerCollapsed() {
+        super.onPlayerCollapsed()
+        if (supportFragmentManager.backStackEntryCount > 0) {
+            when (supportFragmentManager.getBackStackEntryAt(supportFragmentManager.backStackEntryCount - 1).name){
+                MainActivity.Fragments.PLAYLISTS -> { drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED) }
+                MainActivity.Fragments.EQUALIZER -> { drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED) }
+                MainActivity.Fragments.FAVORITES -> { drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED) }
+                MainActivity.Fragments.HOME -> { drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED) }
+                MainActivity.Fragments.LIBRARY -> { drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED) }
+                else -> { drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED) }
+            }
+        } else {
+            drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED)
+        }
+    }
+
+    override fun onPlayerExpanded() {
+        super.onPlayerExpanded()
+        drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
     }
 
     fun onHomeLibraryClick() {

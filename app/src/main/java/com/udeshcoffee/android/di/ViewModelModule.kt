@@ -8,7 +8,7 @@ import com.udeshcoffee.android.ui.main.editor.EditorViewModel
 import com.udeshcoffee.android.ui.main.favorites.FavoritesViewModel
 import com.udeshcoffee.android.ui.main.library.nested.folder.FolderViewModel
 import com.udeshcoffee.android.ui.main.library.nested.track.TrackViewModel
-import com.udeshcoffee.android.ui.main.search.SearchViewModelDetail
+import com.udeshcoffee.android.ui.main.search.SearchViewModel
 import com.udeshcoffee.android.ui.miniplayer.MiniPlayerViewModel
 import com.udeshcoffee.android.ui.player.player.PlayerViewModel
 import com.udeshcoffee.android.ui.player.queue.QueueViewModel
@@ -28,7 +28,7 @@ val viewModelModule = applicationContext {
 
     // Features
     viewModel{ FavoritesViewModel(get(), get(), get()) }
-    viewModel{ SearchViewModelDetail(get(), get(), get()) }
+    viewModel{ SearchViewModel(get(), get(), get()) }
     viewModel{ EditorViewModel(get(), get(), get()) }
 
     // Player

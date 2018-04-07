@@ -1,12 +1,33 @@
 package com.udeshcoffee.android.extensions
 
 import android.animation.Animator
+import android.animation.ArgbEvaluator
 import android.animation.ValueAnimator
+import android.graphics.Color
+import android.support.design.widget.AppBarLayout
+import android.support.v4.view.animation.FastOutSlowInInterpolator
 import android.view.View
 
 /**
  * Created by Udathari on 9/17/2017.
  */
+fun AppBarLayout.backgroundFadeOut(duration: Long) {
+    val colorAnimation = ValueAnimator.ofObject(ArgbEvaluator(), Color.BLACK.getColorWithAlpha(64), Color.TRANSPARENT)
+    colorAnimation.duration = duration // milliseconds
+    colorAnimation.interpolator = FastOutSlowInInterpolator()
+    colorAnimation.addUpdateListener { animator -> this.setBackgroundColor(animator.animatedValue as Int) }
+    colorAnimation.start()
+}
+
+fun AppBarLayout.backgroundFadeIn(duration: Long) {
+    val colorAnimation = ValueAnimator.ofObject(ArgbEvaluator(), Color.TRANSPARENT, Color.BLACK.getColorWithAlpha(64))
+    colorAnimation.duration = duration // milliseconds
+    colorAnimation.interpolator = FastOutSlowInInterpolator()
+    colorAnimation.addUpdateListener { animator -> this.setBackgroundColor(animator.animatedValue as Int) }
+    colorAnimation.start()
+}
+
+
 fun View.fadeOut(duration: Long, completed: (() -> Unit)? = null) {
     val animator = ValueAnimator.ofFloat(1.0f, 0.0f)
     animator.addUpdateListener { animation ->

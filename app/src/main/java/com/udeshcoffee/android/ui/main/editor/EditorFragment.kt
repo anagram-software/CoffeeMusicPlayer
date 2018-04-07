@@ -219,6 +219,9 @@ class EditorFragment : Fragment() {
                 takePermissionDialog.setTargetFragment(this@EditorFragment, 0)
                 takePermissionDialog.show(fragmentManager, "PermissionToSdCardDialog")
             })
+            finish.observe(this@EditorFragment, Observer {
+                activity?.onBackPressed()
+            })
         }
     }
 

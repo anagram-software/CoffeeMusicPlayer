@@ -17,8 +17,8 @@ import io.reactivex.functions.Consumer
  * Created by Udesh on 2/18/2017.
  */
 
-class SongAdapter(private val dataType: Int, private val hasShuffle: Boolean) : RecyclerView.Adapter<RecyclerView.ViewHolder>(),
-        FastScrollRecyclerView.SectionedAdapter, Consumer<List<Song>>{
+class SongAdapter(private val dataType: Int, private val hasShuffle: Boolean):
+        RecyclerView.Adapter<RecyclerView.ViewHolder>(), FastScrollRecyclerView.SectionedAdapter, Consumer<List<Song>>{
 
     private var mDataset: List<Song> = ArrayList()
     private var context: Context? = null
@@ -99,7 +99,8 @@ class SongAdapter(private val dataType: Int, private val hasShuffle: Boolean) : 
         else -> ""
     }
 
-    internal inner class ShuffleViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView), View.OnClickListener {
+    internal inner class ShuffleViewHolder(itemView: View):
+            RecyclerView.ViewHolder(itemView), View.OnClickListener {
         init {
             itemView.setOnClickListener(this)
         }

@@ -17,6 +17,7 @@
     <!-- Status Bar Height -->
     <dimen name="status_bar_height">0dp</dimen>
     <dimen name="activity_horizontal_margin">16dp</dimen>
+    <dimen name="song_less_padding">8dp</dimen>
     <dimen name="item_subtitle_size">12sp</dimen>
     <dimen name="item_title_size">14sp</dimen>
 

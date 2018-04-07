@@ -40,7 +40,7 @@ import java.util.concurrent.TimeUnit
 */
 class SearchFragment : Fragment() {
 
-    private val viewModel: SearchViewModelDetail by inject()
+    private val viewModel: SearchViewModel by inject()
 
     private lateinit var songAdpt: SongAdapter
     private lateinit var albumAdpt: AlbumAdapter

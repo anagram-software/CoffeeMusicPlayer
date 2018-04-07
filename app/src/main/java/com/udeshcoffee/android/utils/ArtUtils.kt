@@ -30,6 +30,7 @@ import com.udeshcoffee.android.App
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.data.remote.RemoteDataSource
 import com.udeshcoffee.android.extensions.toLastFMArtistQuery
+import com.udeshcoffee.android.utils.blur.BlurTransformation
 import com.udeshcoffee.android.views.FadableLayout
 import java.io.File
 import java.io.FileNotFoundException
@@ -83,13 +84,16 @@ fun loadCoolCardView(context: Context,
     }
 }
 
-fun loadAlbumArtwork(context: Context, id: Long, imageView: ImageView, animate: Boolean = true,
+fun loadAlbumArtwork(context: Context, id: Long, imageView: ImageView, animate: Boolean = true, isBlurred: Boolean = false,
                      callback: ((success: Boolean) -> Unit)? = null){
     val uri = ContentUris.withAppendedId(ArtworkURI, id)
     if (uri != null) {
+        val options = RequestOptions().placeholder(R.drawable.ic_album_white_24dp)
+        if (isBlurred)
+            options.transform(BlurTransformation())
         val glide = Glide.with(context)
                 .load(uri)
-                .apply(RequestOptions().placeholder(R.drawable.ic_album_white_24dp))
+                .apply(options)
         if (animate)
             glide.transition(DrawableTransitionOptions.withCrossFade(250))
         glide.listener(object : RequestListener<Drawable>{
@@ -136,7 +140,8 @@ fun loadArtistArtwork(context: Context,
                       id: Long,
                       name: String,
                       imageView: ImageView,
-                      shouldCollect: Boolean) {
+                      shouldCollect: Boolean,
+                      isBlur: Boolean = false) {
     if (name == "<unknown>") {
         loadUnknownArtist(imageView)
         return
@@ -146,7 +151,7 @@ fun loadArtistArtwork(context: Context,
     val myDir = File("$root/CoffeePlayer/ArtistImages/$id.jpg")
     if (myDir.exists()) {
         Log.d("loadArtwork", "file found")
-        loadFileArtistArtwork(glide, myDir, imageView)
+        loadFileArtistArtwork(glide, myDir, imageView, isBlur)
     } else {
         loadUnknownArtist(imageView)
         if (shouldCollect)
@@ -156,13 +161,19 @@ fun loadArtistArtwork(context: Context,
 
 fun loadFileArtistArtwork(glide: RequestManager,
                           dir: File,
-                          imageView: ImageView){
+                          imageView: ImageView,
+                          isBlur: Boolean){
 
     val colors = IntArray(2)
     colors[1] = Color.TRANSPARENT
+
+    val options = RequestOptions().error(R.drawable.ic_person_white_24dp).signature(ObjectKey(dir.lastModified()))
+    if (isBlur)
+        options.transform(BlurTransformation(50))
+
     glide.load(dir)
-            .apply(RequestOptions().placeholder(R.drawable.ic_person_white_24dp).signature(ObjectKey(dir.lastModified())))
-            .transition(DrawableTransitionOptions.withCrossFade(250))
+            .apply(options)
+            .transition(DrawableTransitionOptions.withCrossFade())
             .into(imageView)
 }
 

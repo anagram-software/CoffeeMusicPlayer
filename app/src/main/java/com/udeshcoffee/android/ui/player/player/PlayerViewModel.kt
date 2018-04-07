@@ -109,8 +109,7 @@ class PlayerViewModel(
     /* Current */
     private fun setCurrent(){
         disposeCurrent()
-        currentDisposable = getService()?.getProgressObservable()
-                ?.debounce(1000, TimeUnit.MILLISECONDS)
+        currentDisposable = getService()?.getCurrentObservable()
                 ?.observeOn(AndroidSchedulers.mainThread())
                 ?.subscribe{
                     current.value = it

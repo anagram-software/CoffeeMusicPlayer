@@ -53,8 +53,8 @@
     </style>
 
     <style name="PlayableActionToolbarTheme" parent="AppTheme">
-        <item name="android:textColorPrimary">#888</item>
-        <item name="actionMenuTextColor">#888</item>
+        <item name="android:textColorPrimary">#aaa</item>
+        <item name="actionMenuTextColor">#aaa</item>
     </style>
 
     <style name="SeekBarTheme" parent="AppTheme">

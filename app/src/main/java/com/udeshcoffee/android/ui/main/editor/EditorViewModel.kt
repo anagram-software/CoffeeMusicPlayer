@@ -150,7 +150,7 @@ class EditorViewModel(
 
     fun save(title: String, album: String, artist: String, genre: String, year: String, trackNo: String, discNo: String) {
         Log.d(Companion.TAG, "save")
-        progressDialog.value = "Saving"
+//        progressDialog.value = "Saving"
         saveDisposable = Observable.fromCallable({
             Log.d(Companion.TAG, "saveObservable")
             var tempFile: File
@@ -170,13 +170,13 @@ class EditorViewModel(
                             override fun onMediaScannerConnected() {}
 
                             override fun onScanCompleted(path: String, uri: Uri) {
-                                progressDialog.value = null
+//                                progressDialog.value = null
+                                finish.call()
                                 Observable.fromCallable { showToast.value = "Song changed" }
                                         .subscribeOn(AndroidSchedulers.mainThread())
                                         .observeOn(AndroidSchedulers.mainThread())
-                                        .take(1)
+                                        .firstOrError()
                                         .subscribe()
-                                finish.call()
                             }
                         })
             }
@@ -186,7 +186,7 @@ class EditorViewModel(
                 .take(1)
                 .subscribeWith(object : DisposableObserver<Unit>() {
                     override fun onError(e: Throwable) {
-                        progressDialog.value = null
+//                        progressDialog.value = null
                         finish.call()
                         showToast.value = "Couldn't edit the song"
                     }

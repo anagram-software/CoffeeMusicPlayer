@@ -3,10 +3,8 @@ package com.udeshcoffee.android.ui
 import android.content.IntentFilter
 import android.os.Build
 import android.os.Bundle
-import android.support.design.widget.NavigationView
-import android.transition.Fade
 import android.support.v4.view.ViewCompat
-import android.support.v4.widget.DrawerLayout
+import android.transition.Fade
 import android.util.Log
 import android.view.View
 import com.cantrowitz.rxbroadcast.RxBroadcast
@@ -16,7 +14,6 @@ import com.udeshcoffee.android.extensions.getService
 import com.udeshcoffee.android.extensions.loadSongColor
 import com.udeshcoffee.android.extensions.replaceFragmentToActivity
 import com.udeshcoffee.android.service.MusicService
-import com.udeshcoffee.android.ui.main.MainActivity
 import com.udeshcoffee.android.ui.miniplayer.MiniPlayerFragment
 import com.udeshcoffee.android.ui.player.player.PlayerFragment
 import com.udeshcoffee.android.ui.player.queue.QueueFragment
@@ -28,7 +25,7 @@ import org.koin.android.ext.android.inject
  * Created by Udathari on 8/25/2017.
  */
 
-open class MiniPlayerActivity : BaseActivity() {
+abstract class MiniPlayerActivity : BaseActivity() {
 
     open val miniPlayerFragment: MiniPlayerFragment by inject()
 
@@ -37,8 +34,6 @@ open class MiniPlayerActivity : BaseActivity() {
 
     private var isQueueVisible = false
 
-    open lateinit var drawer: NavigationView
-    open lateinit var drawerLayout: DrawerLayout
     private lateinit var controlBack: FadableLayout
     private lateinit var slidingPanel: SlidingUpPanelLayout
 
@@ -49,9 +44,6 @@ open class MiniPlayerActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        drawer = findViewById(R.id.navigation)
-        drawerLayout = findViewById(R.id.drawer_layout)
 
         slidingPanel = findViewById(R.id.slidingpanel)
         slidingPanel.panelState = SlidingUpPanelLayout.PanelState.HIDDEN
@@ -69,9 +61,9 @@ open class MiniPlayerActivity : BaseActivity() {
 
             override fun onPanelStateChanged(panel: View?, previousState: SlidingUpPanelLayout.PanelState?, newState: SlidingUpPanelLayout.PanelState?) {
                 if (newState == SlidingUpPanelLayout.PanelState.EXPANDED)
-                    drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
+                    onPlayerExpanded()
                 else if (newState == SlidingUpPanelLayout.PanelState.COLLAPSED || newState == SlidingUpPanelLayout.PanelState.HIDDEN) {
-                    checkAndChangeNavigationLock()
+                    onPlayerCollapsed()
                 }
 
                 if (newState == SlidingUpPanelLayout.PanelState.COLLAPSED) {
@@ -180,20 +172,9 @@ open class MiniPlayerActivity : BaseActivity() {
         return slidingPanel.panelState != SlidingUpPanelLayout.PanelState.EXPANDED
     }
 
-    open fun checkAndChangeNavigationLock() {
-        if (supportFragmentManager.backStackEntryCount > 0) {
-            when (supportFragmentManager.getBackStackEntryAt(supportFragmentManager.backStackEntryCount - 1).name){
-                MainActivity.Fragments.PLAYLISTS -> { drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED) }
-                MainActivity.Fragments.EQUALIZER -> { drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED) }
-                MainActivity.Fragments.FAVORITES -> { drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED) }
-                MainActivity.Fragments.HOME -> { drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED) }
-                MainActivity.Fragments.LIBRARY -> { drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED) }
-                else -> { drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED) }
-            }
-        } else {
-            drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED)
-        }
-    }
+    open fun onPlayerExpanded() {}
+
+    open fun onPlayerCollapsed() {}
 
     override fun onBackPressed() {
         Log.d(TAG, "onBackPressedSuper")
