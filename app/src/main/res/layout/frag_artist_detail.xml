@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.design.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<android.support.design.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:fitsSystemWindows="true"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -10,75 +10,16 @@
     <include layout="@layout/detail_app_bar" />
 
     <android.support.v4.widget.NestedScrollView
-        android:id="@+id/nsv"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:fillViewport="true"
-        android:overScrollMode="never"
         app:layout_behavior="android.support.design.widget.AppBarLayout$ScrollingViewBehavior">
 
         <!-- Specific -->
         <LinearLayout
             android:orientation="vertical"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:paddingTop="140dp">
-
-            <TextView
-                android:id="@+id/expanded_title"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/activity_horizontal_margin"
-                android:layout_marginLeft="@dimen/activity_horizontal_margin"
-                android:layout_marginRight="@dimen/activity_horizontal_margin"
-                android:fontFamily="@font/roboto_regular"
-                android:singleLine="true"
-                android:text="@string/info_album"
-                android:textAlignment="center"
-                android:textAppearance="@style/TextAppearance.AppCompat.Headline"
-                app:layout_constraintEnd_toStartOf="@+id/expanded_tag1"
-                app:layout_constraintStart_toStartOf="parent" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:layout_marginLeft="@dimen/activity_horizontal_margin"
-                android:layout_marginRight="@dimen/activity_horizontal_margin"
-                android:orientation="horizontal"
-                android:gravity="center_horizontal">
-                <TextView
-                    android:id="@+id/expanded_tag1"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="8dp"
-                    android:layout_marginRight="8dp"
-                    android:background="@drawable/tag"
-                    android:paddingBottom="2dp"
-                    android:paddingLeft="6dp"
-                    android:paddingRight="6dp"
-                    android:paddingTop="2dp"
-                    android:textAllCaps="true"
-                    android:textColor="@android:color/black"
-                    android:textSize="10sp"
-                    android:visibility="gone"
-                    tools:text="Pop" />
-
-                <TextView
-                    android:id="@+id/expanded_tag2"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/tag"
-                    android:paddingBottom="2dp"
-                    android:paddingLeft="6dp"
-                    android:paddingRight="6dp"
-                    android:paddingTop="2dp"
-                    android:textAllCaps="true"
-                    android:textColor="@android:color/black"
-                    android:textSize="10sp"
-                    android:visibility="gone"
-                    tools:text="Dance" />
-            </LinearLayout>
+            android:layout_height="match_parent">
 
             <android.support.v7.widget.Toolbar
                 android:id="@+id/toolbar_albums"
@@ -92,6 +33,7 @@
                 android:id="@+id/artist_album_recycler_view"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
                 android:nestedScrollingEnabled="false"/>
 
             <android.support.v7.widget.Toolbar
@@ -105,6 +47,7 @@
                 android:id="@+id/artist_song_recycler_view"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
                 android:nestedScrollingEnabled="false"
                 app:fastScrollPopupBgColor="@color/colorAccent"
                 app:fastScrollPopupTextColor="@android:color/primary_text_dark"
@@ -112,37 +55,33 @@
 
             </com.udeshcoffee.android.recyclerview.EmptyRecyclerView>
 
-            <android.support.v7.widget.CardView
+            <LinearLayout
+                android:id="@+id/info"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:cardBackgroundColor="@color/colorPrimaryDark"
-                android:layout_margin="8dp">
-                <LinearLayout
-                    android:id="@+id/info"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:padding="@dimen/activity_horizontal_margin"
-                    android:orientation="vertical">
+                android:layout_height="match_parent"
+                android:layout_marginTop="8dp"
+                android:padding="@dimen/activity_horizontal_margin"
+                android:background="@color/colorPrimaryDark"
+                android:orientation="vertical">
 
-                    <TextView
-                        android:id="@+id/info_head"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/info_info"
-                        android:textAllCaps="true"
-                        android:textColor="#777"
-                        android:textSize="16sp"
-                        android:textStyle="bold" />
+                <TextView
+                    android:id="@+id/info_head"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/info_info"
+                    android:textAllCaps="true"
+                    android:textColor="#777"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
 
-                    <TextView
-                        android:id="@+id/info_info"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="@string/msg_no_info_found" />
+                <TextView
+                    android:id="@+id/info_info"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/msg_no_info_found" />
 
-                </LinearLayout>
-            </android.support.v7.widget.CardView>
+            </LinearLayout>
 
             <include layout="@layout/empty_view" />
         </LinearLayout>

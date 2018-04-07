@@ -3,10 +3,8 @@ package com.udeshcoffee.android.ui.main.detail.albumdetail
 import android.arch.lifecycle.Observer
 import android.os.Bundle
 import android.support.design.widget.AppBarLayout
-import android.support.design.widget.CollapsingToolbarLayout
 import android.support.v4.app.Fragment
 import android.support.v4.view.ViewCompat
-import android.support.v4.widget.NestedScrollView
 import android.support.v7.app.ActionBar
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
@@ -16,7 +14,10 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import com.udeshcoffee.android.R
-import com.udeshcoffee.android.extensions.*
+import com.udeshcoffee.android.extensions.fadeIn
+import com.udeshcoffee.android.extensions.fadeOut
+import com.udeshcoffee.android.extensions.openAddToPlaylistDialog
+import com.udeshcoffee.android.extensions.openSongLongDialog
 import com.udeshcoffee.android.interfaces.OnSongItemClickListener
 import com.udeshcoffee.android.model.Album
 import com.udeshcoffee.android.model.Song
@@ -30,7 +31,7 @@ import org.koin.android.ext.android.inject
 /**
 * Created by Udathari on 9/12/2017.
 */
-class AlbumDetailFragment: Fragment(), NestedScrollView.OnScrollChangeListener {
+class AlbumDetailFragment: Fragment(), AppBarLayout.OnOffsetChangedListener {
 
     val viewModel: AlbumDetailViewModel by inject()
 
@@ -38,14 +39,13 @@ class AlbumDetailFragment: Fragment(), NestedScrollView.OnScrollChangeListener {
     private var mIsTheTitleContainerVisible = true
 
     private lateinit var collapsedTitle: TextView
+    private lateinit var expandedLayout: View
     private lateinit var expandedTitle: TextView
     private lateinit var expandedSubtitle: TextView
 
     private lateinit var songAdpt: SongAdapter
-    private lateinit var appBar: AppBarLayout
     private lateinit var detailImage: ImageView
     private lateinit var blurDetailImage: ImageView
-    private lateinit var shadeOverlay: View
     var actionBar: ActionBar? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -68,26 +68,26 @@ class AlbumDetailFragment: Fragment(), NestedScrollView.OnScrollChangeListener {
             }
 
             // Custom Collapsing Toolbar
-            appBar = findViewById(R.id.appbar)
-            val nestedSV = findViewById<NestedScrollView>(R.id.nsv)
-            nestedSV.setOnScrollChangeListener(this@AlbumDetailFragment)
+            val appBar = findViewById<AppBarLayout>(R.id.appbar)
+            appBar.addOnOffsetChangedListener(this@AlbumDetailFragment)
 
-            shadeOverlay = findViewById(R.id.shade_overlay)
+            expandedLayout = findViewById(R.id.expanded_layout)
             expandedTitle = findViewById(R.id.expanded_title)
             expandedTitle.text = name
             expandedSubtitle = findViewById(R.id.expanded_subtitle)
-            expandedSubtitle.text = artistName
+            expandedSubtitle.visibility = android.view.View.VISIBLE
+            expandedSubtitle.text = "By $artistName"
             collapsedTitle = findViewById(R.id.collapsed_title)
             collapsedTitle.text = name
             collapsedTitle.fadeOut(0)
 
             detailImage = findViewById(R.id.detail_image)
-            loadAlbumArtwork(context, arguments!!.getLong(ARGUMENT_ID), detailImage, false) {
+            loadAlbumArtwork(context, arguments!!.getLong(ARGUMENT_ID), detailImage, true) {
                 startPostponedEnterTransition()
             }
 
             blurDetailImage = findViewById(R.id.blur_detail_image)
-            loadAlbumArtwork(context, arguments!!.getLong(ARGUMENT_ID), blurDetailImage, false, true)
+            loadAlbumArtwork(context, arguments!!.getLong(ARGUMENT_ID), blurDetailImage, true, true)
 
             actionBar?.apply {
                 setDisplayHomeAsUpEnabled(true)
@@ -135,22 +135,15 @@ class AlbumDetailFragment: Fragment(), NestedScrollView.OnScrollChangeListener {
                 }
             }
             songView.adapter = songAdpt
-
-            ViewCompat.setOnApplyWindowInsetsListener(this
-            ) { v, insets ->
-                val lp = toolbar.layoutParams as CollapsingToolbarLayout.LayoutParams
-                if (lp.height != CollapsingToolbarLayout.LayoutParams.MATCH_PARENT) {
-                    lp.topMargin = insets.systemWindowInsetTop
-                }
-                insets.consumeSystemWindowInsets()
-            }
         }
     }
-    override fun onScrollChange(v: NestedScrollView?, scrollX: Int, scrollY: Int, oldScrollX: Int, oldScrollY: Int) {
-        v?.let {
-            val maxScroll = v.maxScrollAmount
-            val percentage = Math.abs(scrollY) / maxScroll.toFloat()
 
+    override fun onOffsetChanged(appBarLayout: AppBarLayout?, verticalOffset: Int) {
+        appBarLayout?.let {
+            val maxScroll = appBarLayout.totalScrollRange
+            val percentage = Math.abs(verticalOffset) / maxScroll.toFloat()
+
+            handleAlphaOnTitle(percentage)
             handleToolbarTitleVisibility(percentage)
             handleAlphaOnImage(percentage)
         }
@@ -250,7 +243,6 @@ class AlbumDetailFragment: Fragment(), NestedScrollView.OnScrollChangeListener {
 
             if (!mIsTheTitleVisible) {
                 collapsedTitle.fadeIn(MainActivity.DetailFragments.ALPHA_ANIMATIONS_DURATION.toLong())
-                appBar.backgroundFadeIn(MainActivity.DetailFragments.ALPHA_ANIMATIONS_DURATION.toLong())
                 mIsTheTitleVisible = true
             }
 
@@ -258,16 +250,33 @@ class AlbumDetailFragment: Fragment(), NestedScrollView.OnScrollChangeListener {
 
             if (mIsTheTitleVisible) {
                 collapsedTitle.fadeOut(MainActivity.DetailFragments.ALPHA_ANIMATIONS_DURATION.toLong())
-                appBar.backgroundFadeOut(MainActivity.DetailFragments.ALPHA_ANIMATIONS_DURATION.toLong())
                 mIsTheTitleVisible = false
             }
         }
     }
 
-    private fun handleAlphaOnImage(percentage: Float) {
-        detailImage.alpha = 1.0f - Math.min(1.0f, percentage * 1.5f)
-        shadeOverlay.alpha = Math.min(0.6f, percentage * 1.2f)
+    private fun handleAlphaOnTitle(percentage: Float) {
+        if (percentage >= MainActivity.DetailFragments.PERCENTAGE_TO_HIDE_TITLE_DETAILS) {
+            if (mIsTheTitleContainerVisible) {
+                expandedTitle.fadeOut(MainActivity.DetailFragments.ALPHA_ANIMATIONS_DURATION.toLong())
+                expandedSubtitle.fadeOut(MainActivity.DetailFragments.ALPHA_ANIMATIONS_DURATION.toLong()/2)
+                mIsTheTitleContainerVisible = false
+            }
+
+        } else {
+
+            if (!mIsTheTitleContainerVisible) {
+                expandedTitle.fadeIn(MainActivity.DetailFragments.ALPHA_ANIMATIONS_DURATION.toLong())
+                expandedSubtitle.fadeIn(MainActivity.DetailFragments.ALPHA_ANIMATIONS_DURATION.toLong()*2)
+                mIsTheTitleContainerVisible = true
+            }
+        }
     }
+
+    private fun handleAlphaOnImage(percentage: Float) {
+        detailImage.alpha = 1.0f - Math.min(1.0f, percentage * 1.2f)
+    }
+
 
     companion object {
         private const val ARGUMENT_ID = "ARGUMENT_ID"

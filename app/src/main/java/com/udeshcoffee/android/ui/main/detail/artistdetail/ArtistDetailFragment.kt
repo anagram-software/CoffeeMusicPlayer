@@ -4,10 +4,7 @@ import android.arch.lifecycle.Observer
 import android.content.Intent
 import android.os.Bundle
 import android.support.design.widget.AppBarLayout
-import android.support.design.widget.CollapsingToolbarLayout
 import android.support.v4.app.Fragment
-import android.support.v4.view.ViewCompat
-import android.support.v4.widget.NestedScrollView
 import android.support.v7.app.ActionBar
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
@@ -37,26 +34,27 @@ import org.koin.android.ext.android.inject
 
 
 /**
- * Created by Udathari on 9/12/2017.
- */
-class ArtistDetailFragment: Fragment(), NestedScrollView.OnScrollChangeListener {
+* Created by Udathari on 9/12/2017.
+*/
+class ArtistDetailFragment: Fragment(), AppBarLayout.OnOffsetChangedListener {
 
     private val viewModel: ArtistDetailViewModel by inject()
 
     private var mIsTheTitleVisible = false
+    private var mIsTheTitleContainerVisible = true
 
     private lateinit var collapsedTitle: TextView
+    private lateinit var expandedLayout: View
     private lateinit var expandedTitle: TextView
     private var tag: Array<TextView?> = arrayOfNulls(2)
+    private lateinit var tagLayout: View
     private lateinit var biotext: TextView
 
     private lateinit var songAdpt: SongAdapter
     private lateinit var albumAdpt: AlbumAdapter
 
-    private lateinit var appBar: AppBarLayout
     private lateinit var detailImage: ImageView
     private lateinit var blurDetailImage: ImageView
-    private lateinit var shadeOverlay: View
     private lateinit var toolbarAlbums: Toolbar
     private lateinit var toolbarSongs: Toolbar
     var actionBar: ActionBar? = null
@@ -73,13 +71,14 @@ class ArtistDetailFragment: Fragment(), NestedScrollView.OnScrollChangeListener 
             }
 
             // Custom Collapsing Toolbar
-            appBar = findViewById(R.id.appbar)
-            val nestedSV = findViewById<NestedScrollView>(R.id.nsv)
-            nestedSV.setOnScrollChangeListener(this@ArtistDetailFragment)
+            val appBar = findViewById<AppBarLayout>(R.id.appbar)
+            appBar.addOnOffsetChangedListener(this@ArtistDetailFragment)
 
-            shadeOverlay = findViewById(R.id.shade_overlay)
+            expandedLayout = findViewById(R.id.expanded_layout)
             expandedTitle = findViewById(R.id.expanded_title)
             expandedTitle.text = arguments!!.getString(ARGUMENT_NAME)
+            tagLayout = findViewById(R.id.expanded_tags)
+            tagLayout.visibility = View.VISIBLE
             this@ArtistDetailFragment.tag[0] = findViewById(R.id.expanded_tag1)
             this@ArtistDetailFragment.tag[1] = findViewById(R.id.expanded_tag2)
             collapsedTitle = findViewById(R.id.collapsed_title)
@@ -171,26 +170,17 @@ class ArtistDetailFragment: Fragment(), NestedScrollView.OnScrollChangeListener 
 
             // Bio
             biotext = findViewById(R.id.info_info)
-
-
-            ViewCompat.setOnApplyWindowInsetsListener(this
-            ) { v, insets ->
-                val lp = toolbar.layoutParams as CollapsingToolbarLayout.LayoutParams
-                if (lp.height != CollapsingToolbarLayout.LayoutParams.MATCH_PARENT) {
-                    lp.topMargin = insets.systemWindowInsetTop
-                }
-                insets.consumeSystemWindowInsets()
-            }
         }
 
         return root
     }
 
-    override fun onScrollChange(v: NestedScrollView?, scrollX: Int, scrollY: Int, oldScrollX: Int, oldScrollY: Int) {
-        v?.let {
-            val maxScroll = v.maxScrollAmount
-            val percentage = Math.abs(scrollY) / maxScroll.toFloat()
+    override fun onOffsetChanged(appBarLayout: AppBarLayout?, verticalOffset: Int) {
+        appBarLayout?.let {
+            val maxScroll = appBarLayout.totalScrollRange
+            val percentage = Math.abs(verticalOffset) / maxScroll.toFloat()
 
+            handleAlphaOnTitle(percentage)
             handleToolbarTitleVisibility(percentage)
             handleAlphaOnImage(percentage)
         }
@@ -371,7 +361,6 @@ class ArtistDetailFragment: Fragment(), NestedScrollView.OnScrollChangeListener 
 
             if (!mIsTheTitleVisible) {
                 collapsedTitle.fadeIn(MainActivity.DetailFragments.ALPHA_ANIMATIONS_DURATION.toLong())
-                appBar.backgroundFadeIn(MainActivity.DetailFragments.ALPHA_ANIMATIONS_DURATION.toLong())
                 mIsTheTitleVisible = true
             }
 
@@ -379,15 +368,30 @@ class ArtistDetailFragment: Fragment(), NestedScrollView.OnScrollChangeListener 
 
             if (mIsTheTitleVisible) {
                 collapsedTitle.fadeOut(MainActivity.DetailFragments.ALPHA_ANIMATIONS_DURATION.toLong())
-                appBar.backgroundFadeOut(MainActivity.DetailFragments.ALPHA_ANIMATIONS_DURATION.toLong())
                 mIsTheTitleVisible = false
             }
         }
     }
 
+    private fun handleAlphaOnTitle(percentage: Float) {
+        if (percentage >= MainActivity.DetailFragments.PERCENTAGE_TO_HIDE_TITLE_DETAILS) {
+            if (mIsTheTitleContainerVisible) {
+                expandedTitle.fadeOut(MainActivity.DetailFragments.ALPHA_ANIMATIONS_DURATION.toLong())
+                tagLayout.fadeOut(MainActivity.DetailFragments.ALPHA_ANIMATIONS_DURATION.toLong()/2)
+                mIsTheTitleContainerVisible = false
+            }
+
+        } else {
+            if (!mIsTheTitleContainerVisible) {
+                expandedTitle.fadeIn(MainActivity.DetailFragments.ALPHA_ANIMATIONS_DURATION.toLong())
+                tagLayout.fadeIn(MainActivity.DetailFragments.ALPHA_ANIMATIONS_DURATION.toLong()*2)
+                mIsTheTitleContainerVisible = true
+            }
+        }
+    }
+
     private fun handleAlphaOnImage(percentage: Float) {
-        detailImage.alpha = 1.0f - Math.min(1.0f, percentage * 1.5f)
-        shadeOverlay.alpha = Math.min(0.6f, percentage * 1.2f)
+        detailImage.alpha = 1.0f - Math.min(1.0f, percentage * 1.2f)
     }
 
     companion object {

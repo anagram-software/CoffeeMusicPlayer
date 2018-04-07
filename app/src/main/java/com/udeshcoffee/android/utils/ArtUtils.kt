@@ -88,7 +88,7 @@ fun loadAlbumArtwork(context: Context, id: Long, imageView: ImageView, animate: 
                      callback: ((success: Boolean) -> Unit)? = null){
     val uri = ContentUris.withAppendedId(ArtworkURI, id)
     if (uri != null) {
-        val options = RequestOptions().placeholder(R.drawable.ic_album_white_24dp)
+        val options = RequestOptions().error(R.drawable.ic_album_white_24dp)
         if (isBlurred)
             options.transform(BlurTransformation())
         val glide = Glide.with(context)
@@ -167,9 +167,13 @@ fun loadFileArtistArtwork(glide: RequestManager,
     val colors = IntArray(2)
     colors[1] = Color.TRANSPARENT
 
-    val options = RequestOptions().error(R.drawable.ic_person_white_24dp).signature(ObjectKey(dir.lastModified()))
-    if (isBlur)
-        options.transform(BlurTransformation(50))
+    val options = RequestOptions()
+            .error(R.drawable.ic_person_white_24dp)
+            .signature(ObjectKey(dir.lastModified()))
+    if (isBlur) {
+        options.override(imageView.width / 5, imageView.height / 5)
+                .transform(BlurTransformation(25))
+    }
 
     glide.load(dir)
             .apply(options)
