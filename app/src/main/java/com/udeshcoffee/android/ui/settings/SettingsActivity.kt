@@ -62,11 +62,6 @@ class SettingsActivity: AppCompatActivity() {
 
         override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
 
-            val prefAppStart = findPreference(PreferenceUtil.PREF_APP_START) as ListPreference
-            //TODO Home - Remove isEnabled(false) from pref_app_start
-            prefAppStart.isEnabled = false
-            prefAppStart.summary = prefAppStart.entry
-
             val prefLibStart = findPreference(PreferenceUtil.PREF_LIB_START) as ListPreference
             prefLibStart.summary = prefLibStart.entry
 
@@ -121,10 +116,6 @@ class SettingsActivity: AppCompatActivity() {
                 PreferenceUtil.PREF_NEW_PLAYER -> {
                     val pref = findPreference(key) as CheckBoxPreference
                     pref.summary = resources.getString(R.string.pref_new_player) + " Restart to affect the changes."
-                }
-                PreferenceUtil.PREF_APP_START -> {
-                    val pref = findPreference(key) as ListPreference
-                    pref.summary = pref.entry
                 }
                 PreferenceUtil.PREF_LIB_START -> {
                     val pref = findPreference(key) as ListPreference

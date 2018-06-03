@@ -50,7 +50,7 @@ class ArtistFragment : Fragment() {
 
         val albumView = view.findViewById<EmptyRecyclerView>(R.id.linear_list)
         // specify an adapter (see also next example)
-        artistAdpt = ArtistAdapter(ArtistAdapter.ITEM_TYPE_NORMAL, Glide.with(context), true)
+        artistAdpt = ArtistAdapter(ArtistAdapter.ITEM_TYPE_NORMAL, Glide.with(context!!), true)
         albumView.layoutManager = GridLayoutManager(context,  resources.getInteger(R.integer.grid_columns),
                 GridLayoutManager.VERTICAL, false)
         albumView.setEmptyView(view.findViewById(R.id.empty_view))

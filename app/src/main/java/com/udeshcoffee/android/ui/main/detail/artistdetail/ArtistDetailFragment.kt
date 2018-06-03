@@ -329,7 +329,7 @@ class ArtistDetailFragment: Fragment(), AppBarLayout.OnOffsetChangedListener {
                 it?.let { fragmentManager?.navigateToDetail(it) }
             })
             artistArtChanged.observe(this@ArtistDetailFragment, Observer {
-                it?.let { loadArtistArtwork(context!!, Glide.with(context), it.first, it.second, detailImage,
+                it?.let { loadArtistArtwork(context!!, Glide.with(context!!), it.first, it.second, detailImage,
                         shouldCollect = false) }
             })
             artistArtDeleted.observe(this@ArtistDetailFragment, Observer {

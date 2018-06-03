@@ -212,6 +212,7 @@ class PlayerFragment : Fragment() {
                 }
             })
             queue.observe(this@PlayerFragment, Observer {
+                Log.d(TAG, "observe queue ${it?.size}")
                 it?.let {
                     playerArtPagerAdapter.accept(it)
                 }

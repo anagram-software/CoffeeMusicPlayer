@@ -26,7 +26,6 @@ class MainActivity : MiniPlayerActivity(), NavigationView.OnNavigationItemSelect
 
     object Fragments {
         const val FAVORITES = "favorites"
-        const val HOME = "home"
         const val LIBRARY = "library"
         const val PLAYLISTS = "playlists"
         const val EQUALIZER = "equalizer"
@@ -51,10 +50,6 @@ class MainActivity : MiniPlayerActivity(), NavigationView.OnNavigationItemSelect
     private var pendingUri: Uri? = null
     private var mainContentItem : Int? = null
 
-    // Pref
-    //TODO Home - Change this to PreferenceUtil.APP_START_HOME
-    private var prefAppStart: Int = PreferenceUtil.APP_START_LIB
-
     override fun onCreate(savedInstanceState: Bundle?) {
         setContentView(R.layout.activity_main)
         super.onCreate(savedInstanceState)
@@ -63,29 +58,12 @@ class MainActivity : MiniPlayerActivity(), NavigationView.OnNavigationItemSelect
         drawer.setNavigationItemSelectedListener(this)
         drawerLayout = findViewById(R.id.drawer_layout)
 
-        prefAppStart = sharedPreferences.getString(PreferenceUtil.PREF_APP_START, "${PreferenceUtil.APP_START_LIB}").toInt()
-
-        // Mini Player Fragment
-        when (prefAppStart) {
-        //TODO Home - Uncomment
-//            PreferenceUtil.APP_START_HOME -> {
-//                val homeFragment = supportFragmentManager.findFragmentByTag(Fragments.HOME)
-//                        as HomeFragment? ?: HomeFragment().also {
-//                    addFragmentToActivity(it, R.id.main_container, Fragments.HOME)
-//                }
-//                HomePresenter(homeFragment, Injection.provideMediaRepository(applicationContext))
-//                drawer.setCheckedItem(R.id.navigation_home)
-//                mainContentItem = R.id.navigation_home
-//            }
-            PreferenceUtil.APP_START_LIB -> {
-                supportFragmentManager.findFragmentByTag(Fragments.LIBRARY)
-                        as LibraryFragment? ?: LibraryFragment().also {
-                    replaceFragmentToActivity(it, R.id.main_container, Fragments.LIBRARY)
-                }
-                drawer.setCheckedItem(R.id.navigation_library)
-                mainContentItem = R.id.navigation_library
-            }
+        supportFragmentManager.findFragmentByTag(Fragments.LIBRARY)
+                as LibraryFragment? ?: LibraryFragment().also {
+            replaceFragmentToActivity(it, R.id.main_container, Fragments.LIBRARY)
         }
+        drawer.setCheckedItem(R.id.navigation_library)
+        mainContentItem = R.id.navigation_library
 
 //        try {
 //            //current version
@@ -178,35 +156,10 @@ class MainActivity : MiniPlayerActivity(), NavigationView.OnNavigationItemSelect
                 closeDrawerLayout()
                 openNowPlay()
             }
-            //TODO Home - Uncomment
-//            R.id.navigation_home -> {
-//
-//                if (prefAppStart == PreferenceUtil.APP_START_HOME) {
-//                    supportFragmentManager.popBackStack()
-//                    mainContentItem = R.id.navigation_home
-//                    closeDrawerLayout()
-//                } else {
-//
-//                    supportFragmentManager.popBackStack()
-//                    val homeFragment = supportFragmentManager.findFragmentByTag(Fragments.HOME)
-//                            as HomeFragment? ?: HomeFragment()
-//                    HomePresenter(homeFragment, Injection.provideMediaRepository(applicationContext))
-//                    doTransaction(R.id.main_container, homeFragment, MainActivity.Fragments.HOME)
-//                    mainContentItem = R.id.navigation_home
-//                    closeDrawerLayout()
-//                }
-//            }
             R.id.navigation_library -> {
-                if (prefAppStart == PreferenceUtil.APP_START_LIB) {
-                    supportFragmentManager.popBackStack()
-                    mainContentItem = R.id.navigation_library
-                    closeDrawerLayout()
-                } else {
-                    supportFragmentManager.popBackStack()
-                    supportFragmentManager?.navigateToLibrary()
-                    mainContentItem = R.id.navigation_library
-                    closeDrawerLayout()
-                }
+                supportFragmentManager.popBackStack()
+                mainContentItem = R.id.navigation_library
+                closeDrawerLayout()
             }
             R.id.navigation_playlist -> {
                 supportFragmentManager.popBackStack()
@@ -238,21 +191,11 @@ class MainActivity : MiniPlayerActivity(), NavigationView.OnNavigationItemSelect
         when (supportFragmentManager.backStackEntryCount) {
             0 -> {
                 drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED)
-                when (prefAppStart) {
-                    //TODO Home - Uncomment
-//                    PreferenceUtil.APP_START_HOME -> {
-//                        drawer.setCheckedItem(R.id.navigation_home)
-//                        mainContentItem = R . id . navigation_home
-//                    }
-                    PreferenceUtil.APP_START_LIB -> {
-                        drawer.setCheckedItem(R.id.navigation_library)
-                        mainContentItem = R . id . navigation_library
-                    }
-                }
+                drawer.setCheckedItem(R.id.navigation_library)
+                mainContentItem = R . id . navigation_library
             }
             else -> {
                 when (supportFragmentManager.getBackStackEntryAt(supportFragmentManager.backStackEntryCount - 1).name){
-                    Fragments.HOME -> { drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED) }
                     Fragments.LIBRARY -> { drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED) }
                     Fragments.PLAYLISTS -> { drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED) }
                     Fragments.EQUALIZER -> { drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED) }
@@ -299,7 +242,6 @@ class MainActivity : MiniPlayerActivity(), NavigationView.OnNavigationItemSelect
                 MainActivity.Fragments.PLAYLISTS -> { drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED) }
                 MainActivity.Fragments.EQUALIZER -> { drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED) }
                 MainActivity.Fragments.FAVORITES -> { drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED) }
-                MainActivity.Fragments.HOME -> { drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED) }
                 MainActivity.Fragments.LIBRARY -> { drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED) }
                 else -> { drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED) }
             }
@@ -311,20 +253,5 @@ class MainActivity : MiniPlayerActivity(), NavigationView.OnNavigationItemSelect
     override fun onPlayerExpanded() {
         super.onPlayerExpanded()
         drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
-    }
-
-    fun onHomeLibraryClick() {
-        if (prefAppStart == PreferenceUtil.APP_START_LIB) {
-            supportFragmentManager.popBackStack()
-            mainContentItem = R.id.navigation_library
-            drawer.setCheckedItem(R.id.navigation_library)
-            closeDrawerLayout()
-        } else {
-            supportFragmentManager.popBackStack()
-            supportFragmentManager?.navigateToLibrary()
-            mainContentItem = R.id.navigation_library
-            drawer.setCheckedItem(R.id.navigation_library)
-            closeDrawerLayout()
-        }
     }
 }

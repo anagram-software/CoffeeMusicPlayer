@@ -134,10 +134,12 @@ abstract class MiniPlayerActivity : BaseActivity() {
 
     private fun setControlBack(){
         val service = getService()
-        service?.currentSong()?.let {
-            if (controlBackSongId != it.id) {
-                it.loadSongColor(this, controlBack)
-                controlBackSongId = it.id
+        service?.let {
+            it.currentSong()?.let {
+                if (controlBackSongId != it.id) {
+                    it.loadSongColor(this, controlBack)
+                    controlBackSongId = it.id
+                }
             }
         }
     }

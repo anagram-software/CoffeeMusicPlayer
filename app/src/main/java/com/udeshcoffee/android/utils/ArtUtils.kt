@@ -40,50 +40,6 @@ import java.io.IOException
 /**
  * Created by Udathari on 9/23/2017.
  */
-fun loadCoolCardView(context: Context,
-                     albumId: Long? = null,
-                     artistId: Long? = null,
-                     background: FadableLayout) {
-
-    val uri = albumId?.let {
-        ContentUris.withAppendedId(ArtworkURI, albumId)
-    }
-
-    val myDir = artistId?.let {
-        val root = Environment.getExternalStorageDirectory().toString()
-        File("$root/CoffeePlayer/ArtistImages/$artistId.jpg")
-    }
-
-    if (uri != null || myDir != null) {
-        val glide = Glide.with(context)
-                .asBitmap()
-
-        val load = when {
-            uri != null -> glide.load(uri)
-            myDir != null -> glide.load(myDir)
-            else -> throw IllegalArgumentException("Should supply one of the twp ids")
-        }
-        load.apply(RequestOptions().placeholder(R.drawable.ic_music_note_white_24dp))
-                .into(object : SimpleTarget<Bitmap>(50, 50) {
-
-                    override fun onResourceReady(resource: Bitmap?, transition: Transition<in Bitmap>?) {
-                        resource?.let {
-                            getPalette(it, {
-                                val nextColor = it.getMutedColor(Color.DKGRAY)
-                                background.fadeToColor(nextColor, 300)
-                            })
-                        }
-                    }
-
-                    override fun onLoadFailed(errorDrawable: Drawable?) {
-                        super.onLoadFailed(errorDrawable)
-                        background.fadeToColor(Color.DKGRAY, 300)
-                    }
-
-                })
-    }
-}
-
 fun loadAlbumArtwork(context: Context, id: Long, imageView: ImageView, animate: Boolean = true, isBlurred: Boolean = false,
                      callback: ((success: Boolean) -> Unit)? = null){
     val uri = ContentUris.withAppendedId(ArtworkURI, id)

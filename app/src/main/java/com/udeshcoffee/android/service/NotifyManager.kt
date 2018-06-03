@@ -83,7 +83,7 @@ class NotifyManager(val service: MusicService) {
         Glide.with(mContext).asBitmap()
                 .load(ContentUris.withAppendedId(ArtworkURI, currentSong.albumId))
                 .into(object : SimpleTarget<Bitmap>(320, 320) {
-                    override fun onResourceReady(resource: Bitmap?, transition: Transition<in Bitmap>?) {
+                    override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
                         metadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, resource)
                         metadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, resource)
                         service.mediaSession.setMetadata(metadataBuilder.build())

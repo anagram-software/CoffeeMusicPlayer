@@ -16,15 +16,9 @@ object PreferenceUtil {
     const val SHUFFLE = "shuffle"
     const val LYRICS = "lyrics"
     const val LYRICS_SIZE = "lyricssize"
-    const val HOME_INFO_DISMISSED = "homeinfodismissed"
-    const val LAST_VIEWED_WHATS_NEW = "lastviewedwhatsnew"
-
-    const val APP_START_HOME = 0
-    const val APP_START_LIB = 1
 
     const val DEFAULT_LYRICS = false
 
-    const val  PREF_APP_START = "pref_app_start"
     const val  PREF_LIB_START = "pref_lib_start"
     const val  PREF_NEW_PLAYER = "pref_new_player"
     const val  PREF_CALL = "pref_call"

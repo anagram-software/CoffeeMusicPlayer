@@ -70,8 +70,8 @@ class BigAppWidget : BaseAppWidget() {
 
         Glide.with(context).asBitmap().load(uri)
                 .into(object : SimpleTarget<Bitmap>(180, 180) {
-                    override fun onResourceReady(bitmap: Bitmap, transition: Transition<in Bitmap>) {
-                        views.setImageViewBitmap(R.id.album_art, bitmap)
+                    override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
+                        views.setImageViewBitmap(R.id.album_art, resource)
                         setStyles(context, views, id)
                         appWidgetManager.updateAppWidget(id, views)
                     }

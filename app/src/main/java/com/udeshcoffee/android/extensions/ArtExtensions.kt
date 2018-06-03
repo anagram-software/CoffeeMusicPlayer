@@ -6,6 +6,7 @@ import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.drawable.Drawable
 import android.support.v4.content.ContextCompat
+import android.view.View
 import android.widget.ImageButton
 import android.widget.ImageView
 import com.bumptech.glide.Glide
@@ -43,8 +44,8 @@ fun Song.loadSongColor(context: Context, background: FadableLayout? = null, play
                         .signature(MediaStoreSignature("image/*", this.dateModified, 0)))
                 .into(object : SimpleTarget<Bitmap>(50, 50) {
 
-                    override fun onResourceReady(resource: Bitmap?, transition: Transition<in Bitmap>?) {
-                        resource?.let {
+                    override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
+                        resource.let {
                             getPalette(it, {
                                 background?.apply { fadeToColor(it.getMutedColor(Color.DKGRAY), 500) }
                                 play?.apply { setColorFilter(it.getLightMutedColor(Color.WHITE)) }
@@ -109,12 +110,13 @@ fun Genre.loadArtwork(context: Context, imageViews: Array<ImageView>) {
         for (count in 0 until it.size) {
             val uri = ContentUris.withAppendedId(ArtworkURI, it[count])
             val imageView = imageViews[count]
+            imageView.visibility = View.INVISIBLE
             if (uri != null) {
                 Glide.with(context)
                         .load(uri)
                         .apply(RequestOptions().placeholder(R.drawable.ic_music_note_white_24dp).centerCrop())
                         .into(object : SimpleTarget<Drawable>() {
-                            override fun onResourceReady(resource: Drawable?, transition: Transition<in Drawable>?) {
+                            override fun onResourceReady(resource: Drawable, transition: Transition<in Drawable>?) {
                                 imageView.setImageDrawable(resource)
                                 imageView.fadeIn(250)
                             }

@@ -12,15 +12,6 @@
 
     // Preference
     <string name="pref_new_player">Use ExoPlayer instead of Android\'s default player. Try this is your have playback issues.</string>
-    <string-array name="pref_app_start_list_titles">
-        <item>Home</item>
-        <item>Library</item>
-    </string-array>
-
-    <string-array name="pref_app_start_list_values">
-        <item>0</item>
-        <item>1</item>
-    </string-array>
 
     <string-array name="pref_lib_start_list_titles">
         <item>Songs</item>
