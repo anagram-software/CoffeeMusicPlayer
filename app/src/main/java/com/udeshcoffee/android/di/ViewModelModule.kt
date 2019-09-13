@@ -12,10 +12,10 @@ import com.udeshcoffee.android.ui.main.search.SearchViewModel
 import com.udeshcoffee.android.ui.miniplayer.MiniPlayerViewModel
 import com.udeshcoffee.android.ui.player.player.PlayerViewModel
 import com.udeshcoffee.android.ui.player.queue.QueueViewModel
-import org.koin.android.architecture.ext.viewModel
-import org.koin.dsl.module.applicationContext
+import org.koin.android.viewmodel.ext.koin.viewModel
+import org.koin.dsl.module.module
 
-val viewModelModule = applicationContext {
+val viewModelModule = module {
     // Detail
     viewModel{ AlbumDetailViewModel(get(), get(), get()) }
     viewModel{ ArtistDetailViewModel(get(), get(), get()) }

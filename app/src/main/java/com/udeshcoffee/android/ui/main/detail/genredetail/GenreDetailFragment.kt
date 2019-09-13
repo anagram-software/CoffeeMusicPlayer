@@ -1,17 +1,20 @@
 package com.udeshcoffee.android.ui.main.detail.genredetail
 
-import android.arch.lifecycle.Observer
 import android.os.Bundle
-import android.support.v4.app.Fragment
-import android.support.v7.app.ActionBar
-import android.support.v7.app.AppCompatActivity
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.RecyclerView
-import android.support.v7.widget.Toolbar
 import android.view.*
 import android.widget.Toast
+import androidx.appcompat.app.ActionBar
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
+import androidx.lifecycle.Observer
+import androidx.navigation.findNavController
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.udeshcoffee.android.R
-import com.udeshcoffee.android.extensions.*
+import com.udeshcoffee.android.extensions.openAddToPlaylistDialog
+import com.udeshcoffee.android.extensions.openCollectionLongDialog
+import com.udeshcoffee.android.extensions.openSongLongDialog
+import com.udeshcoffee.android.extensions.showPlayingToast
 import com.udeshcoffee.android.interfaces.OnGridItemClickListener
 import com.udeshcoffee.android.interfaces.OnSongItemClickListener
 import com.udeshcoffee.android.model.Genre
@@ -20,13 +23,14 @@ import com.udeshcoffee.android.recyclerview.EmptyRecyclerView
 import com.udeshcoffee.android.recyclerview.MiniGridItemDecor
 import com.udeshcoffee.android.ui.common.adapters.AlbumAdapter
 import com.udeshcoffee.android.ui.common.adapters.SongAdapter
+import com.udeshcoffee.android.ui.main.detail.albumdetail.AlbumDetailFragment
 import com.udeshcoffee.android.utils.SortManager
 import org.koin.android.ext.android.inject
 
 /**
-* Created by Udathari on 9/12/2017.
-*/
-class GenreDetailFragment: Fragment() {
+ * Created by Udathari on 9/12/2017.
+ */
+class GenreDetailFragment : androidx.fragment.app.Fragment() {
 
     private val viewModel: GenreDetailViewModel by inject()
 
@@ -75,12 +79,10 @@ class GenreDetailFragment: Fragment() {
             }
 
             val songView = findViewById<EmptyRecyclerView>(R.id.genre_song_recycler_view)
-            songView.layoutManager = LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false)
+            songView.layoutManager = LinearLayoutManager(context, RecyclerView.VERTICAL, false)
             songView.setEmptyView(findViewById(R.id.empty_view))
             songView.hasFixedSize()
             songView.setItemViewCacheSize(20)
-            songView.isDrawingCacheEnabled = true
-            songView.drawingCacheQuality = View.DRAWING_CACHE_QUALITY_AUTO
             songView.isNestedScrollingEnabled = false
 
             // specify an adapter (see also next example)
@@ -130,38 +132,38 @@ class GenreDetailFragment: Fragment() {
         return root
     }
 
-    override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
-        inflater?.inflate(R.menu.genre_detail_menu, menu)
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(R.menu.genre_detail_menu, menu)
         super.onCreateOptionsMenu(menu, inflater)
     }
 
-    override fun onPrepareOptionsMenu(menu: Menu?) {
-        if (menu != null) {
-            when (viewModel.songSortOrder) {
-                SortManager.SongSort.DEFAULT -> menu.findItem(R.id.action_sort_default).isChecked = true
-                SortManager.SongSort.NAME -> menu.findItem(R.id.action_sort_title).isChecked = true
-                SortManager.SongSort.TRACK_NUMBER -> menu.findItem(R.id.action_sort_track).isChecked = true
-                SortManager.SongSort.DURATION -> menu.findItem(R.id.action_sort_duration).isChecked = true
-                SortManager.SongSort.DATE -> menu.findItem(R.id.action_sort_date).isChecked = true
-                SortManager.SongSort.YEAR -> menu.findItem(R.id.action_sort_year).isChecked = true
-                SortManager.SongSort.ALBUM_NAME -> menu.findItem(R.id.action_sort_album_name).isChecked = true
-            }
-            when (viewModel.albumSortOrder) {
-                SortManager.AlbumSort.DEFAULT -> menu.findItem(R.id.action_sort_album_default).isChecked = true
-                SortManager.AlbumSort.NAME -> menu.findItem(R.id.action_sort_album_title).isChecked = true
-                SortManager.AlbumSort.YEAR -> menu.findItem(R.id.action_sort_album_year).isChecked = true
-            }
-            viewModel.let { menu.findItem(R.id.action_sort_ascending).isChecked = it.songSortAscending
-                menu.findItem(R.id.action_sort_album_ascending).isChecked = it.albumSortAscending }
+    override fun onPrepareOptionsMenu(menu: Menu) {
+        when (viewModel.songSortOrder) {
+            SortManager.SongSort.DEFAULT -> menu.findItem(R.id.action_sort_default).isChecked = true
+            SortManager.SongSort.NAME -> menu.findItem(R.id.action_sort_title).isChecked = true
+            SortManager.SongSort.TRACK_NUMBER -> menu.findItem(R.id.action_sort_track).isChecked = true
+            SortManager.SongSort.DURATION -> menu.findItem(R.id.action_sort_duration).isChecked = true
+            SortManager.SongSort.DATE -> menu.findItem(R.id.action_sort_date).isChecked = true
+            SortManager.SongSort.YEAR -> menu.findItem(R.id.action_sort_year).isChecked = true
+            SortManager.SongSort.ALBUM_NAME -> menu.findItem(R.id.action_sort_album_name).isChecked = true
+        }
+        when (viewModel.albumSortOrder) {
+            SortManager.AlbumSort.DEFAULT -> menu.findItem(R.id.action_sort_album_default).isChecked = true
+            SortManager.AlbumSort.NAME -> menu.findItem(R.id.action_sort_album_title).isChecked = true
+            SortManager.AlbumSort.YEAR -> menu.findItem(R.id.action_sort_album_year).isChecked = true
+        }
+        viewModel.let {
+            menu.findItem(R.id.action_sort_ascending).isChecked = it.songSortAscending
+            menu.findItem(R.id.action_sort_album_ascending).isChecked = it.albumSortAscending
         }
         super.onPrepareOptionsMenu(menu)
     }
 
-    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
         var sortChanged = true
         var albumSortChanged = true
 
-        if (item?.groupId == R.id.sort_album) {
+        if (item.groupId == R.id.sort_album) {
             when (item.itemId) {
                 R.id.action_sort_album_default -> viewModel.albumSortOrder = SortManager.AlbumSort.DEFAULT
                 R.id.action_sort_album_title -> viewModel.albumSortOrder = SortManager.AlbumSort.NAME
@@ -170,7 +172,7 @@ class GenreDetailFragment: Fragment() {
             }
         } else albumSortChanged = false
 
-        if (item?.groupId == R.id.sort_song) {
+        if (item.groupId == R.id.sort_song) {
             when (item.itemId) {
                 R.id.action_sort_default -> viewModel.songSortOrder = SortManager.SongSort.DEFAULT
                 R.id.action_sort_title -> viewModel.songSortOrder = SortManager.SongSort.NAME
@@ -183,7 +185,7 @@ class GenreDetailFragment: Fragment() {
             }
         } else sortChanged = false
 
-        when (item?.itemId) {
+        when (item.itemId) {
             android.R.id.home -> activity?.onBackPressed()
             R.id.action_play -> viewModel.playClick()
             R.id.action_play_next -> viewModel.playNextClick()
@@ -242,7 +244,7 @@ class GenreDetailFragment: Fragment() {
                 it?.let { openCollectionLongDialog(it.first, it.second) }
             })
             showAlbum.observe(this@GenreDetailFragment, Observer {
-                it?.let { fragmentManager?.navigateToDetail(it) }
+                it?.let { view?.findNavController()?.navigate(R.id.albumDetailFragment, AlbumDetailFragment.createBundle(it)) }
             })
         }
     }
@@ -263,13 +265,11 @@ class GenreDetailFragment: Fragment() {
         private const val ARGUMENT_ID = "ARGUMENT_ID"
         private const val ARGUMENT_NAME = "ARGUMENT_NAME"
 
-        fun create(genre: Genre): GenreDetailFragment {
-            val fragment = GenreDetailFragment()
+        fun createBundle(genre: Genre): Bundle {
             val bundle = Bundle()
             bundle.putLong(ARGUMENT_ID, genre.id)
             bundle.putString(ARGUMENT_NAME, genre.name)
-            fragment.arguments = bundle
-            return fragment
+            return bundle
         }
     }
 

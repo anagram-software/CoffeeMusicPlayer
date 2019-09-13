@@ -10,9 +10,8 @@ import android.os.Build
 import android.os.Environment
 import android.os.ParcelFileDescriptor
 import android.provider.MediaStore
-import android.support.annotation.RequiresApi
-import android.support.v4.provider.DocumentFile
 import android.util.Log
+import androidx.annotation.RequiresApi
 import com.udeshcoffee.android.App
 import java.io.File
 import java.io.FileInputStream
@@ -34,9 +33,9 @@ fun getExtSdCardFiles(): Array<File> {
 @TargetApi(Build.VERSION_CODES.KITKAT)
 fun getExtSdCardPaths(): Array<String> {
     val paths = ArrayList<String>()
-    for (file in App.Companion.instance.getExternalFilesDirs("external")) {
+    for (file in App.instance.getExternalFilesDirs("external")) {
 
-        if (file != null && file != App.Companion.instance.getExternalFilesDir("external")) {
+        if (file != null && file != App.instance.getExternalFilesDir("external")) {
             val index = file.absolutePath.lastIndexOf("/Android/data")
             if (index < 0) {
                 Log.w("asd", "Unexpected external file dir: " + file.absolutePath)
@@ -66,7 +65,7 @@ fun copyFile(sourceFile: File, destFile: File) {
 
         if (isFromSdCard(destFile.absolutePath)) {
             val documentFile = getDocumentFile(destFile)
-            pfd = App.instance.contentResolver.openFileDescriptor(documentFile?.uri, "w")
+            pfd = documentFile?.uri?.let { App.instance.contentResolver.openFileDescriptor(it, "w") }
             val outputStream = FileOutputStream(pfd!!.fileDescriptor)
             destination = outputStream.channel
         } else {
@@ -74,8 +73,8 @@ fun copyFile(sourceFile: File, destFile: File) {
         }
 
 
-        if (!destFile.parentFile.exists())
-            destFile.parentFile.mkdirs()
+        if (destFile.parentFile != null && !destFile.parentFile!!.exists())
+            destFile.parentFile?.mkdirs()
 
         if (!destFile.exists()) {
             destFile.createNewFile()
@@ -87,15 +86,9 @@ fun copyFile(sourceFile: File, destFile: File) {
     } catch (e: Exception) {
         e.printStackTrace()
     } finally {
-        if (pfd != null) {
-            pfd.close()
-        }
-        if (source != null) {
-            source.close()
-        }
-        if (destination != null) {
-            destination.close()
-        }
+        pfd?.close()
+        source?.close()
+        destination?.close()
     }
 }
 
@@ -108,7 +101,7 @@ fun cutFile(sourceFile: File, destFile: File){
 
         if (isFromSdCard(destFile.absolutePath)) {
             val documentFile = getDocumentFile(destFile)
-            pfd = App.instance.contentResolver.openFileDescriptor(documentFile?.uri, "w")
+            pfd = documentFile?.uri?.let { App.instance.contentResolver.openFileDescriptor(it, "w") }
             val outputStream = FileOutputStream(pfd!!.fileDescriptor)
             destination = outputStream.channel
         } else {
@@ -116,8 +109,8 @@ fun cutFile(sourceFile: File, destFile: File){
         }
 
 
-        if (!destFile.parentFile.exists())
-            destFile.parentFile.mkdirs()
+        if (destFile.parentFile != null && !destFile.parentFile!!.exists())
+            destFile.parentFile?.mkdirs()
 
         if (!destFile.exists()) {
             destFile.createNewFile()
@@ -127,20 +120,14 @@ fun cutFile(sourceFile: File, destFile: File){
         throw e
     } finally {
         deleteRecursive(sourceFile)
-        if (pfd != null) {
-            pfd.close()
-        }
-        if (source != null) {
-            source.close()
-        }
-        if (destination != null) {
-            destination.close()
-        }
+        pfd?.close()
+        source?.close()
+        destination?.close()
     }
 }
 
 @TargetApi(Build.VERSION_CODES.KITKAT)
-fun getDocumentFile(file: File): DocumentFile? {
+fun getDocumentFile(file: File): androidx.documentfile.provider.DocumentFile? {
     val baseFolder = getExtSdCardFolder(file)
     val relativePath: String?
 
@@ -158,13 +145,13 @@ fun getDocumentFile(file: File): DocumentFile? {
     val treeUri = App.instance.contentResolver.persistedUriPermissions[0].uri ?: return null
 
 // start with root of SD card and then parse through document tree.
-    var document = DocumentFile.fromTreeUri(App.instance, treeUri)
+    var document = androidx.documentfile.provider.DocumentFile.fromTreeUri(App.instance, treeUri)
 
     val parts = relativePath.split("/".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
 
     parts
             .asSequence()
-            .mapNotNull { document.findFile(it) }
+            .mapNotNull { document?.findFile(it) }
             .forEach { document = it }
 
     return document
@@ -285,5 +272,5 @@ fun isFromSdCard(filepath: String): Boolean {
 @RequiresApi(api = Build.VERSION_CODES.KITKAT)
 fun hasPermission(): Boolean {
     val uriPermission = App.instance.contentResolver.persistedUriPermissions
-    return uriPermission != null && uriPermission.size > 0
+    return uriPermission.size > 0
 }

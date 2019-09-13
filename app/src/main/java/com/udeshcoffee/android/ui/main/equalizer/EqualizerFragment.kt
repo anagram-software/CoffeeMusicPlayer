@@ -2,33 +2,32 @@ package com.udeshcoffee.android.ui.main.equalizer
 
 import android.media.audiofx.Equalizer
 import android.os.Bundle
-import android.support.v4.app.Fragment
-import android.support.v7.app.ActionBar
-import android.support.v7.app.AppCompatActivity
-import android.support.v7.widget.Toolbar
 import android.util.TypedValue
 import android.view.*
 import android.widget.*
-import com.h6ah4i.android.widget.verticalseekbar.VerticalSeekBar
-import com.h6ah4i.android.widget.verticalseekbar.VerticalSeekBarWrapper
+import androidx.appcompat.app.ActionBar
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
+import androidx.transition.Fade
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.extensions.openDrawer
 import com.udeshcoffee.android.extensions.setRoundColor
 import com.udeshcoffee.android.ui.common.dialogs.DeleteEQDialog
 import com.udeshcoffee.android.ui.common.dialogs.SaveEQDialog
+import com.udeshcoffee.android.utils.SeekBarRotator
 import org.koin.android.ext.android.inject
 
 /**
 * Created by Udathari on 9/28/2017.
 */
-class EqualizerFragment : Fragment(), EqualizerContract.View {
+class EqualizerFragment : androidx.fragment.app.Fragment(), EqualizerContract.View {
 
     override val presenter: EqualizerContract.Presenter by inject()
 
     var actionBar: ActionBar? = null
     private lateinit var presetSpinner: Spinner
     private lateinit var actionSave: ImageButton
-    private var bandBars: Array<VerticalSeekBar?>? = null
+    private var bandBars: Array<SeekBar?>? = null
     private lateinit var dbTextViews: Array<TextView?>
     private lateinit var bandHolder: LinearLayout
 
@@ -42,6 +41,11 @@ class EqualizerFragment : Fragment(), EqualizerContract.View {
 
     // Reverb
     private lateinit var reverbSpinner: Spinner
+
+    init {
+        enterTransition = Fade()
+        exitTransition = Fade()
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
             inflater.inflate(R.layout.frag_equalizer, container, false)
@@ -115,13 +119,13 @@ class EqualizerFragment : Fragment(), EqualizerContract.View {
         presenter.start()
     }
 
-    override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
-        inflater?.inflate(R.menu.equalizer_menu, menu)
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(R.menu.equalizer_menu, menu)
         super.onCreateOptionsMenu(menu, inflater)
     }
 
-    override fun onPrepareOptionsMenu(menu: Menu?) {
-        val item = menu?.findItem(R.id.switch_equalizer)
+    override fun onPrepareOptionsMenu(menu: Menu) {
+        val item = menu.findItem(R.id.switch_equalizer)
         item?.let {
             val actionEnable = item.actionView.findViewById<Switch>(R.id.action_enable_equalizer)
             presenter.enabled?.let { actionEnable.isChecked = it }
@@ -132,8 +136,8 @@ class EqualizerFragment : Fragment(), EqualizerContract.View {
         super.onPrepareOptionsMenu(menu)
     }
 
-    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
-        when (item?.itemId) {
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
             android.R.id.home -> activity?.openDrawer()
             R.id.switch_equalizer -> {
                 Toast.makeText(context, "Switch: ${item.isChecked}", Toast.LENGTH_SHORT).show()
@@ -203,32 +207,36 @@ class EqualizerFragment : Fragment(), EqualizerContract.View {
     }
 
     override fun setReverbs(reverbs: ArrayList<String>, initReverb: Int) {
-        val dataAdapterReverb = ArrayAdapter<String>(context, android.R.layout.simple_spinner_item, reverbs)
-        dataAdapterReverb.setDropDownViewResource(R.layout.spinner_dropdown_item)
-        reverbSpinner.adapter = dataAdapterReverb
-        reverbSpinner.setSelection(initReverb)
-        reverbSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener{
-            override fun onNothingSelected(p0: AdapterView<*>?) {}
+        context?.let {
+            val dataAdapterReverb = ArrayAdapter<String>(it, android.R.layout.simple_spinner_item, reverbs)
+            dataAdapterReverb.setDropDownViewResource(R.layout.spinner_dropdown_item)
+            reverbSpinner.adapter = dataAdapterReverb
+            reverbSpinner.setSelection(initReverb)
+            reverbSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener{
+                override fun onNothingSelected(p0: AdapterView<*>?) {}
 
-            override fun onItemSelected(p0: AdapterView<*>?, p1: View?, index: Int, p3: Long) {
-                presenter.pickReverb(index)
+                override fun onItemSelected(p0: AdapterView<*>?, p1: View?, index: Int, p3: Long) {
+                    presenter.pickReverb(index)
+                }
+
             }
-
         }
     }
 
     override fun setPresets(presets: ArrayList<String>, initPreset: Int) {
-        val dataAdapterEq = ArrayAdapter<String>(context, android.R.layout.simple_spinner_item, presets)
-        dataAdapterEq.setDropDownViewResource(R.layout.spinner_dropdown_item)
-        presetSpinner.adapter = dataAdapterEq
-        presetSpinner.setSelection(initPreset)
-        presetSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener{
-            override fun onNothingSelected(p0: AdapterView<*>?) {}
+        context?.let {
+            val dataAdapterEq = ArrayAdapter<String>(it, android.R.layout.simple_spinner_item, presets)
+            dataAdapterEq.setDropDownViewResource(R.layout.spinner_dropdown_item)
+            presetSpinner.adapter = dataAdapterEq
+            presetSpinner.setSelection(initPreset)
+            presetSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener{
+                override fun onNothingSelected(p0: AdapterView<*>?) {}
 
-            override fun onItemSelected(p0: AdapterView<*>?, p1: View?, index: Int, p3: Long) {
-                presenter.pickPreset(index)
+                override fun onItemSelected(p0: AdapterView<*>?, p1: View?, index: Int, p3: Long) {
+                    presenter.pickPreset(index)
+                }
+
             }
-
         }
     }
 
@@ -269,14 +277,12 @@ class EqualizerFragment : Fragment(), EqualizerContract.View {
                     ViewGroup.LayoutParams.WRAP_CONTENT,
                     TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 150f, resources.displayMetrics).toInt())
             layoutParams.weight = 1f
-            val wrapper = VerticalSeekBarWrapper(context)
-            wrapper.layoutParams = layoutParams
             val view = LayoutInflater.from(context).inflate(R.layout.equalizer_seekbar, null)
-            bandBars!![i] = view.findViewById(R.id.equalizerBandBar)
+            val seekBarRotator = view.findViewById<SeekBarRotator>(R.id.seekbar_rotator)
+            seekBarRotator.layoutParams = layoutParams
+            bandBars!![i] = view.findViewById(R.id.eq_seekbar)
             bandBars!![i]?.apply {
                 max = equalizer.bandLevelRange[1] - equalizer.bandLevelRange[0]
-                rotationAngle = 270
-                rotation = 270f
                 setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                     override fun onProgressChanged(seekBar: SeekBar, progress: Int,
                                                    fromUser: Boolean) {
@@ -293,9 +299,8 @@ class EqualizerFragment : Fragment(), EqualizerContract.View {
                     }
                 })
             }
-            wrapper.addView(view)
             row.addView(freqTextView)
-            row.addView(wrapper)
+            row.addView(view)
             row.addView(dbTextViews[i])
             bandHolder.addView(row)
         }
@@ -303,7 +308,7 @@ class EqualizerFragment : Fragment(), EqualizerContract.View {
 
     override fun setBands(equalizer: Equalizer) {
         bandBars?.let {
-            for (i in 0 until it.size) {
+            for (i in it.indices) {
                 it[i]?.progress = equalizer.getBandLevel(i.toShort()) - equalizer.bandLevelRange[0]
             }
         }
@@ -312,13 +317,13 @@ class EqualizerFragment : Fragment(), EqualizerContract.View {
     override fun showSaveEQDialog() {
         val mDialog = SaveEQDialog.create()
         mDialog.setTargetFragment(this, 0)
-        mDialog.show(fragmentManager, "SaveEQDialog")
+        fragmentManager?.let { mDialog.show(it, "SaveEQDialog") }
     }
 
     override fun showDeleteEQDialog(preset: Int, name: String) {
         val mDialog = DeleteEQDialog.create(preset, name)
         mDialog.setTargetFragment(this, 0)
-        mDialog.show(fragmentManager, "SaveEQDialog")
+        fragmentManager?.let { mDialog.show(it, "SaveEQDialog") }
     }
 
     companion object {

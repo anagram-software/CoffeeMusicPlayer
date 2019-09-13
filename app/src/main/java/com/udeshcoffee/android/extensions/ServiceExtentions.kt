@@ -1,11 +1,10 @@
 package com.udeshcoffee.android.extensions
 
-import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
-import android.preference.PreferenceManager
 import android.util.Log
+import androidx.preference.PreferenceManager
 import com.annimon.stream.Stream
 import com.udeshcoffee.android.data.MediaRepository
 import com.udeshcoffee.android.model.Song
@@ -20,11 +19,7 @@ import io.reactivex.schedulers.Schedulers
  * Created by Udathari on 8/26/2017.
  */
 
-val TAG = "ServiceExtensions"
-
-fun AppWidgetProvider.getQueue(context: Context, mediaRepository: MediaRepository): Observable<ArrayList<Song>>? {
-    return getQueueLogic(context, mediaRepository)
-}
+const val TAG = "ServiceExtensions"
 
 fun MusicService.getQueue(): Observable<ArrayList<Song>>? {
     return getQueueLogic(this, mediaRepository)

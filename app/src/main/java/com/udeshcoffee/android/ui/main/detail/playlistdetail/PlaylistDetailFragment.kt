@@ -1,17 +1,16 @@
 package com.udeshcoffee.android.ui.main.detail.playlistdetail
 
-import android.arch.lifecycle.Observer
 import android.content.Intent
 import android.os.Bundle
-import android.support.v4.app.Fragment
-import android.support.v7.app.ActionBar
-import android.support.v7.app.AppCompatActivity
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.RecyclerView
-import android.support.v7.widget.Toolbar
-import android.support.v7.widget.helper.ItemTouchHelper
 import android.view.*
 import android.widget.Toast
+import androidx.appcompat.app.ActionBar
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
+import androidx.lifecycle.Observer
+import androidx.recyclerview.widget.ItemTouchHelper
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.extensions.openAddToPlaylistDialog
 import com.udeshcoffee.android.extensions.openSongLongDialog
@@ -29,7 +28,7 @@ import org.koin.android.ext.android.inject
 * Created by Udathari on 9/12/2017.
 */
 
-class PlaylistDetailFragment : Fragment() {
+class PlaylistDetailFragment : androidx.fragment.app.Fragment() {
 
     private val viewModel: PlaylistDetailViewModel by inject()
 
@@ -72,12 +71,10 @@ class PlaylistDetailFragment : Fragment() {
             }
 
             songView = findViewById(R.id.list)
-            songView.layoutManager = LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false)
+            songView.layoutManager = LinearLayoutManager(context, RecyclerView.VERTICAL, false)
             songView.setEmptyView(findViewById(R.id.empty_view))
             songView.hasFixedSize()
             songView.setItemViewCacheSize(20)
-            songView.isDrawingCacheEnabled = true
-            songView.drawingCacheQuality = View.DRAWING_CACHE_QUALITY_AUTO
             songView.isNestedScrollingEnabled = false
 
             // specify an adapter (see also next example)
@@ -117,18 +114,18 @@ class PlaylistDetailFragment : Fragment() {
         return root
     }
 
-    override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
-        inflater?.inflate(R.menu.playlist_detail_menu, menu)
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(R.menu.playlist_detail_menu, menu)
         super.onCreateOptionsMenu(menu, inflater)
     }
 
-    override fun onPrepareOptionsMenu(menu: Menu?) {
+    override fun onPrepareOptionsMenu(menu: Menu) {
         super.onPrepareOptionsMenu(menu)
-        menu?.findItem(R.id.action_add_to_this_playlist)?.isVisible = isAddToPlaylistVisible
+        menu.findItem(R.id.action_add_to_this_playlist)?.isVisible = isAddToPlaylistVisible
     }
 
-    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
-        when (item?.itemId) {
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
             android.R.id.home -> activity?.onBackPressed()
             R.id.action_play -> viewModel.playClick()
             R.id.action_play_next -> viewModel.playNextClick()
@@ -169,7 +166,7 @@ class PlaylistDetailFragment : Fragment() {
         super.onResume()
         viewModel.playlistId = arguments!!.getLong(ARGUMENT_ID)
         viewModel.playlistType = arguments!!.getInt(ARGUMENT_TYPE)
-        viewModel.playlistTitle = arguments!!.getString(ARGUMENT_NAME)
+        viewModel.playlistTitle = arguments!!.getString(ARGUMENT_NAME, "")
         viewModel.start()
     }
 
@@ -179,12 +176,14 @@ class PlaylistDetailFragment : Fragment() {
     }
 
     private fun showRenameUI() {
-        RenamePlaylistDialog.create(viewModel.playlistId, viewModel.playlistTitle).show(fragmentManager, "RenameDialog")
+        fragmentManager?.let { RenamePlaylistDialog.create(viewModel.playlistId, viewModel.playlistTitle).show(it, "RenameDialog") }
     }
 
     private fun showDeleteUI() {
-        DeletePlaylistDialog.create(viewModel.playlistId, viewModel.playlistTitle, true)
-                .show(fragmentManager, "DeletePlaylistDialog")
+        fragmentManager?.let {
+            DeletePlaylistDialog.create(viewModel.playlistId, viewModel.playlistTitle, true)
+                .show(it, "DeletePlaylistDialog")
+        }
     }
 
     private fun showAddToPlaylistUI() {
@@ -199,14 +198,12 @@ class PlaylistDetailFragment : Fragment() {
         private const val ARGUMENT_NAME = "ARGUMENT_NAME"
         private const val ARGUMENT_TYPE = "ARGUMENT_TYPE"
 
-        fun create(playlist: Playlist): PlaylistDetailFragment {
-            val fragment = PlaylistDetailFragment()
+        fun createBundle(playlist: Playlist): Bundle {
             val bundle = Bundle()
             bundle.putLong(ARGUMENT_ID, playlist.id)
             bundle.putInt(ARGUMENT_TYPE, playlist.type)
             bundle.putString(ARGUMENT_NAME, playlist.title)
-            fragment.arguments = bundle
-            return fragment
+            return bundle
         }
     }
 

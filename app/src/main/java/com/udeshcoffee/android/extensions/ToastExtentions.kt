@@ -1,6 +1,6 @@
 package com.udeshcoffee.android.extensions
 
-import android.support.v4.app.Fragment
+import androidx.fragment.app.Fragment
 import android.widget.Toast
 import com.udeshcoffee.android.model.Album
 import com.udeshcoffee.android.model.Artist

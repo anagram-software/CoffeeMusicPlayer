@@ -5,14 +5,14 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Build
 import android.os.Bundle
-import android.support.v4.content.ContextCompat
-import android.support.v7.app.AlertDialog
-import android.support.v7.app.AppCompatActivity
-import android.support.v7.preference.CheckBoxPreference
-import android.support.v7.preference.ListPreference
-import android.support.v7.preference.Preference
-import android.support.v7.preference.PreferenceFragmentCompat
-import android.support.v7.widget.Toolbar
+import androidx.core.content.ContextCompat
+import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
+import androidx.preference.CheckBoxPreference
+import androidx.preference.ListPreference
+import androidx.preference.Preference
+import androidx.preference.PreferenceFragmentCompat
+import androidx.appcompat.widget.Toolbar
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -90,7 +90,7 @@ class SettingsActivity: AppCompatActivity() {
 
             val prefWhatsNew = findPreference(PreferenceUtil.PREF_WHATS_NEW)
             prefWhatsNew.onPreferenceClickListener = Preference.OnPreferenceClickListener {
-                WhatsNewDialog.create().show(fragmentManager, "WhatsNewDialog")
+                fragmentManager?.let { it1 -> WhatsNewDialog.create().show(it1, "WhatsNewDialog") }
                 true
             }
 

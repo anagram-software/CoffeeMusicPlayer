@@ -2,38 +2,31 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <group>
         <item
-            android:id="@+id/navigation_now_play"
+            android:id="@+id/navigationNowPlay"
             android:icon="@drawable/ic_play"
             android:title="@string/action_listening" />
-
         <item
-            android:id="@+id/navigation_favorites"
+            android:id="@+id/favoritesFragment"
             android:icon="@drawable/ic_favorite_white_24dp"
             android:title="@string/action_favorites"
             android:checkable="true"/>
-        <!-- TODO Home - Uncomment -->
-        <!--<item-->
-            <!--android:id="@+id/navigation_home"-->
-            <!--android:icon="@drawable/ic_home_white_24dp"-->
-            <!--android:title="@string/action_home"-->
-            <!--android:checkable="true"/>-->
         <item
-            android:id="@+id/navigation_library"
+            android:id="@+id/libraryFragment"
             android:icon="@drawable/ic_library_music_white_24dp"
             android:title="@string/action_library"
             android:checkable="true"/>
         <item
-            android:id="@+id/navigation_playlist"
+            android:id="@+id/playlistFragment"
             android:icon="@drawable/ic_list_white_24dp"
             android:title="@string/action_playlists"
             android:checkable="true"/>
         <item
-            android:id="@+id/navigation_equalizer"
+            android:id="@+id/equalizerFragment"
             android:icon="@drawable/ic_equalizer_white_24dp"
             android:title="@string/action_equalizer"
             android:checkable="true"/>
         <item
-            android:id="@+id/navigation_settings"
+            android:id="@+id/settingsActivity"
             android:icon="@drawable/ic_settings_white_24dp"
             android:title="@string/action_settings"/>
     </group>

@@ -8,28 +8,28 @@
     android:layout_height="match_parent"
     android:background="?android:colorBackground">
 
-    <android.support.design.widget.AppBarLayout
+    <com.google.android.material.appbar.AppBarLayout
         android:layout_height="wrap_content"
         android:layout_width="match_parent"
         android:fitsSystemWindows="true"
         android:id="@+id/appBarLayout">
 
-        <android.support.v7.widget.Toolbar
+        <androidx.appcompat.widget.Toolbar
             android:id="@+id/toolbar"
             android:layout_height="?attr/actionBarSize"
             android:layout_width="match_parent">
 
-            <android.support.v7.widget.SearchView
+            <androidx.appcompat.widget.SearchView
                 android:id="@+id/search"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:defaultQueryHint="@string/info_search_hint">
 
-            </android.support.v7.widget.SearchView>
+            </androidx.appcompat.widget.SearchView>
 
-        </android.support.v7.widget.Toolbar>
+        </androidx.appcompat.widget.Toolbar>
 
-    </android.support.design.widget.AppBarLayout>
+    </com.google.android.material.appbar.AppBarLayout>
 
     <ScrollView
         android:layout_width="match_parent"
@@ -54,7 +54,7 @@
                 android:textColor="#777"
                 android:textAllCaps="true"/>
 
-            <android.support.v7.widget.RecyclerView
+            <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/album_recycler_view"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -74,7 +74,7 @@
                 android:textColor="#777"
                 android:textAllCaps="true"/>
 
-            <android.support.v7.widget.RecyclerView
+            <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/artist_recycler_view"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -100,9 +100,10 @@
                 android:layout_height="match_parent"
                 android:layout_marginTop="8dp"
                 android:nestedScrollingEnabled="false"
-                app:fastScrollPopupBgColor="@color/colorAccent"
-                app:fastScrollPopupTextColor="@android:color/primary_text_dark"
-                app:fastScrollThumbColor="@color/colorAccent"/>
+                app:fastScrollHorizontalThumbDrawable="@drawable/thumb_drawable"
+                app:fastScrollHorizontalTrackDrawable="@drawable/line_drawable"
+                app:fastScrollVerticalThumbDrawable="@drawable/thumb_drawable"
+                app:fastScrollVerticalTrackDrawable="@drawable/line_drawable"/>
         </LinearLayout>
     </ScrollView>
 

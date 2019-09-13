@@ -1,12 +1,11 @@
 package com.udeshcoffee.android.ui.common.adapters
 
 import android.content.Context
-import android.support.v7.widget.RecyclerView
+import androidx.recyclerview.widget.RecyclerView
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import com.simplecityapps.recyclerview_fastscroll.views.FastScrollRecyclerView
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.interfaces.OnSongItemClickListener
 import com.udeshcoffee.android.model.Song
@@ -18,7 +17,7 @@ import io.reactivex.functions.Consumer
  */
 
 class SongAdapter(private val dataType: Int, private val hasShuffle: Boolean):
-        RecyclerView.Adapter<RecyclerView.ViewHolder>(), FastScrollRecyclerView.SectionedAdapter, Consumer<List<Song>>{
+        RecyclerView.Adapter<RecyclerView.ViewHolder>(), Consumer<List<Song>>{
 
     private var mDataset: List<Song> = ArrayList()
     private var context: Context? = null
@@ -30,26 +29,6 @@ class SongAdapter(private val dataType: Int, private val hasShuffle: Boolean):
             field = value
             checkCurrentSong()
         }
-
-//    TODO - Selection
-//    var isSelection: Boolean = false
-//        set(value) {
-//            if (!value)
-//                selected.clear()
-//            field = value
-//        }
-//    private var selected = ArrayList<Song>()
-//    private var selectListener = object : OnItemSelectListener{
-//        override fun onSelectItem(postion: Int) {
-//            selected.add(mDataset[postion])
-//            notifyItemChanged(if (hasShuffle) postion + 1 else postion)
-//        }
-//
-//        override fun onDeselectItem(postion: Int) {
-//            selected.remove(mDataset[postion])
-//            notifyItemChanged(if (hasShuffle) postion + 1 else postion)
-//        }
-//    }
 
     companion object {
         private const val TAG = "SongAdapter"
@@ -91,12 +70,6 @@ class SongAdapter(private val dataType: Int, private val hasShuffle: Boolean):
         } else {
             dataType
         }
-    }
-
-    override fun getSectionName(position: Int): String = when {
-        position == 0 -> "#"
-        position != -1 -> Character.toString(mDataset[position - 1].title[0]).toUpperCase()
-        else -> ""
     }
 
     internal inner class ShuffleViewHolder(itemView: View):

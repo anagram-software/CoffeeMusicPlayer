@@ -1,10 +1,10 @@
 package com.udeshcoffee.android.service
 
 import android.content.Context
+import androidx.preference.PreferenceManager
 import android.content.SharedPreferences
 import android.media.audiofx.*
 import android.os.Build
-import android.preference.PreferenceManager
 import android.util.Log
 import com.udeshcoffee.android.data.DataRepository
 import com.udeshcoffee.android.data.model.EQPreset
@@ -15,25 +15,25 @@ import com.udeshcoffee.android.data.model.EQPreset
 class AudioFXHelper private constructor(private val dataRepository: DataRepository) {
 
     companion object {
-        val TAG = "AudioFxHelper"
+        const val TAG = "AudioFxHelper"
 
-        val EQUALIZER_PRESET_PREF = "eqpreset"
-        val EQUALIZER_USER_PRESET_PREF = "equser"
-        val EQUALIZER_FQ_PREFIX = "eq"
+        const val EQUALIZER_PRESET_PREF = "eqpreset"
+        const val EQUALIZER_USER_PRESET_PREF = "equser"
+        const val EQUALIZER_FQ_PREFIX = "eq"
 
-        val EQUALIZER_ENABLED_PREF = "eq_enabled"
-        val BASSBOOST_ENABLED_PREF = "bassboost_enabled"
-        val VIRTUALIZER_ENABLED_PREF = "virtualizer_enabled"
-        val PRESETREVERB_ENABLED_PREF = "preset_reverb_enabled"
-        val LOUDNESSENHANCER_ENABLED_PREF = "loudness_enhancer_enabled"
+        const val EQUALIZER_ENABLED_PREF = "eq_enabled"
+        const val BASSBOOST_ENABLED_PREF = "bassboost_enabled"
+        const val VIRTUALIZER_ENABLED_PREF = "virtualizer_enabled"
+        const val PRESETREVERB_ENABLED_PREF = "preset_reverb_enabled"
+        const val LOUDNESSENHANCER_ENABLED_PREF = "loudness_enhancer_enabled"
 
-        val BASSBOOST_STRENGTH_PREF = "bassboost_strength"
-        val VIRTUALIZER_STRENGTH_PREF = "virtualizer_strength"
-        val PRESETREVERB_PRESET_PREF = "preset_reverb_preset"
-        val LOUDNESSENHANCER_STRENGTH_PREF = "loudness_enhancer_strength"
+        const val BASSBOOST_STRENGTH_PREF = "bassboost_strength"
+        const val VIRTUALIZER_STRENGTH_PREF = "virtualizer_strength"
+        const val PRESETREVERB_PRESET_PREF = "preset_reverb_preset"
+        const val LOUDNESSENHANCER_STRENGTH_PREF = "loudness_enhancer_strength"
     }
 
-    lateinit var sharedPreferences : SharedPreferences
+    private lateinit var sharedPreferences : SharedPreferences
 
     // AudioFx Objects
     var equalizer : Equalizer? = null
@@ -43,16 +43,11 @@ class AudioFXHelper private constructor(private val dataRepository: DataReposito
     private var loudnessenhancer : LoudnessEnhancer? = null
 
     // Support properties
-    var equalizerSupported : Boolean = false
-        private set
-    var bassboostSupported : Boolean = false
-        private set
-    var virtualizerSupported : Boolean = false
-        private set
-    var presetReverbSupported : Boolean = false
-        private set
-    var loudnessEnhancerSupported : Boolean = false
-        private set
+    private var equalizerSupported : Boolean = false
+    private var bassboostSupported : Boolean = false
+    private var virtualizerSupported : Boolean = false
+    private var presetReverbSupported : Boolean = false
+    private var loudnessEnhancerSupported : Boolean = false
 
     // Enable properties
     var equalizerEnabled : Boolean
@@ -71,9 +66,9 @@ class AudioFXHelper private constructor(private val dataRepository: DataReposito
 
     var bassboostEnabled : Boolean
         get() {
-            if (bassboost != null)
-                return bassboost!!.enabled
-            else return false
+            return if (bassboost != null)
+                bassboost!!.enabled
+            else false
         }
         set(value) {
             Log.d(TAG, "bassboostEnabled: $value")
@@ -91,9 +86,9 @@ class AudioFXHelper private constructor(private val dataRepository: DataReposito
 
     var virtualizerEnabled : Boolean
         get() {
-            if (virtualizer != null)
-                return virtualizer!!.enabled
-            else return false
+            return if (virtualizer != null)
+                virtualizer!!.enabled
+            else false
         }
         set(value) {
             Log.d(TAG, "virtualizerEnabled: $value")
@@ -111,9 +106,9 @@ class AudioFXHelper private constructor(private val dataRepository: DataReposito
 
     var presetReverbEnabled : Boolean
         get() {
-            if (presetreverb != null)
-                return presetreverb!!.enabled
-            else return false
+            return if (presetreverb != null)
+                presetreverb!!.enabled
+            else false
         }
         set(value) {
             if (value != presetreverb?.enabled)
@@ -125,9 +120,9 @@ class AudioFXHelper private constructor(private val dataRepository: DataReposito
 
     var loudnessEnhancerEnabled : Boolean
         get() {
-            if (loudnessenhancer != null)
-                return loudnessenhancer!!.enabled
-            else return false
+            return if (loudnessenhancer != null)
+                loudnessenhancer!!.enabled
+            else false
         }
         set(value) {
             if (loudnessenhancer?.setEnabled(value) == 0) {
@@ -150,9 +145,9 @@ class AudioFXHelper private constructor(private val dataRepository: DataReposito
     // Strength properties
     var bassboostStrength : Short
         get() {
-            if (bassboost != null)
-                return bassboost!!.roundedStrength
-            else return 0
+            return if (bassboost != null)
+                bassboost!!.roundedStrength
+            else 0
         }
         set(value) {
             bassboost?.setStrength(value)
@@ -162,9 +157,9 @@ class AudioFXHelper private constructor(private val dataRepository: DataReposito
 
     var virtualizerStrength : Short
         get() {
-            if (virtualizer != null)
-                return virtualizer!!.roundedStrength
-            else return 0
+            return if (virtualizer != null)
+                virtualizer!!.roundedStrength
+            else 0
         }
         set(value) {
             virtualizer?.setStrength(value)
@@ -174,9 +169,9 @@ class AudioFXHelper private constructor(private val dataRepository: DataReposito
 
     var presetReverbPreset : Short
         get() {
-            if (presetreverb != null)
-                return presetreverb!!.preset
-            else return 0
+            return if (presetreverb != null)
+                presetreverb!!.preset
+            else 0
         }
         set(value) {
             presetreverb?.preset = value
@@ -186,12 +181,12 @@ class AudioFXHelper private constructor(private val dataRepository: DataReposito
 
     var loudnessEnhancerStrength : Float
         get() {
-            if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT && loudnessenhancer != null)
-                return loudnessenhancer!!.targetGain
-            else return 0.0f
+            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT && loudnessenhancer != null)
+                loudnessenhancer!!.targetGain
+            else 0.0f
         }
         set(value) {
-            if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                 loudnessenhancer?.setTargetGain(value.toInt())
                 Log.d(TAG, "loudnessEnhancerStrength: $value")
                 sharedPreferences.edit().putInt(LOUDNESSENHANCER_STRENGTH_PREF, value.toInt()).apply()
@@ -243,7 +238,7 @@ class AudioFXHelper private constructor(private val dataRepository: DataReposito
         } catch (e : UnsupportedOperationException) {}
 
         // Initialize loudnessenhancer
-        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             try {
                 loudnessenhancer = LoudnessEnhancer(audioSessionId)
                 Log.d(TAG, "loudnessEnhancerSupported: true")
@@ -285,29 +280,27 @@ class AudioFXHelper private constructor(private val dataRepository: DataReposito
     private fun setBandsByPreset(preset: Int) {
         equalizer?.apply {
             val noPresets = numberOfPresets
-            if (preset == -1) {
-                for (i in 0 until numberOfBands) {
+            when {
+                preset == -1 -> for (i in 0 until numberOfBands) {
                     setBandLevel(i.toShort(), this@AudioFXHelper.getEqualizerBandStrength(i.toShort()))
                 }
-            } else if (preset < noPresets) {
-                usePreset(preset.toShort())
-            } else {
-                for (i in 0 until numberOfBands) {
+                preset < noPresets -> usePreset(preset.toShort())
+                else -> for (i in 0 until numberOfBands) {
                     setBandLevel(i.toShort(), this@AudioFXHelper.getUserPresetBandStrength(preset - noPresets ,i.toShort()))
                 }
             }
         }
     }
 
-    fun getUserPresetBandStrength(id: Int, band: Short): Short {
+    private fun getUserPresetBandStrength(id: Int, band: Short): Short {
         val eqPreset = userPresets[id]
         val value = sharedPreferences.getInt(EQUALIZER_USER_PRESET_PREF+ eqPreset.id + EQUALIZER_FQ_PREFIX + band,0).toShort()
         Log.d(TAG, "getUserPresetBandStrength: band: $band, value: $value")
         return value
     }
 
-    fun getEqualizerBandStrength(band: Short): Short {
-        val value = sharedPreferences.getInt(AudioFXHelper.EQUALIZER_FQ_PREFIX + band,0).toShort()
+    private fun getEqualizerBandStrength(band: Short): Short {
+        val value = sharedPreferences.getInt(EQUALIZER_FQ_PREFIX + band,0).toShort()
         Log.d(TAG, "getEqualizerBandStrength: band: $band, value: $value")
         return value
     }
@@ -333,7 +326,7 @@ class AudioFXHelper private constructor(private val dataRepository: DataReposito
         virtualizer?.release()
         virtualizer = null
 
-        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             loudnessenhancer?.release()
             loudnessenhancer = null
         }

@@ -1,6 +1,6 @@
 package com.udeshcoffee.android.ui.common.viewholders
 
-import android.support.v7.widget.RecyclerView
+import androidx.recyclerview.widget.RecyclerView
 import android.view.View
 import android.widget.TextView
 import com.udeshcoffee.android.R
@@ -12,7 +12,7 @@ import com.udeshcoffee.android.interfaces.OnItemClickListener
  */
 
 class LyricViewHolder(itemView: View, val listener: OnItemClickListener?) :
-        RecyclerView.ViewHolder(itemView), View.OnClickListener{
+        androidx.recyclerview.widget.RecyclerView.ViewHolder(itemView), View.OnClickListener{
 
     // each data item is just a string in this case
     var titleView: TextView = itemView.findViewById(R.id.song_title)
@@ -31,7 +31,7 @@ class LyricViewHolder(itemView: View, val listener: OnItemClickListener?) :
     override fun onClick(v: View) {
         if (listener != null) {
             val position = adapterPosition
-            if (position != RecyclerView.NO_POSITION) {
+            if (position != androidx.recyclerview.widget.RecyclerView.NO_POSITION) {
                 listener.onItemClick(position)
             }
         }

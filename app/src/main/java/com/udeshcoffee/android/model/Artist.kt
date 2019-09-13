@@ -3,6 +3,7 @@ package com.udeshcoffee.android.model
 import android.annotation.SuppressLint
 import android.os.Parcelable
 import com.udeshcoffee.android.utils.compareString
+import kotlinx.android.parcel.IgnoredOnParcel
 import kotlinx.android.parcel.Parcelize
 
 /**
@@ -12,6 +13,7 @@ import kotlinx.android.parcel.Parcelize
 @Parcelize
 data class Artist(val id:Long, val name:String): Parcelable {
 
+    @IgnoredOnParcel
     @Transient var songCount: Int = 0
     //var albumCount: Int = 0
 

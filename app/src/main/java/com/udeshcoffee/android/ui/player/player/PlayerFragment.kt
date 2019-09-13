@@ -1,13 +1,6 @@
 package com.udeshcoffee.android.ui.player.player
 
-import android.arch.lifecycle.Observer
-import android.os.Build
 import android.os.Bundle
-import android.support.constraint.ConstraintLayout
-import android.support.v4.app.Fragment
-import android.support.v4.view.ViewPager
-import android.support.v4.view.animation.FastOutSlowInInterpolator
-import android.support.v7.widget.Toolbar
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -15,24 +8,25 @@ import android.view.ViewGroup
 import android.widget.ImageButton
 import android.widget.SeekBar
 import android.widget.TextView
+import androidx.appcompat.widget.Toolbar
+import androidx.interpolator.view.animation.FastOutSlowInInterpolator
+import androidx.lifecycle.Observer
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.extensions.*
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.service.MusicService
-import com.udeshcoffee.android.ui.MiniPlayerActivity
+import com.udeshcoffee.android.ui.MainActivity
 import com.udeshcoffee.android.ui.common.adapters.PlayerArtAdapter
 import com.udeshcoffee.android.ui.common.dialogs.PlayerMoreDialog
 import com.udeshcoffee.android.ui.player.lyrics.LyricsFragment
-import com.udeshcoffee.android.utils.DopeUtil
 import com.udeshcoffee.android.views.CustomScroller
 import com.udeshcoffee.android.views.ZoomOutPageTransformer
 import org.koin.android.ext.android.inject
 
-
 /**
  * Created by Udathari on 8/25/2017.
  */
-class PlayerFragment : Fragment() {
+class PlayerFragment : androidx.fragment.app.Fragment() {
 
     val viewModel: PlayerViewModel by inject()
 
@@ -41,7 +35,7 @@ class PlayerFragment : Fragment() {
     private lateinit var shuffle: ImageButton
     private lateinit var favorite: ImageButton
 
-    private lateinit var art: ViewPager
+    private lateinit var art: androidx.viewpager.widget.ViewPager
 
     private lateinit var progress: SeekBar
     private lateinit var title: TextView
@@ -57,7 +51,7 @@ class PlayerFragment : Fragment() {
     private var lyricFragment: LyricsFragment? = null
 
     // Art change listener
-    private val pagerChangeListener = object : ViewPager.OnPageChangeListener {
+    private val pagerChangeListener = object : androidx.viewpager.widget.ViewPager.OnPageChangeListener {
         override fun onPageScrollStateChanged(state: Int) {}
 
         override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {}
@@ -76,12 +70,6 @@ class PlayerFragment : Fragment() {
         // Set up player view
         with(root) {
             val toolbar: Toolbar = findViewById(R.id.toolbar)
-
-            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN)
-            {
-                val layout = findViewById<ConstraintLayout>(R.id.player_layout)
-                layout.setPadding(0, DopeUtil.getStatusHeight(context), 0, 0)
-            }
 
             toolbar.apply {
                 title = ""
@@ -170,27 +158,22 @@ class PlayerFragment : Fragment() {
             current.observe(this@PlayerFragment, Observer {
                 it?.let { it1 -> this@PlayerFragment.current.setTextWithMilliSecondsToTimer(it1) }
             })
-            currentSong.observe(this@PlayerFragment, Observer {
+            currentSong.observe(this@PlayerFragment, Observer { it ->
                 it?.let {song ->
                     context?.let { song.loadSongColor(it, play = play) }
-//                    if (animate) {
-                    title.fadeOut(150, {
+                    title.fadeOut(150) {
                         title.text = song.title
                         title.fadeIn(150)
-                    })
-                    artistAlbum.fadeOut(200, {
+                    }
+                    artistAlbum.fadeOut(200) {
                         artistAlbum.text = String.format("%s • %s", song.artistName, song.albumName)
                         artistAlbum.fadeIn(200)
-                    })
-//                    } else {
-//                        title.text = song.title
-//                        artistAlbum.text = "${song.artistName} • ${song.albumName}"
-//                    }
+                    }
                 }
             })
             isPlaying.observe(this@PlayerFragment, Observer {
                 it?.let {
-                    Log.d(Companion.TAG, "idplay$it")
+                    Log.d(TAG, "idplay$it")
                     if (!it) {
                         play.setImageResource(R.drawable.ic_play_circle_filled_white_24dp)
                     } else {
@@ -297,21 +280,21 @@ class PlayerFragment : Fragment() {
         val bundle = Bundle()
         bundle.putParcelable(PlayerMoreDialog.ARGUMENT_SONG, song)
         mDialog.arguments = bundle
-        mDialog.show(fragmentManager, "PlayerMoreDialog")
+        fragmentManager?.let { mDialog.show(it, "PlayerMoreDialog") }
     }
 
     private fun showQueueUI() {
-        (activity as MiniPlayerActivity).showQueue()
+        (activity as MainActivity).showQueue()
     }
 
     private fun showMainUI() {
-        (activity as MiniPlayerActivity).closeNowPlay()
+        (activity as MainActivity).closeNowPlay()
     }
 
     private fun setupViewPager() {
         art.setPageTransformer(true, ZoomOutPageTransformer())
         try {
-            val mScroller = ViewPager::class.java.getDeclaredField("mScroller")
+            val mScroller = androidx.viewpager.widget.ViewPager::class.java.getDeclaredField("mScroller")
             mScroller.isAccessible = true
             val scroller = CustomScroller(art.context, FastOutSlowInInterpolator())
             // scroller.setFixedDuration(5000);

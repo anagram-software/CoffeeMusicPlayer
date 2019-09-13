@@ -1,7 +1,7 @@
 package com.udeshcoffee.android.ui.common.viewholders
 
 import android.content.Context
-import android.support.v7.widget.RecyclerView
+import androidx.recyclerview.widget.RecyclerView
 import android.view.View
 import android.widget.TextView
 import com.udeshcoffee.android.R
@@ -14,7 +14,7 @@ import com.udeshcoffee.android.utils.DopeUtil
  */
 
 class PlaylistViewHolder(val context: Context, itemView: View, val listener: OnItemClickListener?) :
-        RecyclerView.ViewHolder(itemView), View.OnClickListener, View.OnLongClickListener {
+        androidx.recyclerview.widget.RecyclerView.ViewHolder(itemView), View.OnClickListener, View.OnLongClickListener {
     // each data item is just a string in this case
     var titleView: TextView = itemView.findViewById<View>(R.id.playlist_title) as TextView
     var subtitleView: TextView = itemView.findViewById<View>(R.id.playlist_song_count) as TextView
@@ -34,14 +34,14 @@ class PlaylistViewHolder(val context: Context, itemView: View, val listener: OnI
 
     override fun onClick(view: View) {
         val position = adapterPosition
-        if (position != RecyclerView.NO_POSITION) {
+        if (position != androidx.recyclerview.widget.RecyclerView.NO_POSITION) {
             listener?.onItemClick(position)
         }
     }
 
     override fun onLongClick(view: View): Boolean {
         val position = adapterPosition
-        if (position != RecyclerView.NO_POSITION) {
+        if (position != androidx.recyclerview.widget.RecyclerView.NO_POSITION) {
             listener?.onItemLongClick(position)
         }
         return true

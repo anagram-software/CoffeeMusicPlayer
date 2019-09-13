@@ -1,6 +1,6 @@
-<android.support.v7.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+<androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <android.support.v7.preference.PreferenceCategory android:title="INTERFACE">
+    <androidx.preference.PreferenceCategory android:title="INTERFACE">
 
         <ListPreference
             android:defaultValue="0"
@@ -11,9 +11,9 @@
             android:positiveButtonText="@null"
             android:title="Start Library with" />
 
-    </android.support.v7.preference.PreferenceCategory>
+    </androidx.preference.PreferenceCategory>
 
-    <android.support.v7.preference.PreferenceCategory android:title="PLAYBACK">
+    <androidx.preference.PreferenceCategory android:title="PLAYBACK">
 
         <CheckBoxPreference
             android:key="pref_new_player"
@@ -34,9 +34,9 @@
             android:summary="Smooth audio play and pause"
             android:defaultValue="true" />
 
-    </android.support.v7.preference.PreferenceCategory>
+    </androidx.preference.PreferenceCategory>
 
-    <android.support.v7.preference.PreferenceCategory android:title="META DATA">
+    <androidx.preference.PreferenceCategory android:title="META DATA">
 
         <CheckBoxPreference
             android:key="pref_collect_content"
@@ -55,9 +55,9 @@
             android:title="Collect Lyrics"
             android:summary="Collect missing lyrics" />
 
-    </android.support.v7.preference.PreferenceCategory>
+    </androidx.preference.PreferenceCategory>
 
-    <android.support.v7.preference.PreferenceCategory android:title="ABOUT">
+    <androidx.preference.PreferenceCategory android:title="ABOUT">
 
         <Preference
             android:key="pref_open_source"
@@ -76,6 +76,6 @@
             android:title="Developer"
             android:summary="Udesh Kumarasinghe" />
 
-    </android.support.v7.preference.PreferenceCategory>
+    </androidx.preference.PreferenceCategory>
 
-</android.support.v7.preference.PreferenceScreen>
+</androidx.preference.PreferenceScreen>

@@ -1,17 +1,17 @@
 package com.udeshcoffee.android.di
 
-import android.arch.persistence.room.Room
+import androidx.room.Room
 import com.udeshcoffee.android.data.DataRepository
 import com.udeshcoffee.android.data.MediaRepository
 import com.udeshcoffee.android.data.local.LocalDataSource
 import com.udeshcoffee.android.data.local.LocalDatabase
 import com.udeshcoffee.android.data.remote.RemoteDataSource
-import org.koin.dsl.module.applicationContext
+import org.koin.dsl.module.module
 
 /**
 * Created by Udathari on 1/14/2018.
 */
-val repositoryModule = applicationContext {
+val repositoryModule = module {
 
     factory { Room.databaseBuilder(get(), LocalDatabase::class.java, "CoffeePlayer.db")
             .addMigrations(LocalDatabase.Migration_5_6)
@@ -20,10 +20,10 @@ val repositoryModule = applicationContext {
 
     factory { RemoteDataSource }
 
-    bean { LocalDataSource(get()) }
+    single { LocalDataSource(get()) }
 
-    bean { DataRepository(get(), get()) }
+    single { DataRepository(get(), get()) }
 
-    bean { MediaRepository(get(), get()) }
+    single { MediaRepository(get(), get()) }
 
 }

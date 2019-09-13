@@ -1,6 +1,6 @@
 package com.udeshcoffee.android.data.local
 
-import android.arch.persistence.room.*
+import androidx.room.*
 import com.udeshcoffee.android.data.model.*
 import io.reactivex.Flowable
 import io.reactivex.Single

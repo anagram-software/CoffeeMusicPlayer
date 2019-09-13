@@ -1,7 +1,7 @@
 package com.udeshcoffee.android.ui.common.viewmodels
 
 import android.app.Application
-import android.arch.lifecycle.MutableLiveData
+import androidx.lifecycle.MutableLiveData
 import com.udeshcoffee.android.data.DataRepository
 import com.udeshcoffee.android.data.MediaRepository
 import com.udeshcoffee.android.extensions.playSong

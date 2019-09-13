@@ -16,7 +16,7 @@ fun isNetworkAvailable(context: Context, shouldCheckWifi: Boolean): Boolean {
             networkInfo != null && networkInfo.isConnectedOrConnecting
         else
             networkInfo != null && networkInfo.isConnectedOrConnecting && networkInfo.type == ConnectivityManager.TYPE_WIFI
-    } catch (ex: Exception) {
+    } catch (ex: Throwable) {
         false
     }
 

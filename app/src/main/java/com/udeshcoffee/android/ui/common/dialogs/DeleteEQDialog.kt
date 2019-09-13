@@ -2,15 +2,15 @@ package com.udeshcoffee.android.ui.common.dialogs
 
 import android.app.Dialog
 import android.os.Bundle
-import android.support.v4.app.DialogFragment
-import android.support.v7.app.AlertDialog
+import androidx.fragment.app.DialogFragment
+import androidx.appcompat.app.AlertDialog
 import com.udeshcoffee.android.ui.main.equalizer.EqualizerFragment
 
 /**
 * Created by udesh on 3/21/18.
 */
 
-class DeleteEQDialog : DialogFragment() {
+class DeleteEQDialog : androidx.fragment.app.DialogFragment() {
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val preset = this.arguments!!.getInt(ARGUMENT_PRESET)

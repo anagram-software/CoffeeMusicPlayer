@@ -1,21 +1,19 @@
 package com.udeshcoffee.android.ui.main.detail.artistdetail
 
-import android.arch.lifecycle.Observer
+import androidx.lifecycle.Observer
 import android.content.Intent
 import android.os.Bundle
-import android.support.design.widget.AppBarLayout
-import android.support.v4.app.Fragment
-import android.support.v7.app.ActionBar
-import android.support.v7.app.AppCompatActivity
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.RecyclerView
-import android.support.v7.widget.Toolbar
+import androidx.appcompat.app.ActionBar
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
 import android.text.Html
 import android.util.Log
 import android.view.*
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.navigation.findNavController
+import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.extensions.*
@@ -27,16 +25,17 @@ import com.udeshcoffee.android.recyclerview.EmptyRecyclerView
 import com.udeshcoffee.android.recyclerview.MiniGridItemDecor
 import com.udeshcoffee.android.ui.common.adapters.AlbumAdapter
 import com.udeshcoffee.android.ui.common.adapters.SongAdapter
-import com.udeshcoffee.android.ui.main.MainActivity
+import com.udeshcoffee.android.ui.main.detail.albumdetail.AlbumDetailFragment
 import com.udeshcoffee.android.utils.SortManager
 import com.udeshcoffee.android.utils.loadArtistArtwork
 import org.koin.android.ext.android.inject
+import kotlin.math.abs
 
 
 /**
-* Created by Udathari on 9/12/2017.
-*/
-class ArtistDetailFragment: Fragment(), AppBarLayout.OnOffsetChangedListener {
+ * Created by Udathari on 9/12/2017.
+ */
+class ArtistDetailFragment : androidx.fragment.app.Fragment(), com.google.android.material.appbar.AppBarLayout.OnOffsetChangedListener {
 
     private val viewModel: ArtistDetailViewModel by inject()
 
@@ -71,7 +70,7 @@ class ArtistDetailFragment: Fragment(), AppBarLayout.OnOffsetChangedListener {
             }
 
             // Custom Collapsing Toolbar
-            val appBar = findViewById<AppBarLayout>(R.id.appbar)
+            val appBar = findViewById<com.google.android.material.appbar.AppBarLayout>(R.id.appbar)
             appBar.addOnOffsetChangedListener(this@ArtistDetailFragment)
 
             expandedLayout = findViewById(R.id.expanded_layout)
@@ -87,11 +86,11 @@ class ArtistDetailFragment: Fragment(), AppBarLayout.OnOffsetChangedListener {
 
             detailImage = findViewById(R.id.detail_image)
             loadArtistArtwork(context, Glide.with(context), arguments!!.getLong(ARGUMENT_ID),
-                    arguments!!.getString(ARGUMENT_NAME), detailImage, true)
+                    arguments!!.getString(ARGUMENT_NAME, ""), detailImage, true)
 
             blurDetailImage = findViewById(R.id.blur_detail_image)
             loadArtistArtwork(context, Glide.with(context), arguments!!.getLong(ARGUMENT_ID),
-                    arguments!!.getString(ARGUMENT_NAME), blurDetailImage, true, true)
+                    arguments!!.getString(ARGUMENT_NAME, ""), blurDetailImage, shouldCollect = true, isBlur = true)
 
             actionBar?.apply {
                 setDisplayHomeAsUpEnabled(true)
@@ -103,7 +102,7 @@ class ArtistDetailFragment: Fragment(), AppBarLayout.OnOffsetChangedListener {
             toolbarAlbums = findViewById(R.id.toolbar_albums)
 
             val albumView = findViewById<RecyclerView>(R.id.artist_album_recycler_view)
-            albumView.layoutManager = LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
+            albumView.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(context, androidx.recyclerview.widget.LinearLayoutManager.HORIZONTAL, false)
             albumView.addItemDecoration(MiniGridItemDecor(resources.getDimensionPixelSize(R.dimen.activity_horizontal_margin),
                     resources.getDimensionPixelSize(R.dimen.mini_grid_spacing)))
             // specify an adapter (see also next example)
@@ -144,12 +143,10 @@ class ArtistDetailFragment: Fragment(), AppBarLayout.OnOffsetChangedListener {
             }
 
             val songView = findViewById<EmptyRecyclerView>(R.id.artist_song_recycler_view)
-            songView.layoutManager = LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false)
+            songView.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(context, RecyclerView.VERTICAL, false)
             songView.setEmptyView(findViewById(R.id.empty_view))
             songView.hasFixedSize()
             songView.setItemViewCacheSize(20)
-            songView.isDrawingCacheEnabled = true
-            songView.drawingCacheQuality = View.DRAWING_CACHE_QUALITY_AUTO
             songView.isNestedScrollingEnabled = false
 
             songAdpt = SongAdapter(SongAdapter.ITEM_TYPE_NORMAL, true)
@@ -175,10 +172,10 @@ class ArtistDetailFragment: Fragment(), AppBarLayout.OnOffsetChangedListener {
         return root
     }
 
-    override fun onOffsetChanged(appBarLayout: AppBarLayout?, verticalOffset: Int) {
+    override fun onOffsetChanged(appBarLayout: com.google.android.material.appbar.AppBarLayout?, verticalOffset: Int) {
         appBarLayout?.let {
             val maxScroll = appBarLayout.totalScrollRange
-            val percentage = Math.abs(verticalOffset) / maxScroll.toFloat()
+            val percentage = abs(verticalOffset) / maxScroll.toFloat()
 
             handleAlphaOnTitle(percentage)
             handleToolbarTitleVisibility(percentage)
@@ -186,38 +183,36 @@ class ArtistDetailFragment: Fragment(), AppBarLayout.OnOffsetChangedListener {
         }
     }
 
-    override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
-        inflater?.inflate(R.menu.artist_detail_menu, menu)
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(R.menu.artist_detail_menu, menu)
         super.onCreateOptionsMenu(menu, inflater)
     }
 
-    override fun onPrepareOptionsMenu(menu: Menu?) {
-        if (menu != null) {
-            when (viewModel.songSortOrder) {
-                SortManager.SongSort.DEFAULT -> menu.findItem(R.id.action_sort_default).isChecked = true
-                SortManager.SongSort.NAME -> menu.findItem(R.id.action_sort_title).isChecked = true
-                SortManager.SongSort.TRACK_NUMBER -> menu.findItem(R.id.action_sort_track).isChecked = true
-                SortManager.SongSort.DURATION -> menu.findItem(R.id.action_sort_duration).isChecked = true
-                SortManager.SongSort.DATE -> menu.findItem(R.id.action_sort_date).isChecked = true
-                SortManager.SongSort.YEAR -> menu.findItem(R.id.action_sort_year).isChecked = true
-                SortManager.SongSort.ALBUM_NAME -> menu.findItem(R.id.action_sort_album_name).isChecked = true
-            }
-            when (viewModel.albumSortOrder) {
-                SortManager.AlbumSort.DEFAULT -> menu.findItem(R.id.action_sort_album_default).isChecked = true
-                SortManager.AlbumSort.NAME -> menu.findItem(R.id.action_sort_album_title).isChecked = true
-                SortManager.AlbumSort.YEAR -> menu.findItem(R.id.action_sort_album_year).isChecked = true
-            }
-            menu.findItem(R.id.action_sort_ascending).isChecked = viewModel.songSortAscending
-            menu.findItem(R.id.action_sort_album_ascending).isChecked = viewModel.albumSortAscending
+    override fun onPrepareOptionsMenu(menu: Menu) {
+        when (viewModel.songSortOrder) {
+            SortManager.SongSort.DEFAULT -> menu.findItem(R.id.action_sort_default).isChecked = true
+            SortManager.SongSort.NAME -> menu.findItem(R.id.action_sort_title).isChecked = true
+            SortManager.SongSort.TRACK_NUMBER -> menu.findItem(R.id.action_sort_track).isChecked = true
+            SortManager.SongSort.DURATION -> menu.findItem(R.id.action_sort_duration).isChecked = true
+            SortManager.SongSort.DATE -> menu.findItem(R.id.action_sort_date).isChecked = true
+            SortManager.SongSort.YEAR -> menu.findItem(R.id.action_sort_year).isChecked = true
+            SortManager.SongSort.ALBUM_NAME -> menu.findItem(R.id.action_sort_album_name).isChecked = true
         }
+        when (viewModel.albumSortOrder) {
+            SortManager.AlbumSort.DEFAULT -> menu.findItem(R.id.action_sort_album_default).isChecked = true
+            SortManager.AlbumSort.NAME -> menu.findItem(R.id.action_sort_album_title).isChecked = true
+            SortManager.AlbumSort.YEAR -> menu.findItem(R.id.action_sort_album_year).isChecked = true
+        }
+        menu.findItem(R.id.action_sort_ascending).isChecked = viewModel.songSortAscending
+        menu.findItem(R.id.action_sort_album_ascending).isChecked = viewModel.albumSortAscending
         super.onPrepareOptionsMenu(menu)
     }
 
-    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
         var sortChanged = true
         var albumSortChanged = true
 
-        if (item?.groupId == R.id.sort_album) {
+        if (item.groupId == R.id.sort_album) {
             when (item.itemId) {
                 R.id.action_sort_album_default -> viewModel.albumSortOrder = SortManager.AlbumSort.DEFAULT
                 R.id.action_sort_album_title -> viewModel.albumSortOrder = SortManager.AlbumSort.NAME
@@ -226,7 +221,7 @@ class ArtistDetailFragment: Fragment(), AppBarLayout.OnOffsetChangedListener {
             }
         } else albumSortChanged = false
 
-        if (item?.groupId == R.id.sort_song) {
+        if (item.groupId == R.id.sort_song) {
             when (item.itemId) {
                 R.id.action_sort_default -> viewModel.songSortOrder = SortManager.SongSort.DEFAULT
                 R.id.action_sort_title -> viewModel.songSortOrder = SortManager.SongSort.NAME
@@ -239,7 +234,7 @@ class ArtistDetailFragment: Fragment(), AppBarLayout.OnOffsetChangedListener {
             }
         } else sortChanged = false
 
-        when (item?.itemId) {
+        when (item.itemId) {
             android.R.id.home -> activity?.onBackPressed()
             R.id.action_play -> viewModel.playClick()
             R.id.action_play_next -> viewModel.playNextClick()
@@ -292,15 +287,15 @@ class ArtistDetailFragment: Fragment(), AppBarLayout.OnOffsetChangedListener {
             })
             tags.observe(this@ArtistDetailFragment, Observer {
                 it?.let {
-                    for (i in 0..Math.min(1, it.size - 1)) {
+                    for (i in 0..1.coerceAtMost(it.size - 1)) {
                         tag[i]?.text = it[i]
-                        tag[i]?.fadeIn(MainActivity.DetailFragments.ALPHA_ANIMATIONS_DURATION.toLong())
+                        tag[i]?.fadeIn(ALPHA_ANIMATIONS_DURATION.toLong())
                     }
                 }
             })
             bio.observe(this@ArtistDetailFragment, Observer {
                 it?.let {
-                    if (it != ""){
+                    if (it != "") {
                         val result = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
                             Html.fromHtml(it, Html.FROM_HTML_MODE_LEGACY)
                         } else {
@@ -326,11 +321,13 @@ class ArtistDetailFragment: Fragment(), AppBarLayout.OnOffsetChangedListener {
                 it?.let { openCollectionLongDialog(it.first, it.second) }
             })
             showAlbum.observe(this@ArtistDetailFragment, Observer {
-                it?.let { fragmentManager?.navigateToDetail(it) }
+                it?.let { view?.findNavController()?.navigate(R.id.albumDetailFragment, AlbumDetailFragment.createBundle(it)) }
             })
             artistArtChanged.observe(this@ArtistDetailFragment, Observer {
-                it?.let { loadArtistArtwork(context!!, Glide.with(context!!), it.first, it.second, detailImage,
-                        shouldCollect = false) }
+                it?.let {
+                    loadArtistArtwork(context!!, Glide.with(context!!), it.first, it.second, detailImage,
+                            shouldCollect = false)
+                }
             })
             artistArtDeleted.observe(this@ArtistDetailFragment, Observer {
                 it?.let { detailImage.setImageResource(R.drawable.ic_person_white_24dp) }
@@ -341,7 +338,7 @@ class ArtistDetailFragment: Fragment(), AppBarLayout.OnOffsetChangedListener {
     override fun onResume() {
         super.onResume()
         viewModel.artistId = arguments!!.getLong(ARGUMENT_ID)
-        viewModel.artistName = arguments!!.getString(ARGUMENT_NAME)
+        viewModel.artistName = arguments!!.getString(ARGUMENT_NAME, "")
         viewModel.start()
     }
 
@@ -357,41 +354,41 @@ class ArtistDetailFragment: Fragment(), AppBarLayout.OnOffsetChangedListener {
     }
 
     private fun handleToolbarTitleVisibility(percentage: Float) {
-        if (percentage >= MainActivity.DetailFragments.PERCENTAGE_TO_SHOW_TITLE_AT_TOOLBAR) {
+        if (percentage >= PERCENTAGE_TO_SHOW_TITLE_AT_TOOLBAR) {
 
             if (!mIsTheTitleVisible) {
-                collapsedTitle.fadeIn(MainActivity.DetailFragments.ALPHA_ANIMATIONS_DURATION.toLong())
+                collapsedTitle.fadeIn(ALPHA_ANIMATIONS_DURATION.toLong())
                 mIsTheTitleVisible = true
             }
 
         } else {
 
             if (mIsTheTitleVisible) {
-                collapsedTitle.fadeOut(MainActivity.DetailFragments.ALPHA_ANIMATIONS_DURATION.toLong())
+                collapsedTitle.fadeOut(ALPHA_ANIMATIONS_DURATION.toLong())
                 mIsTheTitleVisible = false
             }
         }
     }
 
     private fun handleAlphaOnTitle(percentage: Float) {
-        if (percentage >= MainActivity.DetailFragments.PERCENTAGE_TO_HIDE_TITLE_DETAILS) {
+        if (percentage >= PERCENTAGE_TO_HIDE_TITLE_DETAILS) {
             if (mIsTheTitleContainerVisible) {
-                expandedTitle.fadeOut(MainActivity.DetailFragments.ALPHA_ANIMATIONS_DURATION.toLong())
-                tagLayout.fadeOut(MainActivity.DetailFragments.ALPHA_ANIMATIONS_DURATION.toLong()/2)
+                expandedTitle.fadeOut(ALPHA_ANIMATIONS_DURATION.toLong())
+                tagLayout.fadeOut(ALPHA_ANIMATIONS_DURATION.toLong() / 2)
                 mIsTheTitleContainerVisible = false
             }
 
         } else {
             if (!mIsTheTitleContainerVisible) {
-                expandedTitle.fadeIn(MainActivity.DetailFragments.ALPHA_ANIMATIONS_DURATION.toLong())
-                tagLayout.fadeIn(MainActivity.DetailFragments.ALPHA_ANIMATIONS_DURATION.toLong()*2)
+                expandedTitle.fadeIn(ALPHA_ANIMATIONS_DURATION.toLong())
+                tagLayout.fadeIn(ALPHA_ANIMATIONS_DURATION.toLong() * 2)
                 mIsTheTitleContainerVisible = true
             }
         }
     }
 
     private fun handleAlphaOnImage(percentage: Float) {
-        detailImage.alpha = 1.0f - Math.min(1.0f, percentage * 1.2f)
+        detailImage.alpha = 1.0f - 1.0f.coerceAtMost(percentage * 1.2f)
     }
 
     companion object {
@@ -402,13 +399,15 @@ class ArtistDetailFragment: Fragment(), AppBarLayout.OnOffsetChangedListener {
         private const val ARGUMENT_ID = "ARGUMENT_ID"
         private const val ARGUMENT_NAME = "ARGUMENT_ARTIST"
 
-        fun create(artist: Artist): ArtistDetailFragment {
-            val fragment = ArtistDetailFragment()
+        private const val PERCENTAGE_TO_SHOW_TITLE_AT_TOOLBAR = 0.9f
+        private const val PERCENTAGE_TO_HIDE_TITLE_DETAILS = 0.3f
+        private const val ALPHA_ANIMATIONS_DURATION = 200
+
+        fun createBundle(artist: Artist): Bundle {
             val bundle = Bundle()
             bundle.putLong(ARGUMENT_ID, artist.id)
             bundle.putString(ARGUMENT_NAME, artist.name)
-            fragment.arguments = bundle
-            return fragment
+            return bundle
         }
     }
 }

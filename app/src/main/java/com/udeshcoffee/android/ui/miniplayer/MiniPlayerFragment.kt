@@ -1,8 +1,7 @@
 package com.udeshcoffee.android.ui.miniplayer
 
-import android.arch.lifecycle.Observer
+import androidx.lifecycle.Observer
 import android.os.Bundle
-import android.support.v4.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -12,8 +11,7 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.extensions.loadArtwork
-import com.udeshcoffee.android.model.Song
-import com.udeshcoffee.android.ui.MiniPlayerActivity
+import com.udeshcoffee.android.ui.MainActivity
 import com.udeshcoffee.android.views.FadableLayout
 import org.koin.android.ext.android.inject
 
@@ -21,7 +19,7 @@ import org.koin.android.ext.android.inject
 /**
 * Created by Udathari on 8/25/2017.
 */
-class MiniPlayerFragment : Fragment() {
+class MiniPlayerFragment : androidx.fragment.app.Fragment() {
 
     private val viewModel: MiniPlayerViewModel by inject()
 
@@ -62,7 +60,7 @@ class MiniPlayerFragment : Fragment() {
             })
             currentSong.observe(this@MiniPlayerFragment, Observer {
                 it?.let {
-                    (activity as MiniPlayerActivity).initNowPlay()
+                    (activity as MainActivity).initNowPlay()
                     title.text = it.title
                     subtitle.text = String.format("%s • %s", it.artistName, it.albumName)
                     it.loadArtwork(context!!, art, layout)
@@ -99,7 +97,7 @@ class MiniPlayerFragment : Fragment() {
     }
 
     private fun showNowPlayUI() {
-        (activity as MiniPlayerActivity).openNowPlay()
+        (activity as MainActivity).openNowPlay()
     }
 
 }

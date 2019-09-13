@@ -1,11 +1,6 @@
 package com.udeshcoffee.android.ui.player.lyrics
 
-import android.content.Context
 import android.os.Bundle
-import android.support.v4.app.Fragment
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.RecyclerView
-import android.support.v7.widget.Toolbar
 import android.text.Html
 import android.util.Log
 import android.view.LayoutInflater
@@ -14,10 +9,11 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import androidx.appcompat.widget.Toolbar
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.data.remote.genius.Result
 import com.udeshcoffee.android.interfaces.OnItemClickListener
-import com.udeshcoffee.android.ui.MiniPlayerActivity
+import com.udeshcoffee.android.ui.MainActivity
 import com.udeshcoffee.android.ui.common.adapters.LyricAdapter
 import com.udeshcoffee.android.ui.common.dialogs.CustomLyricDialog
 import com.udeshcoffee.android.ui.common.dialogs.SearchSongDialog
@@ -27,9 +23,7 @@ import org.koin.android.ext.android.inject
 /**
 * Created by Udathari on 8/25/2017.
 */
-class LyricsFragment : Fragment(), LyricsContract.View {
-
-    val TAG = "LyricsFragment"
+class LyricsFragment : androidx.fragment.app.Fragment(), LyricsContract.View {
 
     override val presenter: LyricsContract.Presenter by inject()
 
@@ -47,7 +41,7 @@ class LyricsFragment : Fragment(), LyricsContract.View {
     private lateinit var errorAction: TextView
     private lateinit var progressText: TextView
     private lateinit var lyricText: TextView
-    private lateinit var multipleRV: RecyclerView
+    private lateinit var multipleRV: androidx.recyclerview.widget.RecyclerView
 
     // Multiple
     private lateinit var adapter: LyricAdapter
@@ -61,7 +55,7 @@ class LyricsFragment : Fragment(), LyricsContract.View {
             errorLayout = findViewById(R.id.lyric_error)
             progressLayout = findViewById(R.id.lyric_progress)
             lyricLayout = findViewById(R.id.lyric)
-            (activity as MiniPlayerActivity).setSlidingView(lyricLayout)
+            (activity as MainActivity).setSlidingView(lyricLayout)
             multipleLayout = findViewById(R.id.lyric_multiple)
 
             toolbar = findViewById(R.id.lyric_toolbar)
@@ -95,7 +89,7 @@ class LyricsFragment : Fragment(), LyricsContract.View {
 
             // Multiple
             multipleRV = findViewById(R.id.lyric_multiple_recyclerview)
-            multipleRV.layoutManager = LinearLayoutManager(context)
+            multipleRV.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(context)
             multipleRV.hasFixedSize()
             adapter = LyricAdapter()
             adapter.listener = object : OnItemClickListener{
@@ -109,10 +103,6 @@ class LyricsFragment : Fragment(), LyricsContract.View {
         }
 
         return root
-    }
-
-    override fun onAttach(context: Context?) {
-        super.onAttach(context)
     }
 
     override fun onResume() {
@@ -258,21 +248,22 @@ class LyricsFragment : Fragment(), LyricsContract.View {
     override fun showSearchDialog(id:Long ,title: String, artist: String) {
         SearchSongDialog.create(id, title, artist).also {
             it.setTargetFragment(this, SEARCH_LYRICS)
-            it.show(fragmentManager, "SearchLyricDialog")
+            fragmentManager?.let { it1 -> it.show(it1, "SearchLyricDialog") }
         }
     }
 
     override fun showCustomLyricDialog(id: Long) {
         CustomLyricDialog.create(id).also {
             it.setTargetFragment(this, ADD_LYRICS)
-            it.show(fragmentManager, "CustomLyricDialog")
+            fragmentManager?.let { it1 -> it.show(it1, "CustomLyricDialog") }
         }
     }
 
     companion object {
-        val SEARCH_LYRICS = 0
-        val ADD_LYRICS = 1
+        const val SEARCH_LYRICS = 0
+        const val ADD_LYRICS = 1
 
         fun create() = LyricsFragment()
+        const val TAG = "LyricsFragment"
     }
 }

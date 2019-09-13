@@ -1,7 +1,7 @@
 package com.udeshcoffee.android.ui.common.adapters
 
 import android.content.Context
-import android.support.v7.widget.RecyclerView
+import androidx.recyclerview.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import com.udeshcoffee.android.R
@@ -14,7 +14,7 @@ import io.reactivex.functions.Consumer
  * Created by Udathari on 5/30/2017.
  */
 
-class PlaylistAdapter() : RecyclerView.Adapter<RecyclerView.ViewHolder>(), Consumer<List<Playlist>> {
+class PlaylistAdapter() : androidx.recyclerview.widget.RecyclerView.Adapter<androidx.recyclerview.widget.RecyclerView.ViewHolder>(), Consumer<List<Playlist>> {
 
     private var dataSet: List<Playlist>? = null
     private var context: Context? = null
@@ -31,7 +31,7 @@ class PlaylistAdapter() : RecyclerView.Adapter<RecyclerView.ViewHolder>(), Consu
     }
 
     // Create new views (invoked by the layout manager)
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): androidx.recyclerview.widget.RecyclerView.ViewHolder {
         context = parent.context
 
         val inflater = LayoutInflater.from(context)
@@ -41,7 +41,7 @@ class PlaylistAdapter() : RecyclerView.Adapter<RecyclerView.ViewHolder>(), Consu
     }
 
     // Replace the contents of a view (invoked by the layout manager)
-    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+    override fun onBindViewHolder(holder: androidx.recyclerview.widget.RecyclerView.ViewHolder, position: Int) {
         // - get element from your dataset at this position
         // - replace the contents of the view with that element
 

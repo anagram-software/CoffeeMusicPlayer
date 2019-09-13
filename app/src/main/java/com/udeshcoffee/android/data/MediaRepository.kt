@@ -8,18 +8,21 @@ import android.net.Uri
 import android.provider.MediaStore
 import android.util.Log
 import androidx.core.content.contentValuesOf
-import androidx.core.database.getStringOrNull
 import com.annimon.stream.Collectors
 import com.annimon.stream.Stream
 import com.udeshcoffee.android.data.local.LocalDataSource
-import com.udeshcoffee.android.data.media.*
-import com.udeshcoffee.android.model.*
+import com.udeshcoffee.android.data.media.songsToAlbums
+import com.udeshcoffee.android.data.media.songsToArtists
+import com.udeshcoffee.android.data.media.statsToSongs
+import com.udeshcoffee.android.data.media.toCompletePlaylists
 import com.udeshcoffee.android.extensions.toBrite
+import com.udeshcoffee.android.model.*
 import com.udeshcoffee.android.utils.DopeUtil
 import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -27,10 +30,10 @@ import java.util.concurrent.TimeUnit
 /**
  * Created by Udathari on 12/19/2017.
  */
-class MediaRepository constructor (
+class MediaRepository constructor(
         context: Context,
         private val localDataSource: LocalDataSource
-){
+) {
 
     private val contentResolver = context.contentResolver
     private val briteContentResolver = contentResolver.toBrite()
@@ -93,15 +96,14 @@ class MediaRepository constructor (
                 .mapToList { Song(it) }
     }
 
-    fun getSongCount(): Observable<Int> = getSongs().map { it.size }
 
     // Albums
     fun getAlbums(): Observable<List<Album>> =
-            getSongs().flatMap({ Observable.just(songsToAlbums(it)) })
+            getSongs().flatMap { Observable.just(songsToAlbums(it)) }
 
     fun getAlbumSongs(albumId: Long): Observable<List<Song>> {
         return getSongs()
-                .map({ songs ->
+                .map { songs ->
                     val songs1 = ArrayList<Song>()
                     Stream.of(songs)
                             .forEach { song ->
@@ -109,18 +111,17 @@ class MediaRepository constructor (
                                     songs1.add(song)
                             }
                     return@map songs1
-                })
+                }
     }
 
-    fun getAlbumCount(): Observable<Int> = getAlbums().map { it.size }
 
     // Artists
     fun getArtists(): Observable<List<Artist>> =
-            getSongs().flatMap({ Observable.just(songsToArtists(it)) })
+            getSongs().flatMap { Observable.just(songsToArtists(it)) }
 
     fun getArtistSongs(artistId: Long): Observable<List<Song>> {
         return getSongs()
-                .map({ songs ->
+                .map { songs ->
                     val songs1 = ArrayList<Song>()
                     Stream.of(songs)
                             .forEach { song ->
@@ -128,12 +129,12 @@ class MediaRepository constructor (
                                     songs1.add(song)
                             }
                     return@map songs1
-                })
+                }
     }
 
     fun getArtistAlbums(artistName: String): Observable<List<Album>> {
         return getAlbums()
-                .map({ albums ->
+                .map { albums ->
                     val albums1 = ArrayList<Album>()
                     Stream.of(albums)
                             .forEach { album ->
@@ -141,10 +142,8 @@ class MediaRepository constructor (
                                     albums1.add(album)
                             }
                     return@map albums1
-                })
+                }
     }
-
-    fun getArtistCount(): Observable<Int> = getArtists().map { it.size }
 
     // Genres
     fun getGenres(): Observable<List<Genre>> {
@@ -159,7 +158,7 @@ class MediaRepository constructor (
         )
         return contentResolver.toBrite()
                 .createQuery(query.uri, query.projection, query.selection, query.args, query.sort, false)
-                .mapToList{ Song(it) }
+                .mapToList { Song(it) }
     }
 
     fun getGenreAlbums(genreId: Long): Observable<List<Album>> =
@@ -198,26 +197,24 @@ class MediaRepository constructor (
         return count
     }
 
-    fun cleanGenres() {
-        getGenres()
+    fun cleanGenres(): Disposable {
+        return getGenres()
                 .subscribeOn(Schedulers.io())
                 .observeOn(Schedulers.newThread())
                 .take(1)
                 .delaySubscription(2500, TimeUnit.MILLISECONDS)
-                .flatMapIterable{it -> it}
-//                .concatMap{Observable.just(it).delay(250, TimeUnit.MILLISECONDS)}
-                .subscribe{
+                .flatMapIterable { it }
+                .subscribe {
                     val count = getGenreSongCount(it.id)
                     Log.d("cleanGenres", "subscribe ${it.name} $count")
                     if (count == 0) {
                         Log.d("cleanGenres", "delete ${it.name}")
                         try {
                             contentResolver.delete(MediaStore.Audio.Genres.EXTERNAL_CONTENT_URI,
-                                    MediaStore.Audio.Genres._ID + " == " + it.id, null);
+                                    MediaStore.Audio.Genres._ID + " == " + it.id, null)
                         } catch (e: Exception) {
                             //Don't care if we couldn't delete this uri.
                         }
-
                     }
                 }
     }
@@ -275,14 +272,6 @@ class MediaRepository constructor (
         return items
     }
 
-    fun getPlaylistCount(): Observable<Int> {
-        return briteContentResolver
-                .createQuery(playlistQuery.uri, playlistQuery.projection, playlistQuery.selection,
-                        playlistQuery.args, playlistQuery.sort, false)
-                .mapToList { cursor: Cursor -> Playlist(cursor) }
-                .map { it.size }
-    }
-
     fun getPlaylistSongs(playlistId: Long, playlistType: Int): Observable<List<Song>>? {
         when (playlistType) {
             Playlist.USER -> {
@@ -308,33 +297,26 @@ class MediaRepository constructor (
                         .mapToList(Playlist.SONGMAPPER)
             }
             Playlist.MOST_PLAYED -> return localDataSource.getMostPlayedSongs()
-                    .flatMap({ stats -> statsToSongs(stats, briteContentResolver, songQuery)
-                            .map({ songs ->
-                                Collections.sort(songs) { a, b -> b.playcount - a.playcount}
-                                songs
-                            })
-                    })
+                    .flatMap { stats ->
+                        statsToSongs(stats, briteContentResolver, songQuery)
+                                .map { songs ->
+                                    return@map songs.sortedWith(kotlin.Comparator { a, b -> b.playcount - a.playcount })
+                                }
+                    }
             Playlist.RECENTLY_PLAYED -> {
                 return localDataSource.getRecentlyPlayedSongs()
-                        .flatMap({ stats -> statsToSongs(stats, briteContentResolver, songQuery)
-                                .map({ songs ->
-                                    Collections.sort(songs) { a, b -> b.lastplayed - a.lastplayed }
-                                    songs
-                                })
-                        })
+                        .flatMap { stats ->
+                            statsToSongs(stats, briteContentResolver, songQuery)
+                                    .map { songs ->
+                                        return@map songs.sortedWith(kotlin.Comparator { a, b -> b.playcount - a.playcount })
+                                    }
+                        }
             }
             Playlist.RECENTLY_ADDED -> {
                 return getRecentlyAdded()
             }
         }
         return null
-    }
-
-    fun getRecentlyAdded(limit: Int): Observable<List<Song>> {
-        return getRecentlyAdded().map {
-            val min = Math.min(limit, it.size)
-            it.subList(0, min)
-        }
     }
 
     private fun getRecentlyAdded(): Observable<List<Song>> {
@@ -346,7 +328,7 @@ class MediaRepository constructor (
         )
         return briteContentResolver
                 .createQuery(query.uri, query.projection, query.selection, query.args, query.sort, false)
-                .mapToList{Song(it)}
+                .mapToList { Song(it) }
     }
 
     fun movePlaylistItem(playlistId: Long, fromPosition: Int, toPosition: Int) {
@@ -369,18 +351,18 @@ class MediaRepository constructor (
     // Favorites
     fun getFavorites(): Flowable<List<Song>> {
         return localDataSource.getFavorites()
-                .flatMap{favorites ->
+                .flatMap { favorites ->
                     val songsQuery = songQuery.copy(
                             selection = songQuery.selection + " AND " + MediaStore.Audio.Media._ID + " IN (" +
                                     Stream.of(favorites)
-                                            .map{it.id.toString()}
+                                            .map { it.id.toString() }
                                             .collect(Collectors.joining(",")) +
                                     ")"
                     )
                     return@flatMap contentResolver.toBrite()
                             .createQuery(songsQuery.uri, songsQuery.projection, songsQuery.selection, songsQuery.args,
                                     songsQuery.sort, false)
-                            .mapToList{Song(it)}
+                            .mapToList { Song(it) }
                             .toFlowable(BackpressureStrategy.BUFFER)
                 }
     }
@@ -396,7 +378,7 @@ class MediaRepository constructor (
         )
         return briteContentResolver
                 .createQuery(query.uri, query.projection, query.selection, query.args, query.sort, false)
-                .mapToList{Song(it)}
+                .mapToList { Song(it) }
                 .observeOn(AndroidSchedulers.mainThread())
     }
 
@@ -404,7 +386,7 @@ class MediaRepository constructor (
         val query = songQuery.copy(
                 projection = arrayOf(MediaStore.Audio.Media._ID),
                 selection = songQuery.selection + " AND (" + MediaStore.Audio.Media.DATA + " LIKE ? )",
-                args = arrayOf(path + "%")
+                args = arrayOf("$path%")
         )
         val audioCursor = contentResolver.query(query.uri, query.projection, query.selection, query.args, query.sort)
         return if (audioCursor != null && audioCursor.moveToFirst()) {
@@ -414,30 +396,6 @@ class MediaRepository constructor (
         } else {
             0
         }
-    }
-
-    // Stats
-    fun getTopSongs(): Observable<List<Song>> {
-        return localDataSource.getTopSongs()
-                .flatMap({ stats -> statsToSongs(stats, briteContentResolver, songQuery)})
-                .map({ songs ->
-                    Collections.sort(songs) { a, b -> b.playcount - a.playcount}
-                    songs
-                })
-    }
-
-    fun getTopAlbums(): Observable<List<Album>> {
-        return localDataSource.getTopAlbums()
-                .flatMap {
-                    getAlbums().map { it1 -> statsToAlbums(it, it1) }
-                }
-    }
-
-    fun getTopArtists(): Observable<List<Artist>> {
-        return localDataSource.getTopArtists()
-                .flatMap {
-                    getArtists().map { it1 -> statsToArtists(it, it1) }
-                }
     }
 
 }

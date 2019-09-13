@@ -8,7 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
-import android.support.v4.app.NotificationCompat
+import androidx.core.app.NotificationCompat
 import android.util.Log
 import android.widget.Toast
 import com.udeshcoffee.android.R
@@ -25,44 +25,49 @@ import org.koin.android.ext.android.inject
  */
 class CollectionService : Service() {
 
-    val TAG = "CollectionService"
-
     val dataRepository: DataRepository by inject()
     val mediaRepository: MediaRepository by inject()
 
-    lateinit var mBuilder: NotificationCompat.Builder
-    private var channel: NotificationChannel? = null
+    private lateinit var mBuilder: NotificationCompat.Builder
     private var collectedCount = 0
     private var isCollecting = false
 
-    var lyricDisposable: Disposable? = null
+    private var lyricDisposable: Disposable? = null
 
     companion object {
-        val ACTION_COLLECT_LYRICS = "com.udeshcoffee.android.collectionservice.ACTION_COLLECT_LYRICS"
-        val ACTION_STOP = "com.udeshcoffee.android.collectionservice.ACTION_STOP"
+        const val ACTION_COLLECT_LYRICS = "com.udeshcoffee.android.collectionservice.ACTION_COLLECT_LYRICS"
+        const val ACTION_STOP = "com.udeshcoffee.android.collectionservice.ACTION_STOP"
+        const val TAG = "CollectionService"
     }
 
     override fun onCreate() {
         super.onCreate()
         Log.d(TAG, "onCreate")
 
-        channel = createNotificationChannel()
+        val channel = createNotificationChannel()
 
         // Actions
         val intent = Intent(ACTION_STOP)
         val pendingIntent = PendingIntent.getService(this, 0, intent, 0)
 
-        mBuilder = NotificationCompat.Builder(this)
+        mBuilder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && channel != null) {
+            NotificationCompat.Builder(this, channel.id)
+        } else {
+            @Suppress("DEPRECATION")
+            NotificationCompat.Builder(this)
+        }
         mBuilder.setSmallIcon(R.drawable.ic_download)
-                .addAction(R.drawable.ic_close_white_24dp, getString(R.string.action_cancel),pendingIntent)
-        channel?.let { if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            mBuilder.setChannelId(it.id)
-        }}
+                .addAction(R.drawable.ic_close_white_24dp, getString(R.string.action_cancel), pendingIntent)
+        channel?.let {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                mBuilder.setChannelId(it.id)
+            }
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(TAG, "onStart")
-        when(intent?.action) {
+        when (intent?.action) {
             ACTION_COLLECT_LYRICS -> {
                 if (isCollecting)
                     Toast.makeText(this, "Already collecting lyrics", Toast.LENGTH_SHORT).show()
@@ -107,16 +112,16 @@ class CollectionService : Service() {
         createNotification(ACTION_COLLECT_LYRICS, collectedCount, false)
         lyricDisposable = mediaRepository.getSongs()
                 .take(1)
-                .flatMapIterable{it -> it}
+                .flatMapIterable { it }
                 .subscribeOn(Schedulers.io())
                 .observeOn(Schedulers.newThread())
                 .subscribe({
                     val isCollected = dataRepository.downloadLyricsIfMissing(it)
-                    if (isCollected){
+                    if (isCollected) {
                         collectedCount++
                         createNotification(ACTION_COLLECT_LYRICS, collectedCount, false)
                     }
-                },{},{
+                }, {}, {
                     Log.d(TAG, "finish collection")
                     createNotification(ACTION_COLLECT_LYRICS, collectedCount, true)
                     stopSelf()
@@ -153,8 +158,7 @@ class CollectionService : Service() {
     }
 
     private fun createNotificationChannel(): NotificationChannel? {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-        {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val id = "coffee_player_collection_channel"
             val name = "Collection Service"
             val description = "Collect data of Coffee Player"

@@ -1,25 +1,24 @@
 package com.udeshcoffee.android.ui.main.search
 
-import android.arch.lifecycle.Observer
 import android.content.Context
 import android.os.Bundle
-import android.support.v4.app.Fragment
-import android.support.v7.app.ActionBar
-import android.support.v7.app.AppCompatActivity
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.RecyclerView
-import android.support.v7.widget.SearchView
-import android.support.v7.widget.Toolbar
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
 import android.widget.TextView
+import androidx.appcompat.app.ActionBar
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.SearchView
+import androidx.appcompat.widget.Toolbar
+import androidx.lifecycle.Observer
+import androidx.navigation.findNavController
+import androidx.recyclerview.widget.RecyclerView
+import androidx.transition.Fade
 import com.bumptech.glide.Glide
 import com.jakewharton.rxbinding2.support.v7.widget.RxSearchView
 import com.udeshcoffee.android.R
-import com.udeshcoffee.android.extensions.navigateToDetail
 import com.udeshcoffee.android.extensions.openCollectionLongDialog
 import com.udeshcoffee.android.extensions.openSongLongDialog
 import com.udeshcoffee.android.extensions.showPlayingToast
@@ -30,6 +29,8 @@ import com.udeshcoffee.android.recyclerview.MiniGridItemDecor
 import com.udeshcoffee.android.ui.common.adapters.AlbumAdapter
 import com.udeshcoffee.android.ui.common.adapters.ArtistAdapter
 import com.udeshcoffee.android.ui.common.adapters.SongAdapter
+import com.udeshcoffee.android.ui.main.detail.albumdetail.AlbumDetailFragment
+import com.udeshcoffee.android.ui.main.detail.artistdetail.ArtistDetailFragment
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import org.koin.android.ext.android.inject
@@ -38,7 +39,7 @@ import java.util.concurrent.TimeUnit
 /**
 * Created by Udathari on 9/12/2017.
 */
-class SearchFragment : Fragment() {
+class SearchFragment : androidx.fragment.app.Fragment() {
 
     private val viewModel: SearchViewModel by inject()
 
@@ -55,6 +56,11 @@ class SearchFragment : Fragment() {
     private var searchDisposable = CompositeDisposable()
 
     private var actionBar: ActionBar? = null
+
+    init {
+        enterTransition = Fade()
+        exitTransition = Fade()
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val root = inflater.inflate(R.layout.frag_search, container, false)
@@ -96,8 +102,8 @@ class SearchFragment : Fragment() {
                     .subscribe({ searchViewQueryTextEvent -> viewModel.search(searchViewQueryTextEvent.queryText().toString()) }))
 
             // Album View
-            val albumView = findViewById<RecyclerView>(R.id.album_recycler_view)
-            albumView.layoutManager = LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
+            val albumView = findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.album_recycler_view)
+            albumView.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(context, androidx.recyclerview.widget.LinearLayoutManager.HORIZONTAL, false)
             albumView.addItemDecoration(MiniGridItemDecor(resources.getDimensionPixelSize(R.dimen.activity_horizontal_margin), resources.getDimensionPixelSize(R.dimen.mini_grid_spacing)))
             albumAdpt = AlbumAdapter(AlbumAdapter.ITEM_TYPE_MINI)
             albumAdpt.listener = object : OnGridItemClickListener {
@@ -120,8 +126,8 @@ class SearchFragment : Fragment() {
             albumView.adapter = albumAdpt
 
             // Album View
-            val artistView = findViewById<RecyclerView>(R.id.artist_recycler_view)
-            artistView.layoutManager = LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
+            val artistView = findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.artist_recycler_view)
+            artistView.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(context, androidx.recyclerview.widget.LinearLayoutManager.HORIZONTAL, false)
             artistView.addItemDecoration(MiniGridItemDecor(resources.getDimensionPixelSize(R.dimen.activity_horizontal_margin), resources.getDimensionPixelSize(R.dimen.mini_grid_spacing)))
             // specify an adapter (see also next example)
             artistAdpt = ArtistAdapter(ArtistAdapter.ITEM_TYPE_MINI, Glide.with(context), false)
@@ -145,12 +151,10 @@ class SearchFragment : Fragment() {
 
             // Song View
             val songView = findViewById<EmptyRecyclerView>(R.id.song_recycler_view)
-            songView.layoutManager = LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false)
+            songView.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(context, RecyclerView.VERTICAL, false)
             songView.setEmptyView(findViewById(R.id.empty_view))
             songView.hasFixedSize()
             songView.setItemViewCacheSize(20)
-            songView.isDrawingCacheEnabled = true
-            songView.drawingCacheQuality = View.DRAWING_CACHE_QUALITY_AUTO
             songView.isNestedScrollingEnabled = false
 
             songAdpt = SongAdapter(SongAdapter.ITEM_TYPE_NORMAL, false)
@@ -174,8 +178,8 @@ class SearchFragment : Fragment() {
     }
 
 
-    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
-        if (item?.itemId == android.R.id.home ) {
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == android.R.id.home ) {
             activity?.onBackPressed()
         }
         return super.onOptionsItemSelected(item)
@@ -223,10 +227,10 @@ class SearchFragment : Fragment() {
                 it?.let { openCollectionLongDialog(it.first, it.second) }
             })
             showAlbum.observe(this@SearchFragment, Observer {
-                it?.let { fragmentManager?.navigateToDetail(it) }
+                it?.let { view?.findNavController()?.navigate(R.id.albumDetailFragment, AlbumDetailFragment.createBundle(it)) }
             })
             showArtist.observe(this@SearchFragment, Observer {
-                it?.let { fragmentManager?.navigateToDetail(it) }
+                it?.let { view?.findNavController()?.navigate(R.id.artistDetailFragment, ArtistDetailFragment.createBundle(it)) }
             })
         }
     }

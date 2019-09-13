@@ -19,7 +19,7 @@
             android:layout_height="match_parent"
             android:orientation="vertical">
 
-            <android.support.v7.widget.Toolbar
+            <androidx.appcompat.widget.Toolbar
                 android:id="@+id/lyric_toolbar"
                 android:layout_width="match_parent"
                 android:layout_height="?actionBarSize"
@@ -33,7 +33,7 @@
                     android:textColor="#FFF"
                     android:textSize="16sp"
                     android:textStyle="bold" />
-            </android.support.v7.widget.Toolbar>
+            </androidx.appcompat.widget.Toolbar>
 
             <LinearLayout
                 android:id="@+id/lyric_multiple"
@@ -43,7 +43,7 @@
                 android:orientation="vertical"
                 android:visibility="gone">
 
-                <android.support.v7.widget.RecyclerView
+                <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/lyric_multiple_recyclerview"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent" />

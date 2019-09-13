@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.h6ah4i.android.widget.verticalseekbar.VerticalSeekBar android:id="@+id/equalizerBandBar"
+<com.udeshcoffee.android.utils.SeekBarRotator xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/seekbar_rotator"
     android:layout_width="0dp"
     android:layout_height="0dp"
-    android:max="31"
-    android:progress="16"
-    android:splitTrack="false"
-    app:seekBarRotation="CW270"
-    android:theme="@style/EqTheme"
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto" />
+    android:theme="@style/EqTheme">
 
+    <SeekBar android:id="@+id/eq_seekbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:rotation="270"/>
+
+</com.udeshcoffee.android.utils.SeekBarRotator>

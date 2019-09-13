@@ -1,8 +1,8 @@
 package com.udeshcoffee.android
 
 import android.content.pm.PackageManager
-import android.support.multidex.MultiDexApplication
-import android.support.v4.content.ContextCompat
+import androidx.multidex.MultiDexApplication
+import androidx.core.content.ContextCompat
 import com.bumptech.glide.Glide
 import com.udeshcoffee.android.data.MediaRepository
 import com.udeshcoffee.android.data.local.LocalDataSource

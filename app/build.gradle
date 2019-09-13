@@ -9,14 +9,14 @@ androidExtensions {
 }
 
 android {
-    compileSdkVersion 27
+    compileSdkVersion 29
     defaultConfig {
         applicationId "com.udeshcoffee.android"
         minSdkVersion 16
-        targetSdkVersion 27
+        targetSdkVersion 29
         versionCode 30
         versionName '2.0.9'
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
         multiDexEnabled = true
     }
@@ -41,38 +41,44 @@ dependencies {
 
     // Glide
     implementation 'com.github.bumptech.glide:glide:4.6.1'
-    implementation "com.android.support:palette-v7:$support_version"
+    implementation 'androidx.palette:palette:1.0.0'
 
     // Permissions
     implementation 'com.greysonparrelli.permiso:permiso:0.3.0'
 
     // Support Libraries
-    implementation "com.android.support:support-v4:$support_version"
-    implementation "com.android.support:appcompat-v7:$support_version"
-    implementation 'com.android.support.constraint:constraint-layout:1.1.0'
-    implementation "com.android.support:design:$support_version"
-    implementation "com.android.support:gridlayout-v7:$support_version"
-    implementation "com.android.support:transition:$support_version"
-    implementation "com.android.support:cardview-v7:$support_version"
-    implementation "com.android.support:preference-v14:$support_version"
-    implementation 'com.android.support:multidex:1.0.3'
+    def support_version = "1.0.0"
+    implementation "androidx.legacy:legacy-support-v4:$support_version"
+    implementation "androidx.appcompat:appcompat:1.1.0"
+    implementation "androidx.constraintlayout:constraintlayout:1.1.3"
+    implementation "com.google.android.material:material:$support_version"
+    implementation "androidx.gridlayout:gridlayout:$support_version"
+    implementation "androidx.transition:transition:1.1.0"
+    implementation "androidx.cardview:cardview:$support_version"
+    implementation "androidx.legacy:legacy-preference-v14:$support_version"
+    implementation "androidx.multidex:multidex:2.0.1"
 
     // Arch
-    implementation "android.arch.lifecycle:extensions:1.1.1"
+    def arch_version = "2.1.0"
+    implementation "androidx.lifecycle:lifecycle-extensions:$arch_version"
+
+    // Nac
+    implementation "androidx.navigation:navigation-fragment-ktx:$arch_version"
+    implementation "androidx.navigation:navigation-ui-ktx:$arch_version"
 
     // Room
-    implementation 'android.arch.persistence.room:runtime:1.1.0'
-    implementation 'android.arch.persistence.room:rxjava2:1.1.0'
-    kapt "android.arch.persistence.room:compiler:1.1.0"
+    implementation "androidx.room:room-runtime:$arch_version"
+    implementation "androidx.room:room-rxjava2:$arch_version"
+    kapt "androidx.room:room-compiler:$arch_version"
 
     // Rx
-    implementation 'io.reactivex.rxjava2:rxandroid:2.0.2'
-    implementation 'io.reactivex.rxjava2:rxjava:2.1.9'
+    implementation 'io.reactivex.rxjava2:rxandroid:2.1.1'
+    implementation 'io.reactivex.rxjava2:rxjava:2.2.8'
     implementation 'io.reactivex.rxjava2:rxkotlin:2.2.0'
     implementation 'com.squareup.sqlbrite2:sqlbrite:2.0.0'
     implementation 'com.annimon:stream:1.1.7'
-    implementation 'com.jakewharton.rxbinding2:rxbinding-appcompat-v7-kotlin:2.0.0'
     implementation 'com.cantrowitz:rxbroadcast:2.0.0'
+    implementation 'com.jakewharton.rxbinding2:rxbinding-appcompat-v7-kotlin:2.0.0'
 
     // Retrofit
     implementation 'com.squareup.retrofit2:retrofit:2.3.0'
@@ -82,7 +88,7 @@ dependencies {
     implementation 'org.jsoup:jsoup:1.10.2'
 
     // GSON
-    implementation 'com.google.code.gson:gson:2.8.2'
+    implementation 'com.google.code.gson:gson:2.8.5'
     implementation 'com.squareup.retrofit2:converter-gson:2.3.0'
 
     // OkHttp
@@ -95,17 +101,14 @@ dependencies {
     implementation 'com.google.android.exoplayer:exoplayer-core:2.7.2'
 
     // KTX
-    implementation 'androidx.core:core-ktx:0.3'
+    implementation "androidx.core:core-ktx:1.1.0"
 
     // Koin
-    implementation 'org.koin:koin-android-architecture:0.9.3'
+    implementation 'org.koin:koin-android-viewmodel:1.0.2'
 
     // Other
-    implementation 'com.simplecityapps:recyclerview-fastscroll:1.0.16'
     implementation 'com.sothree.slidinguppanel:library:3.3.1'
-    implementation 'com.h6ah4i.android.widget.verticalseekbar:verticalseekbar:0.7.1'
     testImplementation 'junit:junit:4.12'
-    implementation 'android.arch.navigation:navigation-fragment:1.0.0-alpha01'
 }
 
 apply plugin: 'kotlin-android-extensions'

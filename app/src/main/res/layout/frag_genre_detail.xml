@@ -8,20 +8,20 @@
     android:layout_height="match_parent"
     android:background="?android:colorBackground">
 
-    <android.support.design.widget.AppBarLayout
+    <com.google.android.material.appbar.AppBarLayout
         android:layout_height="wrap_content"
         android:layout_width="match_parent"
         android:fitsSystemWindows="true"
         android:id="@+id/appBarLayout">
 
-        <android.support.v7.widget.Toolbar
+        <androidx.appcompat.widget.Toolbar
             android:id="@+id/toolbar"
             android:layout_height="?attr/actionBarSize"
             android:layout_width="match_parent"/>
 
-    </android.support.design.widget.AppBarLayout>
+    </com.google.android.material.appbar.AppBarLayout>
 
-    <android.support.v4.widget.NestedScrollView
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:scrollbars="none">
@@ -32,21 +32,21 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
-            <android.support.v7.widget.Toolbar
+            <androidx.appcompat.widget.Toolbar
                 android:id="@+id/toolbar_albums"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:theme="@style/PlayableActionToolbarTheme"
                 app:title="@string/info_albums"/>
 
-            <android.support.v7.widget.RecyclerView
+            <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/genre_album_recycler_view"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:nestedScrollingEnabled="false"/>
 
-            <android.support.v7.widget.Toolbar
+            <androidx.appcompat.widget.Toolbar
                 android:id="@+id/toolbar_songs"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -59,11 +59,12 @@
                 android:layout_height="match_parent"
                 android:layout_marginTop="8dp"
                 android:nestedScrollingEnabled="false"
-                app:fastScrollPopupBgColor="@color/colorAccent"
-                app:fastScrollPopupTextColor="@android:color/primary_text_dark"
-                app:fastScrollThumbColor="@color/colorAccent"/>
+                app:fastScrollHorizontalThumbDrawable="@drawable/thumb_drawable"
+                app:fastScrollHorizontalTrackDrawable="@drawable/line_drawable"
+                app:fastScrollVerticalThumbDrawable="@drawable/thumb_drawable"
+                app:fastScrollVerticalTrackDrawable="@drawable/line_drawable"/>
         </LinearLayout>
-    </android.support.v4.widget.NestedScrollView>
+    </androidx.core.widget.NestedScrollView>
 
     <include layout="@layout/empty_view" />
 </LinearLayout>

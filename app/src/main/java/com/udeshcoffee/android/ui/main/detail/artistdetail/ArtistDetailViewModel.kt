@@ -2,7 +2,7 @@ package com.udeshcoffee.android.ui.main.detail.artistdetail
 
 import android.app.Activity.RESULT_OK
 import android.app.Application
-import android.arch.lifecycle.MutableLiveData
+import androidx.lifecycle.MutableLiveData
 import android.content.Intent
 import android.util.Log
 import com.udeshcoffee.android.data.DataRepository

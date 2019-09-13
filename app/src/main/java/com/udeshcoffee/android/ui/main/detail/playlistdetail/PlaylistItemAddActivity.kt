@@ -3,13 +3,12 @@ package com.udeshcoffee.android.ui.main.detail.playlistdetail
 import android.content.ContentValues
 import android.os.Bundle
 import android.provider.MediaStore
-import android.support.v7.app.AppCompatActivity
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.Toolbar
 import android.view.MenuItem
 import android.widget.TextView
 import android.widget.Toast
-import com.simplecityapps.recyclerview_fastscroll.views.FastScrollRecyclerView
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
+import androidx.recyclerview.widget.RecyclerView
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.data.MediaRepository
 import com.udeshcoffee.android.interfaces.OnItemSelectListener
@@ -50,11 +49,11 @@ class PlaylistItemAddActivity : AppCompatActivity() {
 
         val count = findViewById<TextView>(R.id.playlistitemadd_count)
 
-        val songView = findViewById<FastScrollRecyclerView>(R.id.playlistitemadd_list)
+        val songView = findViewById<RecyclerView>(R.id.playlistitemadd_list)
         //songView.setNestedScrollingEnabled(false);
         addAdapter = PlaylistAddAdapter(count)
 
-        songView.layoutManager = LinearLayoutManager(this)
+        songView.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
         songView.adapter = addAdapter
         addAdapter!!.listener = object : OnItemSelectListener {
             override fun onSelectItem(postion: Int) {

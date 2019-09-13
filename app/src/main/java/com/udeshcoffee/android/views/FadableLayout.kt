@@ -5,12 +5,11 @@ import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
-import android.support.constraint.ConstraintLayout
-import android.support.v4.view.animation.FastOutSlowInInterpolator
+import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import android.util.AttributeSet
+import androidx.constraintlayout.widget.ConstraintLayout
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.extensions.getColorWithAlpha
-
 
 /**
  * Created by Udathari on 12/17/2017.

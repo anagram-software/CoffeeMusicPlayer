@@ -1,14 +1,14 @@
 package com.udeshcoffee.android.ui.main.library.nested.folder
 
-import android.arch.lifecycle.Observer
 import android.os.Bundle
-import android.support.v4.app.Fragment
-import android.support.v7.widget.LinearLayoutManager
 import android.view.*
 import android.widget.Button
 import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
+import androidx.lifecycle.Observer
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.extensions.openCollectionLongDialog
 import com.udeshcoffee.android.extensions.openSongLongDialog
@@ -19,10 +19,10 @@ import com.udeshcoffee.android.utils.SortManager
 import org.koin.android.ext.android.inject
 
 /**
-* Created by Udathari on 8/27/2017.
-*/
+ * Created by Udathari on 8/27/2017.
+ */
 
-class FolderFragment : Fragment() {
+class FolderFragment : androidx.fragment.app.Fragment() {
 
     private val viewModel: FolderViewModel by inject()
 
@@ -44,13 +44,11 @@ class FolderFragment : Fragment() {
             val itemView = findViewById<EmptyRecyclerView>(R.id.folder_list)
             // specify an adapter (see also next example)
             adapter = FolderAdapter()
-            val layoutManager = LinearLayoutManager(activity, LinearLayoutManager.VERTICAL, false)
+            val layoutManager = LinearLayoutManager(activity, RecyclerView.VERTICAL, false)
             itemView.layoutManager = layoutManager
             itemView.setEmptyView(view.findViewById(R.id.empty_view))
             itemView.hasFixedSize()
             itemView.setItemViewCacheSize(20)
-            itemView.isDrawingCacheEnabled = true
-            itemView.drawingCacheQuality = View.DRAWING_CACHE_QUALITY_AUTO
             itemView.isNestedScrollingEnabled = false
 
             adapter.songClickListener = object : OnItemClickListener {
@@ -91,48 +89,46 @@ class FolderFragment : Fragment() {
     }
 
     // Sorting
-    override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
-        inflater?.inflate(R.menu.folder_menu, menu)
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(R.menu.folder_menu, menu)
         super.onCreateOptionsMenu(menu, inflater)
     }
 
-    override fun onPrepareOptionsMenu(menu: Menu?) {
-        if (menu != null) {
-            when (viewModel.songSortOrder) {
-                SortManager.SongSort.DEFAULT -> menu.findItem(R.id.action_sort_default).isChecked = true
-                SortManager.SongSort.NAME -> menu.findItem(R.id.action_sort_title).isChecked = true
-                SortManager.SongSort.TRACK_NUMBER -> menu.findItem(R.id.action_sort_track).isChecked = true
-                SortManager.SongSort.DURATION -> menu.findItem(R.id.action_sort_duration).isChecked = true
-                SortManager.SongSort.DATE -> menu.findItem(R.id.action_sort_date).isChecked = true
-                SortManager.SongSort.YEAR -> menu.findItem(R.id.action_sort_year).isChecked = true
-                SortManager.SongSort.ALBUM_NAME -> menu.findItem(R.id.action_sort_album_name).isChecked = true
-                SortManager.SongSort.ARTIST_NAME -> menu.findItem(R.id.action_sort_artist_name).isChecked = true
-            }
-            when (viewModel.folderSortOrder) {
-                SortManager.FolderSort.DEFAULT -> menu.findItem(R.id.action_sort_folder_default).isChecked = true
-                SortManager.FolderSort.NAME -> menu.findItem(R.id.action_sort_folder_title).isChecked = true
-                SortManager.FolderSort.SONG_COUNT -> menu.findItem(R.id.action_sort_folder_song_count).isChecked = true
-            }
-            menu.findItem(R.id.action_sort_ascending).isChecked = viewModel.songSortAscending
-            menu.findItem(R.id.action_sort_folder_ascending).isChecked = viewModel.folderSortAscending
+    override fun onPrepareOptionsMenu(menu: Menu) {
+        when (viewModel.songSortOrder) {
+            SortManager.SongSort.DEFAULT -> menu.findItem(R.id.action_sort_default).isChecked = true
+            SortManager.SongSort.NAME -> menu.findItem(R.id.action_sort_title).isChecked = true
+            SortManager.SongSort.TRACK_NUMBER -> menu.findItem(R.id.action_sort_track).isChecked = true
+            SortManager.SongSort.DURATION -> menu.findItem(R.id.action_sort_duration).isChecked = true
+            SortManager.SongSort.DATE -> menu.findItem(R.id.action_sort_date).isChecked = true
+            SortManager.SongSort.YEAR -> menu.findItem(R.id.action_sort_year).isChecked = true
+            SortManager.SongSort.ALBUM_NAME -> menu.findItem(R.id.action_sort_album_name).isChecked = true
+            SortManager.SongSort.ARTIST_NAME -> menu.findItem(R.id.action_sort_artist_name).isChecked = true
         }
+        when (viewModel.folderSortOrder) {
+            SortManager.FolderSort.DEFAULT -> menu.findItem(R.id.action_sort_folder_default).isChecked = true
+            SortManager.FolderSort.NAME -> menu.findItem(R.id.action_sort_folder_title).isChecked = true
+            SortManager.FolderSort.SONG_COUNT -> menu.findItem(R.id.action_sort_folder_song_count).isChecked = true
+        }
+        menu.findItem(R.id.action_sort_ascending).isChecked = viewModel.songSortAscending
+        menu.findItem(R.id.action_sort_folder_ascending).isChecked = viewModel.folderSortAscending
         super.onPrepareOptionsMenu(menu)
     }
 
-    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
         var sortChanged = true
         var folderSortChanged = true
 
-        if (item?.groupId == R.id.sort_folder) {
+        if (item.groupId == R.id.sort_folder) {
             when (item.itemId) {
                 R.id.action_sort_folder_default -> viewModel.folderSortOrder = SortManager.AlbumSort.DEFAULT
-                R.id.action_sort_folder_title-> viewModel.folderSortOrder = SortManager.AlbumSort.NAME
+                R.id.action_sort_folder_title -> viewModel.folderSortOrder = SortManager.AlbumSort.NAME
                 R.id.action_sort_folder_song_count -> viewModel.folderSortOrder = SortManager.AlbumSort.YEAR
                 R.id.action_sort_folder_ascending -> viewModel.folderSortAscending = !item.isChecked
             }
         } else folderSortChanged = false
 
-        when (item?.itemId) {
+        when (item.itemId) {
             R.id.action_sort_default -> viewModel.songSortOrder = SortManager.SongSort.DEFAULT
             R.id.action_sort_title -> viewModel.songSortOrder = SortManager.SongSort.NAME
             R.id.action_sort_track -> viewModel.songSortOrder = SortManager.SongSort.TRACK_NUMBER
@@ -141,7 +137,9 @@ class FolderFragment : Fragment() {
             R.id.action_sort_date -> viewModel.songSortOrder = SortManager.SongSort.DATE
             R.id.action_sort_album_name -> viewModel.songSortOrder = SortManager.SongSort.ALBUM_NAME
             R.id.action_sort_artist_name -> viewModel.songSortOrder = SortManager.SongSort.ARTIST_NAME
-            R.id.action_sort_ascending -> { viewModel.songSortAscending = !item.isChecked }
+            R.id.action_sort_ascending -> {
+                viewModel.songSortAscending = !item.isChecked
+            }
             else -> sortChanged = false
         }
 

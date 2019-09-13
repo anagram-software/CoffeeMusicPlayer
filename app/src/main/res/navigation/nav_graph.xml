@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/libraryFragment">
+
+    <fragment
+        android:id="@+id/libraryFragment"
+        android:name="com.udeshcoffee.android.ui.main.library.LibraryFragment"
+        android:label="frag_library"
+        tools:layout="@layout/frag_library" >
+        <action
+            android:id="@+id/action_library_to_genre"
+            app:destination="@id/genreDetailFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim"  />
+        <action
+            android:id="@+id/action_library_to_artist"
+            app:destination="@id/artistDetailFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim"  />
+        <action
+            android:id="@+id/action_library_to_album"
+            app:destination="@id/albumDetailFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim" />
+        <action
+            android:id="@+id/action_library_to_search"
+            app:destination="@id/searchFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim" />
+    </fragment>
+    <fragment
+        android:id="@+id/favoritesFragment"
+        android:name="com.udeshcoffee.android.ui.main.favorites.FavoritesFragment"
+        android:label="FavoritesFragment" />
+    <fragment
+        android:id="@+id/playlistFragment"
+        android:name="com.udeshcoffee.android.ui.main.playlist.PlaylistFragment"
+        android:label="PlaylistFragment" >
+        <action
+            android:id="@+id/action_playlist_to_playlist"
+            app:destination="@id/playlistDetailFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim"  />
+    </fragment>
+    <fragment
+        android:id="@+id/equalizerFragment"
+        android:name="com.udeshcoffee.android.ui.main.equalizer.EqualizerFragment"
+        android:label="EqualizerFragment" />
+    <activity
+        android:id="@+id/settingsActivity"
+        android:name="com.udeshcoffee.android.ui.settings.SettingsActivity"
+        android:label="SettingsActivity" />
+    <fragment
+        android:id="@+id/albumDetailFragment"
+        android:name="com.udeshcoffee.android.ui.main.detail.albumdetail.AlbumDetailFragment"
+        android:label="AlbumDetailFragment" />
+    <fragment
+        android:id="@+id/artistDetailFragment"
+        android:name="com.udeshcoffee.android.ui.main.detail.artistdetail.ArtistDetailFragment"
+        android:label="ArtistDetailFragment" >
+        <action
+            android:id="@+id/action_artist_to_album"
+            app:destination="@id/albumDetailFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim"  />
+    </fragment>
+    <fragment
+        android:id="@+id/genreDetailFragment"
+        android:name="com.udeshcoffee.android.ui.main.detail.genredetail.GenreDetailFragment"
+        android:label="GenreDetailFragment" >
+        <action
+            android:id="@+id/action_genre_to_album"
+            app:destination="@id/albumDetailFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim"  />
+    </fragment>
+    <fragment
+        android:id="@+id/playlistDetailFragment"
+        android:name="com.udeshcoffee.android.ui.main.detail.playlistdetail.PlaylistDetailFragment"
+        android:label="PlaylistDetailFragment" />
+    <fragment
+        android:id="@+id/editorFragment"
+        android:name="com.udeshcoffee.android.ui.main.editor.EditorFragment"
+        android:label="EditorFragment" />
+    <fragment
+        android:id="@+id/searchFragment"
+        android:name="com.udeshcoffee.android.ui.main.search.SearchFragment"
+        android:label="SearchFragment" >
+        <action
+            android:id="@+id/action_search_to_artist"
+            app:destination="@id/artistDetailFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim"  />
+        <action
+            android:id="@+id/action_search_to_album"
+            app:destination="@id/albumDetailFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim" />
+    </fragment>
+</navigation>

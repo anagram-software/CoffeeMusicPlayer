@@ -1,13 +1,13 @@
 package com.udeshcoffee.android.ui.main.favorites
 
 import android.os.Bundle
-import android.support.v4.app.Fragment
-import android.support.v7.app.ActionBar
-import android.support.v7.app.AppCompatActivity
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.Toolbar
 import android.view.*
 import android.widget.TextView
+import androidx.appcompat.app.ActionBar
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.transition.Fade
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.extensions.openDrawer
 import com.udeshcoffee.android.extensions.setRoundColor
@@ -18,15 +18,20 @@ import com.udeshcoffee.android.utils.SortManager
 import org.koin.android.ext.android.inject
 
 /**
-* Created by Udathari on 9/29/2017.
-*/
-class FavoritesFragment: Fragment() {
+ * Created by Udathari on 9/29/2017.
+ */
+class FavoritesFragment : androidx.fragment.app.Fragment() {
 
     val viewModel: FavoritesViewModel by inject()
 
     private lateinit var songAdapter: SongAdapter
     private lateinit var toolbarSongs: Toolbar
     private var actionBar: ActionBar? = null
+
+    init {
+        enterTransition = Fade()
+        exitTransition = Fade()
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
             inflater.inflate(R.layout.frag_favorites, container, false)
@@ -87,31 +92,29 @@ class FavoritesFragment: Fragment() {
         }
     }
 
-    override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
-        inflater?.inflate(R.menu.favorites_detail_menu, menu)
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(R.menu.favorites_detail_menu, menu)
         super.onCreateOptionsMenu(menu, inflater)
     }
 
-    override fun onPrepareOptionsMenu(menu: Menu?) {
-        if (menu != null) {
-            when (viewModel.songSortOrder) {
-                SortManager.SongSort.DEFAULT -> menu.findItem(R.id.action_sort_default).isChecked = true
-                SortManager.SongSort.NAME -> menu.findItem(R.id.action_sort_title).isChecked = true
-                SortManager.SongSort.TRACK_NUMBER -> menu.findItem(R.id.action_sort_track).isChecked = true
-                SortManager.SongSort.DURATION -> menu.findItem(R.id.action_sort_duration).isChecked = true
-                SortManager.SongSort.DATE -> menu.findItem(R.id.action_sort_date).isChecked = true
-                SortManager.SongSort.YEAR -> menu.findItem(R.id.action_sort_year).isChecked = true
-                SortManager.SongSort.ARTIST_NAME -> menu.findItem(R.id.action_sort_artist_name).isChecked = true
-            }
-            viewModel.let { menu.findItem(R.id.action_sort_ascending).isChecked = it.songSortAscending }
+    override fun onPrepareOptionsMenu(menu: Menu) {
+        when (viewModel.songSortOrder) {
+            SortManager.SongSort.DEFAULT -> menu.findItem(R.id.action_sort_default).isChecked = true
+            SortManager.SongSort.NAME -> menu.findItem(R.id.action_sort_title).isChecked = true
+            SortManager.SongSort.TRACK_NUMBER -> menu.findItem(R.id.action_sort_track).isChecked = true
+            SortManager.SongSort.DURATION -> menu.findItem(R.id.action_sort_duration).isChecked = true
+            SortManager.SongSort.DATE -> menu.findItem(R.id.action_sort_date).isChecked = true
+            SortManager.SongSort.YEAR -> menu.findItem(R.id.action_sort_year).isChecked = true
+            SortManager.SongSort.ARTIST_NAME -> menu.findItem(R.id.action_sort_artist_name).isChecked = true
         }
+        viewModel.let { menu.findItem(R.id.action_sort_ascending).isChecked = it.songSortAscending }
         super.onPrepareOptionsMenu(menu)
     }
 
-    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
         var sortChanged = true
 
-        if (item?.groupId == R.id.sort_group) {
+        if (item.groupId == R.id.sort_group) {
             when (item.itemId) {
                 R.id.action_sort_default -> viewModel.songSortOrder = SortManager.SongSort.DEFAULT
                 R.id.action_sort_title -> viewModel.songSortOrder = SortManager.SongSort.NAME
@@ -124,7 +127,7 @@ class FavoritesFragment: Fragment() {
             }
         } else sortChanged = false
 
-        when (item?.itemId) {
+        when (item.itemId) {
             android.R.id.home -> activity?.openDrawer()
             R.id.action_play -> viewModel.playClick()
             R.id.action_play_next -> viewModel.playNextClick()

@@ -4,9 +4,8 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.graphics.BitmapFactory
-import android.support.v4.app.NotificationCompat
-import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
+import androidx.core.app.NotificationCompat
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.service.MusicService
 
@@ -22,7 +21,7 @@ object MediaStyleHelper {
      * @return A pre-built notification with information from the given media session.
      */
     fun from(
-            context: Context, mediaSession: MediaSessionCompat): NotificationCompat.Builder {
+            context: Context, mediaSession: MediaSessionCompat, channelId: String? = null): NotificationCompat.Builder {
         val controller = mediaSession.controller
         val mediaMetadata = controller.metadata
         val description = mediaMetadata.description
@@ -35,10 +34,12 @@ object MediaStyleHelper {
         stopIntent.action = MusicService.ACTION_STOP
         val stopPendingIntent = PendingIntent.getService(context, 0, stopIntent, 0)
 
-        val builder = NotificationCompat.Builder(
-                context)
-        builder
-                .setContentTitle(description.title)
+        val builder = if (channelId == null) {
+            @Suppress("DEPRECATION") NotificationCompat.Builder(context)
+        } else {
+            NotificationCompat.Builder(context, channelId)
+        }
+        builder.setContentTitle(description.title)
                 .setContentText(description.subtitle)
                 .setSubText(description.description)
                 .setLargeIcon(bitmap)

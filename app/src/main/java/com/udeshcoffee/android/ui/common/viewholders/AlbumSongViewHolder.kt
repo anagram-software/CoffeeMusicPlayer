@@ -1,7 +1,7 @@
 package com.udeshcoffee.android.ui.common.viewholders
 
 import android.content.Context
-import android.support.v7.widget.RecyclerView
+import androidx.recyclerview.widget.RecyclerView
 import android.view.View
 import android.widget.TextView
 import com.udeshcoffee.android.R
@@ -13,7 +13,7 @@ import com.udeshcoffee.android.model.Song
  */
 
 class AlbumSongViewHolder(val context: Context, itemView: View, val listener: OnSongItemClickListener?) :
-        RecyclerView.ViewHolder(itemView), View.OnClickListener, View.OnLongClickListener {
+        androidx.recyclerview.widget.RecyclerView.ViewHolder(itemView), View.OnClickListener, View.OnLongClickListener {
 
     // each data item is just a string in this case
     var titleView: TextView = itemView.findViewById<TextView>(R.id.song_title)
@@ -45,7 +45,7 @@ class AlbumSongViewHolder(val context: Context, itemView: View, val listener: On
         if (listener != null) {
             var position = adapterPosition
             position--
-            if (position != RecyclerView.NO_POSITION) {
+            if (position != androidx.recyclerview.widget.RecyclerView.NO_POSITION) {
                 listener.onItemClick(position)
             }
         }
@@ -55,7 +55,7 @@ class AlbumSongViewHolder(val context: Context, itemView: View, val listener: On
         if (listener != null) {
             var position = adapterPosition
             position--
-            if (position != RecyclerView.NO_POSITION) {
+            if (position != androidx.recyclerview.widget.RecyclerView.NO_POSITION) {
                 listener.onItemLongClick(position)
             }
         }

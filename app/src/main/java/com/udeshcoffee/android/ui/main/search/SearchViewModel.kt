@@ -1,7 +1,7 @@
 package com.udeshcoffee.android.ui.main.search
 
 import android.app.Application
-import android.arch.lifecycle.MutableLiveData
+import androidx.lifecycle.MutableLiveData
 import com.annimon.stream.Collectors
 import com.annimon.stream.Stream
 import com.udeshcoffee.android.data.DataRepository

@@ -2,9 +2,8 @@ package com.udeshcoffee.android.ui.common.dialogs
 
 import android.app.Dialog
 import android.os.Bundle
-import android.support.v4.app.DialogFragment
-import android.support.v7.app.AlertDialog
 import android.widget.EditText
+import androidx.appcompat.app.AlertDialog
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.ui.main.equalizer.EqualizerFragment
 
@@ -12,7 +11,7 @@ import com.udeshcoffee.android.ui.main.equalizer.EqualizerFragment
 * Created by udesh on 3/21/18.
 */
 
-class SaveEQDialog : DialogFragment() {
+class SaveEQDialog : androidx.fragment.app.DialogFragment() {
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
 
@@ -33,7 +32,7 @@ class SaveEQDialog : DialogFragment() {
                         }
                     }
                 }
-                .setNegativeButton("Cancel") { _, _ -> this@SaveEQDialog.dialog.cancel() }
+                .setNegativeButton("Cancel") { _, _ -> this@SaveEQDialog.dialog?.cancel() }
         return builder.create()
     }
 

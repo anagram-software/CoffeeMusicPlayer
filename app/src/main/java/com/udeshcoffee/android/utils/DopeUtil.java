@@ -1,7 +1,6 @@
 package com.udeshcoffee.android.utils;
 
 import android.content.ContentResolver;
-import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.MediaStore;
@@ -50,7 +49,7 @@ public class DopeUtil {
         // numbers, which we can generate faster than normal decimal or
         // hexadecimal numbers, which in turn allows us to save the playlist
         // more often without worrying too much about performance.
-        char hexDigits[] = new char[]{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+        char[] hexDigits = new char[]{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
         int len = songs.size();
         for (int i = 0; i < len; i++) {
             long n = songs.get(i).getId();
@@ -95,14 +94,5 @@ public class DopeUtil {
                 cursor.close();
             }
         }
-    }
-
-    public static int getStatusHeight(Context c){
-        int result = 0;
-        int resourceId = c.getResources().getIdentifier("status_bar_height", "dimen", "android");
-        if (resourceId > 0) {
-            result = c.getResources().getDimensionPixelSize(resourceId);
-        }
-        return result;
     }
 }

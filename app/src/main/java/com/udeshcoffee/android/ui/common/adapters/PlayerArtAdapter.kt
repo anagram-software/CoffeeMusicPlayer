@@ -1,7 +1,7 @@
 package com.udeshcoffee.android.ui.common.adapters
 
 import android.content.Context
-import android.support.v4.view.PagerAdapter
+import androidx.viewpager.widget.PagerAdapter
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -15,7 +15,7 @@ import io.reactivex.functions.Consumer
 /**
  * Created by Udathari on 9/24/2017.
  */
-class PlayerArtAdapter(val context: Context): PagerAdapter(), Consumer<List<Song>> {
+class PlayerArtAdapter(val context: Context): androidx.viewpager.widget.PagerAdapter(), Consumer<List<Song>> {
 
     val TAG = "PlayerArtAdapter"
 

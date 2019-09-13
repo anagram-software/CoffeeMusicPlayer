@@ -1,26 +1,19 @@
 package com.udeshcoffee.android.ui.main.library
 
 import android.os.Bundle
-import android.preference.PreferenceManager
-import android.support.design.widget.TabLayout
-import android.support.v4.app.Fragment
-import android.support.v4.view.ViewPager
-import android.support.v7.app.ActionBar
-import android.support.v7.app.AppCompatActivity
-import android.support.v7.widget.Toolbar
+import androidx.preference.PreferenceManager
 import android.view.*
 import android.widget.TextView
+import androidx.appcompat.app.ActionBar
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
+import androidx.fragment.app.Fragment
+import androidx.transition.Fade
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.extensions.openDrawer
 import com.udeshcoffee.android.extensions.setRoundColor
-import com.udeshcoffee.android.ui.common.adapters.FragAdapter
-import com.udeshcoffee.android.ui.main.library.nested.AlbumFragment
-import com.udeshcoffee.android.ui.main.library.nested.ArtistFragment
-import com.udeshcoffee.android.ui.main.library.nested.GenreFragment
-import com.udeshcoffee.android.ui.main.library.nested.folder.FolderFragment
-import com.udeshcoffee.android.ui.main.library.nested.track.TrackFragment
+import com.udeshcoffee.android.ui.common.adapters.LibraryChildAdapter
 import com.udeshcoffee.android.utils.PreferenceUtil
-
 
 /**
 * Created by Udathari on 8/26/2017.
@@ -28,8 +21,13 @@ import com.udeshcoffee.android.utils.PreferenceUtil
 class LibraryFragment: Fragment() {
 
     var actionBar: ActionBar? = null
-    lateinit var adapter: FragAdapter
-    lateinit var viewPager: ViewPager
+    lateinit var adapter: LibraryChildAdapter
+    private lateinit var viewPager: androidx.viewpager.widget.ViewPager
+
+    init {
+        enterTransition = Fade()
+        exitTransition = Fade()
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         super.onCreateView(inflater, container, savedInstanceState)
@@ -37,26 +35,11 @@ class LibraryFragment: Fragment() {
         setHasOptionsMenu(true)
 
         val root = inflater.inflate(R.layout.frag_library, container, false)
-        adapter = FragAdapter(childFragmentManager)
-
-        val trackFragment = TrackFragment.create()
-        adapter.addFragment(trackFragment, "Songs")
-
-        val albumFragment = AlbumFragment.create()
-        adapter.addFragment(albumFragment, "Albums")
-
-        val artistFragment = ArtistFragment.create()
-        adapter.addFragment(artistFragment, "Artists")
-
-        val folderFragment = FolderFragment.create()
-        adapter.addFragment(folderFragment, "Folders")
-
-        val genreFragment = GenreFragment.create()
-        adapter.addFragment(genreFragment, "Genres")
+        adapter = LibraryChildAdapter(childFragmentManager)
 
         // Set up player view
         with(root) {
-            val toolbar: Toolbar = findViewById(R.id.toolbar)
+             val toolbar: Toolbar = findViewById(R.id.toolbar)
             (activity as AppCompatActivity).setSupportActionBar(toolbar)
             actionBar = (activity as AppCompatActivity).supportActionBar
             actionBar?.apply {
@@ -71,22 +54,22 @@ class LibraryFragment: Fragment() {
             viewPager.adapter = adapter
             viewPager.currentItem = PreferenceManager
                     .getDefaultSharedPreferences(context)
-                    .getString(PreferenceUtil.PREF_LIB_START, "0").toInt()
+                    .getString(PreferenceUtil.PREF_LIB_START, "0")?.toInt() ?: 0
 
-            val tabs: TabLayout = findViewById(R.id.tabs)
+            val tabs: com.google.android.material.tabs.TabLayout = findViewById(R.id.tabs)
             tabs.setupWithViewPager(viewPager)
         }
 
         return root
     }
 
-    override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
-        inflater?.inflate(R.menu.library_menu, menu)
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(R.menu.library_menu, menu)
         super.onCreateOptionsMenu(menu, inflater)
     }
 
-    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
-        when (item?.itemId) {
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
             android.R.id.home -> activity?.openDrawer()
         }
         return super.onOptionsItemSelected(item)

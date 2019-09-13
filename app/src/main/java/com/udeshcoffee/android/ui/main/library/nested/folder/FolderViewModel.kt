@@ -1,7 +1,7 @@
 package com.udeshcoffee.android.ui.main.library.nested.folder
 
 import android.app.Application
-import android.arch.lifecycle.MutableLiveData
+import androidx.lifecycle.MutableLiveData
 import android.os.Build
 import android.os.Environment
 import android.text.TextUtils
@@ -24,13 +24,13 @@ import java.util.*
 import kotlin.collections.ArrayList
 
 /**
-* Created by Udathari on 9/5/2017.
-*/
+ * Created by Udathari on 9/5/2017.
+ */
 class FolderViewModel(
         application: Application,
         dataRepository: DataRepository,
         private val mediaRepository: MediaRepository
-): DetailSongViewModel(application, dataRepository) {
+) : DetailSongViewModel(application, dataRepository) {
 
     val path = MutableLiveData<String>()
     val folders = MutableLiveData<List<Folder>>()
@@ -55,7 +55,7 @@ class FolderViewModel(
     }
 
     private fun fetchFolders() {
-        currentDir?.let {
+        currentDir?.let { it ->
             val file = it
             if (!file.canRead()) {
                 if (file.absolutePath.startsWith(
@@ -79,7 +79,9 @@ class FolderViewModel(
             try {
                 files = file.listFiles()
             } catch (e: Exception) {
-                showToast.setMessage(e.localizedMessage)
+                e.localizedMessage?.let { msg ->
+                    showToast.setMessage(msg)
+                }
             }
 
             if (files == null) {
@@ -115,10 +117,10 @@ class FolderViewModel(
             SortManager.sortFolders(items)
 
             if (!folderSortAscending) {
-                Collections.reverse(items)
+                folders.value = items.reversed()
+            } else {
+                folders.value = items
             }
-
-            folders.value = items
         }
     }
 
@@ -146,25 +148,26 @@ class FolderViewModel(
         SortManager.sortFolders(items)
 
         if (!folderSortAscending) {
-            Collections.reverse(items)
+            folders.value = items.reversed()
+        }else {
+            folders.value = items
         }
         disposeSongs()
-        folders.value = items
         currentDir = null
     }
 
     override fun fetchSongs() {
-        currentDir?.let {
+        currentDir?.let {file ->
             disposeSongs()
-            disposable = mediaRepository.getFolderSongs(it.path + "/")
-                    .map {
-                        SortManager.sortFolderSongs(it)
+            disposable = mediaRepository.getFolderSongs(file.path + "/")
+                    .map {songs ->
+                        SortManager.sortFolderSongs(songs)
 
                         if (!songSortAscending) {
-                            Collections.reverse(it)
+                            return@map songs.reversed()
                         }
 
-                        return@map it
+                        return@map songs
                     }
                     .subscribe {
                         songs.value = it
@@ -180,7 +183,7 @@ class FolderViewModel(
     }
 
     fun checkSortAndFetchFolders() {
-        Log.d(Companion.TAG, "checkSortAndFetchFolders history: ${history.size}")
+        Log.d(TAG, "checkSortAndFetchFolders history: ${history.size}")
         if (currentDir == null)
             fetchRoot()
         else if (currentDir != null)
@@ -214,17 +217,17 @@ class FolderViewModel(
     }
 
     fun folderItemLongClicked(position: Int) {
-        folders.value?.get(position)?.let {folder ->
+        folders.value?.get(position)?.let { folder ->
             mediaRepository.getFolderSongs(folder.file.path + "/")
-                    .map({ songs ->
+                    .map { songs ->
                         SortManager.sortFolderSongs(songs)
 
                         if (!SortManager.folderSongsAscending) {
-                            Collections.reverse(songs)
+                            return@map songs.reversed()
                         }
 
                         return@map songs
-                    })
+                    }
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
                     .firstOrError()
@@ -235,7 +238,7 @@ class FolderViewModel(
     }
 
     private fun setPath(path: String) {
-        var newPath : String? = null
+        var newPath: String? = null
         internal?.let {
             if (path.contains(it))
                 newPath = "/Internal" + path.substring(it.length)
@@ -248,25 +251,32 @@ class FolderViewModel(
         }
         if (newPath == null)
             newPath = path
-        this.path.value =  newPath
+        this.path.value = newPath
     }
 
     override var songSortOrder: Int
         get() = SortManager.folderSongsSortOrder
-        set(value) { SortManager.folderSongsSortOrder = value}
+        set(value) {
+            SortManager.folderSongsSortOrder = value
+        }
 
     override var songSortAscending: Boolean
         get() = SortManager.folderSongsAscending
-        set(value) { SortManager.folderSongsAscending = value}
+        set(value) {
+            SortManager.folderSongsAscending = value
+        }
 
     var folderSortOrder: Int
         get() = SortManager.folderSortOrder
         set(value) {
-            SortManager.folderSortOrder = value}
+            SortManager.folderSortOrder = value
+        }
 
     var folderSortAscending: Boolean
         get() = SortManager.foldersAscending
-        set(value) { SortManager.foldersAscending = value}
+        set(value) {
+            SortManager.foldersAscending = value
+        }
 
     companion object {
         private const val TAG = "FolderPresenter"

@@ -1,8 +1,8 @@
 package com.udeshcoffee.android.ui.common.viewholders
 
 import android.content.Context
-import android.support.v4.view.ViewCompat
-import android.support.v7.widget.RecyclerView
+import androidx.core.view.ViewCompat
+import androidx.recyclerview.widget.RecyclerView
 import android.view.View
 import android.widget.ImageButton
 import android.widget.ImageView
@@ -18,7 +18,7 @@ import com.udeshcoffee.android.utils.DopeUtil
  */
 
 class AlbumViewHolder(val context: Context, itemView: View, val listener: OnGridItemClickListener?) :
-        RecyclerView.ViewHolder(itemView), View.OnClickListener, View.OnLongClickListener {
+        androidx.recyclerview.widget.RecyclerView.ViewHolder(itemView), View.OnClickListener, View.OnLongClickListener {
     // each data item is just a string in this case
     private var artView: ImageView = itemView.findViewById(R.id.grid_art)
     private var titleView: TextView = itemView.findViewById(R.id.grid_title)
@@ -28,7 +28,7 @@ class AlbumViewHolder(val context: Context, itemView: View, val listener: OnGrid
     init {
         optionView.setOnClickListener{
             val position = adapterPosition
-            if (position != RecyclerView.NO_POSITION) {
+            if (position != androidx.recyclerview.widget.RecyclerView.NO_POSITION) {
                 listener?.onItemOptionClick(position)
             }
         }
@@ -47,14 +47,14 @@ class AlbumViewHolder(val context: Context, itemView: View, val listener: OnGrid
 
     override fun onClick(view: View) {
         val position = adapterPosition
-        if (position != RecyclerView.NO_POSITION) {
+        if (position != androidx.recyclerview.widget.RecyclerView.NO_POSITION) {
             listener?.onItemClick(position, artView)
         }
     }
 
     override fun onLongClick(view: View): Boolean {
         val position = adapterPosition
-        if (position != RecyclerView.NO_POSITION) {
+        if (position != androidx.recyclerview.widget.RecyclerView.NO_POSITION) {
             listener?.onItemLongClick(position)
         }
         return true

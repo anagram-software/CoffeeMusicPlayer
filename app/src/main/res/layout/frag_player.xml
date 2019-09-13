@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:fitsSystemWindows="true"
     android:layout_height="match_parent"
     android:layout_width="match_parent"
     android:id="@+id/player_layout">
@@ -69,7 +68,7 @@
         app:layout_constraintStart_toEndOf="@+id/favorite"
         tools:text="Artist - Album" />
 
-    <android.support.v7.widget.AppCompatSeekBar
+    <androidx.appcompat.widget.AppCompatSeekBar
         android:id="@+id/progress"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
@@ -113,7 +112,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
-        <android.support.v7.widget.AppCompatImageButton
+        <androidx.appcompat.widget.AppCompatImageButton
             android:id="@+id/shuffle"
             style="@style/Widget.AppCompat.ImageButton"
             android:layout_width="0dp"
@@ -123,7 +122,7 @@
             android:contentDescription="@string/action_shuffle"
             app:srcCompat="@drawable/ic_shuffle_white_24dp" />
 
-        <android.support.v7.widget.AppCompatImageButton
+        <androidx.appcompat.widget.AppCompatImageButton
             android:id="@+id/gotoBack"
             style="@style/Widget.AppCompat.ImageButton"
             android:layout_width="0dp"
@@ -133,7 +132,7 @@
             android:contentDescription="@string/action_next"
             app:srcCompat="@drawable/ic_back" />
 
-        <android.support.v7.widget.AppCompatImageButton
+        <androidx.appcompat.widget.AppCompatImageButton
             android:id="@+id/play"
             style="@style/Widget.AppCompat.ImageButton"
             android:layout_width="0dp"
@@ -144,7 +143,7 @@
             android:scaleType="fitCenter"
             app:srcCompat="@drawable/ic_play_circle_filled_white_24dp" />
 
-        <android.support.v7.widget.AppCompatImageButton
+        <androidx.appcompat.widget.AppCompatImageButton
             android:id="@+id/gotoNext"
             style="@style/Widget.AppCompat.ImageButton"
             android:layout_width="0dp"
@@ -154,7 +153,7 @@
             android:contentDescription="@string/action_back"
             app:srcCompat="@drawable/ic_next" />
 
-        <android.support.v7.widget.AppCompatImageButton
+        <androidx.appcompat.widget.AppCompatImageButton
             android:id="@+id/repeat"
             style="@style/Widget.AppCompat.ImageButton"
             android:layout_width="0dp"
@@ -179,12 +178,13 @@
         android:textSize="12sp"
         android:alpha="0.6"/>
 
-    <android.support.v7.widget.Toolbar
+    <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:minHeight="?attr/actionBarSize"
         app:navigationIcon="@drawable/ic_down_white"
+        app:layout_constraintTop_toTopOf="parent"
         android:theme="?attr/actionBarTheme" />
 
     <FrameLayout
@@ -202,7 +202,7 @@
 
     </FrameLayout>
 
-    <android.support.v4.view.ViewPager
+    <androidx.viewpager.widget.ViewPager
         android:id="@+id/art_container"
         android:layout_width="0dp"
         android:layout_height="0dp"
@@ -215,7 +215,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/toolbar">
 
-    </android.support.v4.view.ViewPager>
+    </androidx.viewpager.widget.ViewPager>
 
     <TextView
         android:id="@+id/seek_time"
@@ -225,7 +225,6 @@
         android:shadowDx="0"
         android:shadowDy="0"
         android:shadowRadius="5"
-        android:text="6:00"
         android:textColor="#FFF"
         android:textSize="56sp"
         android:visibility="invisible"
@@ -234,4 +233,4 @@
         app:layout_constraintStart_toStartOf="@+id/art_container"
         app:layout_constraintTop_toTopOf="@+id/art_container" />
 
-</android.support.constraint.ConstraintLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -2,8 +2,7 @@ package com.udeshcoffee.android.ui.common.dialogs
 
 import android.app.Dialog
 import android.os.Bundle
-import android.support.v4.app.DialogFragment
-import android.support.v7.app.AlertDialog
+import androidx.appcompat.app.AlertDialog
 import android.view.View
 import android.widget.EditText
 import com.udeshcoffee.android.R
@@ -14,7 +13,7 @@ import org.koin.android.ext.android.inject
 * Created by udesh on 3/21/18.
 */
 
-class NewPlaylistDialog : DialogFragment() {
+class NewPlaylistDialog : androidx.fragment.app.DialogFragment() {
 
     val mediaRepository: MediaRepository by inject()
 
@@ -37,7 +36,7 @@ class NewPlaylistDialog : DialogFragment() {
                         mediaRepository.addPlaylist(name)
                     }
                 }
-                .setNegativeButton("Cancel") { _, _ -> this@NewPlaylistDialog.dialog.cancel() }
+                .setNegativeButton("Cancel") { _, _ -> this@NewPlaylistDialog.dialog?.cancel() }
         return builder.create()
     }
 

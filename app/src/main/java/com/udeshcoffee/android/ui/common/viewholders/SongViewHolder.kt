@@ -1,7 +1,7 @@
 package com.udeshcoffee.android.ui.common.viewholders
 
 import android.content.Context
-import android.support.v7.widget.RecyclerView
+import androidx.recyclerview.widget.RecyclerView
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
@@ -19,7 +19,7 @@ class SongViewHolder(
         itemView: View,
         val listener: OnItemClickListener?,
         private val hasShuffle: Boolean
-): RecyclerView.ViewHolder(itemView), View.OnClickListener, View.OnLongClickListener {
+): androidx.recyclerview.widget.RecyclerView.ViewHolder(itemView), View.OnClickListener, View.OnLongClickListener {
 
     // each data item is just a string in this case
     private var artView: ImageView = itemView.findViewById(R.id.song_art)
@@ -32,7 +32,7 @@ class SongViewHolder(
         itemView.setOnLongClickListener(this)
     }
 
-    fun bindData(currentItem: Song, isCurrentSong: Boolean, isSelected: Boolean = false) {
+    fun bindData(currentItem: Song, isCurrentSong: Boolean) {
         currentItem.loadArtwork(context, artView)
         titleView.text = currentItem.title
         var artist = currentItem.artistName
@@ -60,7 +60,7 @@ class SongViewHolder(
             var position = adapterPosition
             if (hasShuffle)
                 position--
-            if (position != RecyclerView.NO_POSITION) {
+            if (position != androidx.recyclerview.widget.RecyclerView.NO_POSITION) {
                 listener.onItemClick(position)
             }
         }
@@ -71,7 +71,7 @@ class SongViewHolder(
             var position = adapterPosition
             if (hasShuffle)
                 position--
-            if (position != RecyclerView.NO_POSITION) {
+            if (position != androidx.recyclerview.widget.RecyclerView.NO_POSITION) {
                 listener.onItemLongClick(position)
             }
         }

@@ -1,7 +1,7 @@
 package com.udeshcoffee.android.ui.player.player
 
 import android.app.Application
-import android.arch.lifecycle.MutableLiveData
+import androidx.lifecycle.MutableLiveData
 import android.content.SharedPreferences
 import android.util.Log
 import androidx.core.content.edit

@@ -1,8 +1,8 @@
 package com.udeshcoffee.android.ui.main.editor
 
 import android.app.Application
-import android.arch.lifecycle.AndroidViewModel
-import android.arch.lifecycle.MutableLiveData
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.MutableLiveData
 import android.content.ContentUris
 import android.graphics.Bitmap
 import android.media.MediaScannerConnection
@@ -36,7 +36,7 @@ class EditorViewModel(
         application: Application,
         private val mediaRepository: MediaRepository,
         private val dataRepository: DataRepository
-): AndroidViewModel(application) {
+) : AndroidViewModel(application) {
 
     val song = MutableLiveData<Song>()
     val path = MutableLiveData<String>()
@@ -98,13 +98,13 @@ class EditorViewModel(
         }
     }
 
-    private fun fetchData(){
+    private fun fetchData() {
         genre.value = mediaRepository.getGenreOfSong(song.value!!.id)?.name
         reloadImage.value = ImageType.SONG
     }
 
     fun imageSelected(uri: Uri) {
-        Log.d(Companion.TAG, "imageSelected")
+        Log.d(TAG, "imageSelected")
         albumArtUri = uri
         reloadImage.value = ImageType.URI
     }
@@ -121,18 +121,18 @@ class EditorViewModel(
         progressDialog.value = "Collecting Information"
         disposeCollectionDisposable()
         collectionDisposable = dataRepository.searchItunes(searchableTitle, searchableArtist)
-                .subscribe({
-                    if (it.resultCount > 0 && it.results != null) {
-                        it.results!![0].let {
-                            val releaseYear = it.releaseDate?.split("-")?.get(0)
+                .subscribe({ response ->
+                    if (response.resultCount > 0 && response.results != null) {
+                        response.results!![0].let { results ->
+                            val releaseYear = results.releaseDate?.split("-")?.get(0)
                             var tempSong = song.value
-                            tempSong = it.trackName?.let { tempSong?.copy(title = it)}
-                            tempSong = it.collectionName?.let { tempSong?.copy(albumName = it)}
-                            tempSong = it.artistName?.let { tempSong?.copy(artistName = it)}
-                            tempSong = releaseYear?.let { tempSong?.copy(year = it.toInt())}
-                            genre.value = it.primaryGenreName
+                            tempSong = results.trackName?.let { tempSong?.copy(title = it) }
+                            tempSong = results.collectionName?.let { tempSong?.copy(albumName = it) }
+                            tempSong = results.artistName?.let { tempSong?.copy(artistName = it) }
+                            tempSong = releaseYear?.let { tempSong?.copy(year = it.toInt()) }
+                            genre.value = results.primaryGenreName
                             song.value = tempSong
-                            val image = it.artworkUrl100?.replace("100x100", "500x500")
+                            val image = results.artworkUrl100?.replace("100x100", "500x500")
                             image?.let {
                                 albumArtUrl = it
                                 reloadImage.value = ImageType.URL
@@ -142,52 +142,52 @@ class EditorViewModel(
                         showToast.value = "No tracks found"
                     }
                     progressDialog.value = null
-                },{
+                }, {
                     showToast.value = "No tracks found"
                     progressDialog.value = null
                 })
     }
 
     fun save(title: String, album: String, artist: String, genre: String, year: String, trackNo: String, discNo: String) {
-        Log.d(Companion.TAG, "save")
-//        progressDialog.value = "Saving"
-        saveDisposable = Observable.fromCallable({
-            Log.d(Companion.TAG, "saveObservable")
+        Log.d(TAG, "save")
+        progressDialog.value = "Saving"
+        saveDisposable = Observable.fromCallable {
+            Log.d(TAG, "saveObservable")
             var tempFile: File
 
             file?.let {
-                Log.d(Companion.TAG, "saveObservable file")
+                Log.d(TAG, "saveObservable file")
                 if (isFromSdCard(it.path)) {
-                    tempFile = File(App.instance.externalCacheDir.path, it.name)
+                    tempFile = File(App.instance.externalCacheDir?.path, it.name)
                     copyFile(it, tempFile)
                     setTags(tempFile, title, album, artist, genre, year, trackNo, discNo)
                     cutFile(tempFile, it)
                 } else {
-                    file?.let { setTags(it, title, album, artist, genre, year, trackNo, discNo) }
+                    file?.let { file -> setTags(file, title, album, artist, genre, year, trackNo, discNo) }
                 }
                 MediaScannerConnection.scanFile(App.instance, arrayOf(it.absolutePath), null,
                         object : MediaScannerConnection.MediaScannerConnectionClient {
                             override fun onMediaScannerConnected() {}
 
                             override fun onScanCompleted(path: String, uri: Uri) {
-//                                progressDialog.value = null
-                                finish.call()
-                                Observable.fromCallable { showToast.value = "Song changed" }
-                                        .subscribeOn(AndroidSchedulers.mainThread())
+                                Log.d(TAG, "onScanComplete")
+                                Observable.fromCallable {
+                                    progressDialog.value = null
+                                    finish.call()
+                                    showToast.value = "Song changed"
+                                }.subscribeOn(AndroidSchedulers.mainThread())
                                         .observeOn(AndroidSchedulers.mainThread())
                                         .firstOrError()
                                         .subscribe()
                             }
                         })
             }
-        })
+        }
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .take(1)
                 .subscribeWith(object : DisposableObserver<Unit>() {
                     override fun onError(e: Throwable) {
-//                        progressDialog.value = null
-                        finish.call()
                         showToast.value = "Couldn't edit the song"
                     }
 
@@ -213,8 +213,8 @@ class EditorViewModel(
     }
 
     private fun setTags(file: File, title: String, album: String, artist: String, genre: String,
-                        year: String, trackNo: String, discNo: String){
-        Log.d(Companion.TAG, "setTags")
+                        year: String, trackNo: String, discNo: String) {
+        Log.d(TAG, "setTags")
         val audioFile = AudioFileIO.read(file)
 
         if (audioFile != null) {
@@ -236,7 +236,7 @@ class EditorViewModel(
             if (discNo != "")
                 tag.setField(FieldKey.DISC_NO, discNo)
 
-            Log.d(Companion.TAG, "try to save art")
+            Log.d(TAG, "try to save art")
             val artworkBitmap = when {
                 albumArtUri != null -> loadAlbumArtworkFromUriSynchronous(albumArtUri)
                 albumArtUrl != null -> loadAlbumArtworkFromUriSynchronous(albumArtUrl)
@@ -264,25 +264,26 @@ class EditorViewModel(
                 artwork.binaryData = byteArray
 
                 if (tag.firstArtwork != null) {
-                    Log.d(Companion.TAG, "firstArtwork not null")
+                    Log.d(TAG, "firstArtwork not null")
                     tag.deleteArtworkField()
                     tag.setField(artwork)
                 } else {
-                    Log.d(Companion.TAG, "firstArtwork null")
+                    Log.d(TAG, "firstArtwork null")
                     tag.addField(artwork)
                 }
 
                 try {
                     val uri = ContentUris.withAppendedId(ArtworkURI, song.value!!.id)
-                    val path = mediaRepository.getRealPath(uri)
-                    File(path).delete()
+                    mediaRepository.getRealPath(uri)?.let { path ->
+                        File(path).delete()
+                    }
                     artworkFile.delete()
                 } catch (e: Exception) {
 
                 }
             }
 
-            Log.d(Companion.TAG, "commiting")
+            Log.d(TAG, "commiting")
             audioFile.commit()
         }
     }

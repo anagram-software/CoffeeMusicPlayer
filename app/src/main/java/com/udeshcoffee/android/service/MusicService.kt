@@ -13,9 +13,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
-import android.preference.PreferenceManager
-import android.support.v4.content.LocalBroadcastManager
-import android.support.v4.media.session.MediaButtonReceiver
+import androidx.preference.PreferenceManager
 import android.support.v4.media.session.MediaSessionCompat
 import android.util.Log
 import com.cantrowitz.rxbroadcast.RxBroadcast
@@ -33,12 +31,11 @@ import com.udeshcoffee.android.utils.ObservableList
 import com.udeshcoffee.android.utils.PreferenceUtil
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
-import io.reactivex.subjects.PublishSubject
 import org.koin.android.ext.android.inject
 import java.util.concurrent.TimeUnit
-import javax.security.auth.Subject
 
 /**
  * Created by Udesh Kumarasinghe on 8/22/2017.
@@ -50,13 +47,15 @@ class MusicService : Service() {
     val mediaRepository: MediaRepository by inject()
     val dataRepository: DataRepository by inject()
 
+    val disposables = CompositeDisposable()
+
     lateinit var player : BasePlayer
     private lateinit var audioManager: AudioManager
     lateinit var mediaSession : MediaSessionCompat
     lateinit var notifyManger : NotifyManager
     lateinit var sharedPreferences : SharedPreferences
     private lateinit var sharedPreferencesListener : SharedPreferences.OnSharedPreferenceChangeListener
-    private lateinit var localBroadcastManager: LocalBroadcastManager
+    private lateinit var localBroadcastManager: androidx.localbroadcastmanager.content.LocalBroadcastManager
 
     var audioFXHelper: AudioFXHelper? = null
 
@@ -118,12 +117,12 @@ class MusicService : Service() {
     override fun onCreate() {
         super.onCreate()
 
-        Log.d(Companion.TAG, "onCreate")
+        Log.d(TAG, "onCreate")
 
         audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
         notifyManger = NotifyManager(this)
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
-        localBroadcastManager = LocalBroadcastManager.getInstance(this)
+        localBroadcastManager = androidx.localbroadcastmanager.content.LocalBroadcastManager.getInstance(this)
         player = if (sharedPreferences.getBoolean(PreferenceUtil.PREF_NEW_PLAYER, false))
             NewPlayer(this)
         else
@@ -154,27 +153,26 @@ class MusicService : Service() {
         startMediaSession()
 
         try {
-            Log.d(Companion.TAG, "creating audioFXHelper")
+            Log.d(TAG, "creating audioFXHelper")
             dataRepository.getEQPresets() as ArrayList<EQPreset>
             audioFXHelper = AudioFXHelper(this, getAudioSessionId(), dataRepository)
         }catch (e: Exception) {
-            Log.d(Companion.TAG, "execption audioFXHelper $e")
+            Log.d(TAG, "execption audioFXHelper $e")
         }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Log.d(Companion.TAG, "onStartCommand intent:${intent?.extras}")
+        Log.d(TAG, "onStartCommand intent:${intent?.extras}")
         if (intent != null) {
-            MediaButtonReceiver.handleIntent(mediaSession, intent)
-            val action = intent.action
+            androidx.media.session.MediaButtonReceiver.handleIntent(mediaSession, intent)
 
-            when (action) {
+            when (intent.action) {
                 WidgetIntents.PLAY_PAUSE -> {
                     if (!isPlaying()) {
                         if (list.isEmpty())
-                            loadLastList({ pos, current ->
+                            loadLastList { pos, current ->
                                 initSong(pos, true, current)
-                            })
+                            }
                         else
                             play()
                     } else
@@ -182,19 +180,19 @@ class MusicService : Service() {
                 }
                 WidgetIntents.NEXT  -> {
                     if (list.isEmpty())
-                        loadLastList({pos, _ ->
+                        loadLastList { pos, _ ->
                             playPosition = pos
                             gotoNext()
-                        })
+                        }
                     else
                         gotoNext()
                 }
                 WidgetIntents.PREVIOUS-> {
                     if (list.isEmpty())
-                        loadLastList({pos, _ ->
+                        loadLastList { pos, _ ->
                             playPosition = pos
                             gotoBack()
-                        })
+                        }
                     else
                         gotoBack()
                 }
@@ -203,14 +201,14 @@ class MusicService : Service() {
                 }
             }
         } else
-            Log.e(Companion.TAG, "fucked")
+            Log.e(TAG, "fucked")
 
         return START_NOT_STICKY
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        Log.d(Companion.TAG, "onDestroy")
+        Log.d(TAG, "onDestroy")
         saveUnshuffledQueue()
         player.release()
         focusHandler.removeCallbacks(delayedStopRunnable)
@@ -223,6 +221,7 @@ class MusicService : Service() {
 
         removeAudioFocus()
 
+        disposables.dispose()
         disposePlayTimeEvents()
 
         sharedPreferences.unregisterOnSharedPreferenceChangeListener(sharedPreferencesListener)
@@ -230,7 +229,7 @@ class MusicService : Service() {
     }
 
     override fun onBind(p0: Intent?): IBinder {
-        Log.d(Companion.TAG, "onBind")
+        Log.d(TAG, "onBind")
         if (list.isNotEmpty())
             notifyManger.notifyChange(InternalIntents.METADATA_CHANGED, true)
         isAttached = true
@@ -238,14 +237,14 @@ class MusicService : Service() {
     }
 
     override fun onRebind(intent: Intent?) {
-        Log.d(Companion.TAG, "onRebind")
+        Log.d(TAG, "onRebind")
         notifyManger.notifyChange(InternalIntents.METADATA_CHANGED, true)
         isAttached = true
         super.onRebind(intent)
     }
 
     override fun onUnbind(intent: Intent?): Boolean {
-        Log.d(Companion.TAG, "onUnbind")
+        Log.d(TAG, "onUnbind")
         isAttached = false
 
         // Take a snapshot of the current playlist
@@ -299,7 +298,7 @@ class MusicService : Service() {
         mediaSession.setFlags(MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS or MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS)
 
         val mediaButtonIntent = Intent(Intent.ACTION_MEDIA_BUTTON)
-        mediaButtonIntent.setClass(this, MediaButtonReceiver::class.java)
+        mediaButtonIntent.setClass(this, androidx.media.session.MediaButtonReceiver::class.java)
 
         val mbrIntent = PendingIntent.getBroadcast(this, 0, mediaButtonIntent, 0)
         mediaSession.setMediaButtonReceiver(mbrIntent)
@@ -346,7 +345,7 @@ class MusicService : Service() {
                 checkAndShuffle()
                 notifyManger.notifyChange(InternalIntents.METADATA_CHANGED, true)
             }
-        }
+        }?.let { disposables.add(it) }
     }
 
     fun clearSongList() {
@@ -354,7 +353,7 @@ class MusicService : Service() {
         this.list.clear()
         playPosition = -1
         wasPlaying = false
-        notifyManger.notifyChange(MusicService.InternalIntents.METADATA_CHANGED, false)
+        notifyManger.notifyChange(InternalIntents.METADATA_CHANGED, false)
         player.stop()
     }
 
@@ -376,12 +375,12 @@ class MusicService : Service() {
         } else {
             if (unshuffledList.isNotEmpty()) {
                 val currentSong = list.getOrNull(playPosition)
-                Log.d(Companion.TAG, "current ${currentSong?.id}, ${currentSong?.title}")
+                Log.d(TAG, "current ${currentSong?.id}, ${currentSong?.title}")
                 val position = unshuffledList.indexOf(currentSong)
-                Log.d(Companion.TAG, "in loop $position")
+                Log.d(TAG, "in loop $position")
                 list.clearAndAddAll(unshuffledList)
                 playPosition = position
-                Log.d(Companion.TAG, "play position $playPosition")
+                Log.d(TAG, "play position $playPosition")
                 unshuffledList.clear()
             }
         }
@@ -395,7 +394,7 @@ class MusicService : Service() {
 
     fun initSong(position: Int, shouldPlay: Boolean) {
         initSong(position, shouldPlay, 0)
-        Log.d(Companion.TAG, "initSub")
+        Log.d(TAG, "initSub")
     }
 
     private fun initSong(position: Int, shouldPlay: Boolean, startPos: Int) {
@@ -403,19 +402,20 @@ class MusicService : Service() {
             return
         playPosition = position
         player.initSong(list.list[playPosition], shouldPlay, startPos)
-        Log.d(Companion.TAG, "init")
+        Log.d(TAG, "init")
     }
 
     fun initFile(uri:Uri) {
-        mediaRepository.getSong(uri)
+        disposables.add(mediaRepository.getSong(uri)
                 .subscribeOn(Schedulers.io())
                 .observeOn(Schedulers.io())
-                .subscribe {
+                .firstOrError()
+                .subscribe ({
                     if (it.isNotEmpty()) {
                         setSongList(it as ArrayList<Song>)
                         initSong(0, true)
                     }
-                }
+                }, {}))
     }
 
     fun  gotoNextOnFinish() {
@@ -444,7 +444,7 @@ class MusicService : Service() {
     }
 
     fun gotoBack() {
-        Log.d(Companion.TAG, "gotoBack")
+        Log.d(TAG, "gotoBack")
         playPosition--
         if (playPosition < 0){
             playPosition = list.size - 1
@@ -454,7 +454,7 @@ class MusicService : Service() {
     }
 
     fun play() {
-        Log.d(Companion.TAG, "play")
+        Log.d(TAG, "play")
         if (playbackNowAuthorized) {
             wasPlaying = true
             player.start()
@@ -466,26 +466,26 @@ class MusicService : Service() {
     }
 
     fun pause() {
-        Log.d(Companion.TAG, "pause")
+        Log.d(TAG, "pause")
         wasPlaying = false
         player.pause()
         disposePlayTimeEvents()
     }
 
     fun stop() {
-        Log.d(Companion.TAG, "stop")
+        Log.d(TAG, "stop")
         wasPlaying = false
         player.stop()
-        Log.d(Companion.TAG, "player stop")
+        Log.d(TAG, "player stop")
         disposePlayTimeEvents()
         focusHandler.removeCallbacks(delayedStopRunnable)
         mediaSession.isActive = false
         removeAudioFocus()
         if (!isAttached) {
-            Log.d(Companion.TAG, "isNotAttached")
+            Log.d(TAG, "isNotAttached")
             stopSelf()
         }
-        Log.d(Companion.TAG, "end stop")
+        Log.d(TAG, "end stop")
     }
 
     // Playback Info
@@ -529,7 +529,7 @@ class MusicService : Service() {
 
     @Suppress("DEPRECATION")
     private fun gainAudioFocusAndPlay() {
-        Log.d(Companion.TAG, "gainAudioFocusAndPlay")
+        Log.d(TAG, "gainAudioFocusAndPlay")
         if ( Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ) {
             val mPlaybackAttributes = AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_MEDIA)
@@ -541,7 +541,7 @@ class MusicService : Service() {
                     .setAcceptsDelayedFocusGain(true)
                     .setOnAudioFocusChangeListener(audioFocusListener, focusHandler)
                     .build()
-            val res = audioManager.requestAudioFocus (focusRequest)
+            val res = audioManager.requestAudioFocus (focusRequest!!)
             synchronized(focusLock) {
                 when (res) {
                     AudioManager.AUDIOFOCUS_REQUEST_FAILED -> playbackNowAuthorized = false
@@ -574,7 +574,7 @@ class MusicService : Service() {
     @Suppress("DEPRECATION")
     private fun removeAudioFocus() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            focusRequest?.let { audioManager.abandonAudioFocusRequest(focusRequest) }
+            focusRequest?.let { audioManager.abandonAudioFocusRequest(focusRequest!!) }
         } else {
             audioManager.abandonAudioFocus(audioFocusListener)
         }
@@ -583,10 +583,10 @@ class MusicService : Service() {
     private val audioFocusListener = AudioManager.OnAudioFocusChangeListener {
         when (it) {
             AudioManager.AUDIOFOCUS_GAIN -> {
-                Log.d(Companion.TAG, "gain")
+                Log.d(TAG, "gain")
                 if (playbackDelayed || resumeOnFocusGain) {
 
-                    Log.d(Companion.TAG, "gain playbackDelayed:$playbackDelayed resumeOnFocusGain:$resumeOnFocusGain")
+                    Log.d(TAG, "gain playbackDelayed:$playbackDelayed resumeOnFocusGain:$resumeOnFocusGain")
                     mediaSession.isActive = true
                     synchronized(focusLock) {
                         playbackDelayed = false
@@ -598,7 +598,7 @@ class MusicService : Service() {
                 playbackNowAuthorized = true
             }
             AudioManager.AUDIOFOCUS_LOSS -> {
-                Log.d(Companion.TAG, "loss")
+                Log.d(TAG, "loss")
                 synchronized(focusLock) {
                     resumeOnFocusGain = false
                     playbackDelayed = false
@@ -608,7 +608,7 @@ class MusicService : Service() {
                 focusHandler.postDelayed(delayedStopRunnable, TimeUnit.SECONDS.toMillis(30))
             }
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
-                Log.d(Companion.TAG, "loss trnsient")
+                Log.d(TAG, "loss trnsient")
                 synchronized(focusLock) {
                     resumeOnFocusGain = wasPlaying
                     playbackDelayed = false
@@ -617,7 +617,7 @@ class MusicService : Service() {
                 playbackNowAuthorized = false
             }
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
-                Log.d(Companion.TAG, "duck")
+                Log.d(TAG, "duck")
                 // ... pausing or ducking depends on your app
             }
         }

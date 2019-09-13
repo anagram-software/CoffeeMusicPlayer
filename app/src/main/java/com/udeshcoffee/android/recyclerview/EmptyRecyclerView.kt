@@ -1,20 +1,18 @@
 package com.udeshcoffee.android.recyclerview
 
 import android.content.Context
-import android.support.v7.widget.RecyclerView
 import android.util.AttributeSet
 import android.view.View
-import com.simplecityapps.recyclerview_fastscroll.views.FastScrollRecyclerView
-
+import androidx.recyclerview.widget.RecyclerView
 /**
  * Created by Udathari on 8/27/2017.
  */
 
-class EmptyRecyclerView : FastScrollRecyclerView {
+class EmptyRecyclerView : RecyclerView {
 
     private var emptyView: View? = null
 
-    private val observer = object : AdapterDataObserver() {
+    private val observer = object : RecyclerView.AdapterDataObserver() {
         override fun onChanged() {
             checkIfEmpty()
         }
@@ -35,22 +33,17 @@ class EmptyRecyclerView : FastScrollRecyclerView {
     constructor(context: Context, attrs: AttributeSet, defStyle: Int) : super(context, attrs, defStyle)
 
     internal fun checkIfEmpty() {
-        if (emptyView != null && getAdapter() != null) {
-            val emptyViewVisible = adapter.itemCount == 0
+        if (emptyView != null && adapter != null) {
+            val emptyViewVisible = adapter?.itemCount == 0
             emptyView!!.visibility = if (emptyViewVisible) VISIBLE else GONE
             visibility = if (emptyViewVisible) GONE else VISIBLE
         }
     }
 
     override fun setAdapter(adapter: Adapter<RecyclerView.ViewHolder>?) {
-        val oldAdapter = getAdapter()
-        if (oldAdapter != null) {
-            oldAdapter.unregisterAdapterDataObserver(observer)
-        }
+        getAdapter()?.unregisterAdapterDataObserver(observer)
         super.setAdapter(adapter)
-        if (adapter != null) {
-            adapter.registerAdapterDataObserver(observer)
-        }
+        adapter?.registerAdapterDataObserver(observer)
 
         checkIfEmpty()
     }

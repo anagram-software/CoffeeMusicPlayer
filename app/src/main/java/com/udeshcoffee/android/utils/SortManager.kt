@@ -1,7 +1,7 @@
 package com.udeshcoffee.android.utils
 
 import android.content.SharedPreferences
-import android.preference.PreferenceManager
+import androidx.preference.PreferenceManager
 import com.udeshcoffee.android.App
 import com.udeshcoffee.android.model.Album
 import com.udeshcoffee.android.model.Artist

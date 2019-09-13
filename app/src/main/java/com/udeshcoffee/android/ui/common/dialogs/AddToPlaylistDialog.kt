@@ -2,8 +2,8 @@ package com.udeshcoffee.android.ui.common.dialogs
 
 import android.app.Dialog
 import android.os.Bundle
-import android.support.v4.app.DialogFragment
-import android.support.v7.app.AlertDialog
+import androidx.fragment.app.DialogFragment
+import androidx.appcompat.app.AlertDialog
 import android.widget.Toast
 import com.udeshcoffee.android.data.MediaRepository
 import com.udeshcoffee.android.model.Playlist
@@ -14,7 +14,7 @@ import java.util.*
 /**
 * Created by Udathari on 10/19/2017.
 */
-class AddToPlaylistDialog: DialogFragment() {
+class AddToPlaylistDialog: androidx.fragment.app.DialogFragment() {
 
     val mediaRepository: MediaRepository by inject()
 
@@ -38,10 +38,10 @@ class AddToPlaylistDialog: DialogFragment() {
         builder.setTitle("Add to playlist")
                 .setItems(titles) { _, i ->
                     if (i == size) {
-                        NewPlaylistDialog.create().show(fragmentManager, "NewPlaylistDialog")
+                        fragmentManager?.let { NewPlaylistDialog.create().show(it, "NewPlaylistDialog") }
                         dismiss()
                     } else {
-                        addToPlaylist(playlists[i].id, songs)
+                        songs?.let { addToPlaylist(playlists[i].id, it) }
                     }
                 }
 

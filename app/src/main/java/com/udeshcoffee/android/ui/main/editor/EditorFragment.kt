@@ -2,19 +2,19 @@ package com.udeshcoffee.android.ui.main.editor
 
 import android.app.Activity.RESULT_OK
 import android.app.ProgressDialog
-import android.arch.lifecycle.Observer
 import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
-import android.support.v4.app.Fragment
-import android.support.v7.app.ActionBar
-import android.support.v7.app.AppCompatActivity
-import android.support.v7.widget.Toolbar
 import android.util.Log
 import android.view.*
 import android.view.inputmethod.InputMethodManager
 import android.widget.*
+import androidx.appcompat.app.ActionBar
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
+import androidx.lifecycle.Observer
+import androidx.transition.Fade
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.extensions.loadArtwork
 import com.udeshcoffee.android.extensions.setRoundColor
@@ -30,7 +30,7 @@ import org.koin.android.ext.android.inject
 /**
  * Created by Udathari on 9/28/2017.
  */
-class EditorFragment : Fragment() {
+class EditorFragment : androidx.fragment.app.Fragment() {
 
     private val viewModel: EditorViewModel by inject()
     @Suppress("DEPRECATION")
@@ -51,15 +51,26 @@ class EditorFragment : Fragment() {
     private lateinit var discno: EditText
     private lateinit var path: EditText
 
+    init {
+        enterTransition = Fade()
+        exitTransition = Fade()
+    }
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
             inflater.inflate(R.layout.frag_edit_song, container, false)
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        Log.d(TAG, "Editor Fragment Creating")
+
         setHasOptionsMenu(true)
 
         val song = arguments!!.getParcelable<Song>(ARGUMENT_SONG)
+        if (song == null) {
+            Log.d(TAG, "No song")
+            activity?.onBackPressed()
+        }
 
         @Suppress("DEPRECATION")
         dialog = ProgressDialog(context)
@@ -103,16 +114,16 @@ class EditorFragment : Fragment() {
             path = findViewById(R.id.editsongpath)
         }
 
-        viewModel.start(song)
+        viewModel.start(song!!)
     }
 
-    override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
-        inflater?.inflate(R.menu.edit_song_menu, menu)
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(R.menu.edit_song_menu, menu)
         super.onCreateOptionsMenu(menu, inflater)
     }
 
-    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
-        when(item?.itemId) {
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when(item.itemId) {
             android.R.id.home -> {
                 activity?.onBackPressed()
                 hideKeyboard()
@@ -147,18 +158,20 @@ class EditorFragment : Fragment() {
             PermissionToSdCardDialog.REQUEST_CODE -> {
                 if (resultCode == RESULT_OK) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                        context!!.contentResolver
-                                .takePersistableUriPermission(data?.data,
-                                        Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+                        data?.data?.let {
+                            context!!.contentResolver
+                                    .takePersistableUriPermission(it,
+                                            Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+                        }
                     }
                 } else {
                     activity?.onBackPressed()
                 }
             }
-            Companion.SELECT_IMAGE -> {
-                Log.d(Companion.TAG, "onResult")
+            SELECT_IMAGE -> {
+                Log.d(TAG, "onResult")
                 if (resultCode == RESULT_OK) {
-                    Log.d(Companion.TAG, "onResult Ok")
+                    Log.d(TAG, "onResult Ok")
                     data?.data?.let { viewModel.imageSelected(it) }
                 }
             }
@@ -168,7 +181,7 @@ class EditorFragment : Fragment() {
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
         viewModel.apply {
-            reloadImage.observe(this@EditorFragment, Observer {
+            reloadImage.observe(this@EditorFragment, Observer { it ->
                 when(it) {
                     EditorViewModel.ImageType.SONG -> {
                         context?.let { song.value?.loadArtwork(it, albumArt) }
@@ -217,7 +230,7 @@ class EditorFragment : Fragment() {
             showPermissionDialog.observe(this@EditorFragment, Observer {
                 val takePermissionDialog = PermissionToSdCardDialog()
                 takePermissionDialog.setTargetFragment(this@EditorFragment, 0)
-                takePermissionDialog.show(fragmentManager, "PermissionToSdCardDialog")
+                fragmentManager?.let { it1 -> takePermissionDialog.show(it1, "PermissionToSdCardDialog") }
             })
             finish.observe(this@EditorFragment, Observer {
                 activity?.onBackPressed()
@@ -226,7 +239,7 @@ class EditorFragment : Fragment() {
     }
 
     fun onSearchRequest(id: Long, title: String, artist: String) {
-        Log.d(Companion.TAG, "onSearchRequest id:$id, title:$title, artist:$artist")
+        Log.d(TAG, "onSearchRequest id:$id, title:$title, artist:$artist")
         if (isNetworkAvailable(context!!, false))
             viewModel.search(title, artist)
         else
@@ -239,10 +252,10 @@ class EditorFragment : Fragment() {
             return
         }
 
-        viewModel.song.value?.let {
+        viewModel.song.value?.let { it ->
             SearchSongDialog.create(it.id, it.title, it.artistName).also {
                 it.setTargetFragment(this, LyricsFragment.SEARCH_LYRICS)
-                it.show(fragmentManager, "SearchLyricDialog")
+                fragmentManager?.let { it1 -> it.show(it1, "SearchLyricDialog") }
             }
         }
     }
@@ -250,7 +263,7 @@ class EditorFragment : Fragment() {
     private fun showSelectImageUI() {
         val photoPickerIntent = Intent(Intent.ACTION_PICK)
         photoPickerIntent.type = "image/*"
-        startActivityForResult(photoPickerIntent, Companion.SELECT_IMAGE)
+        startActivityForResult(photoPickerIntent, SELECT_IMAGE)
     }
 
     private fun hideKeyboard() {
@@ -261,12 +274,10 @@ class EditorFragment : Fragment() {
     companion object {
         private const val ARGUMENT_SONG = "ARGUMENT_SONG"
 
-        fun create(song: Song): EditorFragment {
-            val fragment = EditorFragment()
+        fun createBundle(song: Song): Bundle {
             val bundle = Bundle()
             bundle.putParcelable(ARGUMENT_SONG, song)
-            fragment.arguments = bundle
-            return fragment
+            return bundle
         }
 
         private const val TAG = "EditorFragment"

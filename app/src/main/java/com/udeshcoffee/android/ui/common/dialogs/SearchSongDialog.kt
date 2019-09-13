@@ -3,8 +3,8 @@ package com.udeshcoffee.android.ui.common.dialogs
 import android.app.Dialog
 import android.content.Context
 import android.os.Bundle
-import android.support.v4.app.DialogFragment
-import android.support.v7.app.AlertDialog
+import androidx.fragment.app.DialogFragment
+import androidx.appcompat.app.AlertDialog
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
@@ -15,7 +15,7 @@ import com.udeshcoffee.android.ui.player.lyrics.LyricsFragment
 /**
  * Created by Udathari on 10/23/2017.
  */
-class SearchSongDialog: DialogFragment() {
+class SearchSongDialog: androidx.fragment.app.DialogFragment() {
 
     private var id: Long = 0
 

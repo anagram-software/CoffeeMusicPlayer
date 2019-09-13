@@ -1,7 +1,7 @@
 package com.udeshcoffee.android.ui.common.adapters
 
 import android.content.Context
-import android.support.v7.widget.RecyclerView
+import androidx.recyclerview.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -15,7 +15,7 @@ import com.udeshcoffee.android.ui.common.viewholders.SongViewHolder
 /**
  * Created by Udathari on 9/26/2017.
  */
-class FolderAdapter(): RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+class FolderAdapter(): androidx.recyclerview.widget.RecyclerView.Adapter<androidx.recyclerview.widget.RecyclerView.ViewHolder>() {
 
     lateinit var context: Context
     var folderClickListener: OnItemClickListener? = null
@@ -46,7 +46,7 @@ class FolderAdapter(): RecyclerView.Adapter<RecyclerView.ViewHolder>() {
         }
     }
 
-    internal inner class FolderViewHolder(itemView: View): RecyclerView.ViewHolder(itemView), View.OnClickListener, View.OnLongClickListener {
+    internal inner class FolderViewHolder(itemView: View): androidx.recyclerview.widget.RecyclerView.ViewHolder(itemView), View.OnClickListener, View.OnLongClickListener {
 
         private val titleView: TextView = itemView.findViewById(R.id.folder_title)
         private val countView: TextView = itemView.findViewById(R.id.folder_no)
@@ -70,7 +70,7 @@ class FolderAdapter(): RecyclerView.Adapter<RecyclerView.ViewHolder>() {
         override fun onClick(view: View) {
             if (folderClickListener != null) {
                 val position = adapterPosition
-                if (position != RecyclerView.NO_POSITION) {
+                if (position != androidx.recyclerview.widget.RecyclerView.NO_POSITION) {
                     folderClickListener?.onItemClick(position)
                 }
             }
@@ -79,7 +79,7 @@ class FolderAdapter(): RecyclerView.Adapter<RecyclerView.ViewHolder>() {
         override fun onLongClick(view: View): Boolean {
             if (folderClickListener != null) {
                 val position = adapterPosition
-                if (position != RecyclerView.NO_POSITION) {
+                if (position != androidx.recyclerview.widget.RecyclerView.NO_POSITION) {
                     folderClickListener?.onItemLongClick(position)
                 }
                 return true
@@ -88,7 +88,7 @@ class FolderAdapter(): RecyclerView.Adapter<RecyclerView.ViewHolder>() {
         }
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): androidx.recyclerview.widget.RecyclerView.ViewHolder {
         context = parent.context
         val inflater = LayoutInflater.from(parent.context)
         return if (viewType == ITEM_TYPE_SONG) {
@@ -98,7 +98,7 @@ class FolderAdapter(): RecyclerView.Adapter<RecyclerView.ViewHolder>() {
         }
     }
 
-    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+    override fun onBindViewHolder(holder: androidx.recyclerview.widget.RecyclerView.ViewHolder, position: Int) {
         val itemType = getItemViewType(position)
 
         if (itemType == ITEM_TYPE_SONG) {

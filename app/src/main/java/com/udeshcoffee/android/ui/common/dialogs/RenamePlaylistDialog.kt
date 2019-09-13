@@ -4,15 +4,14 @@ import android.app.Dialog
 import android.content.ContentValues
 import android.os.Bundle
 import android.provider.MediaStore
-import android.support.v4.app.DialogFragment
-import android.support.v7.app.AlertDialog
 import android.widget.EditText
+import androidx.appcompat.app.AlertDialog
 import com.udeshcoffee.android.R
 
 /**
  * Created by Udathari on 10/17/2017.
  */
-class RenamePlaylistDialog: DialogFragment() {
+class RenamePlaylistDialog: androidx.fragment.app.DialogFragment() {
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
 
@@ -32,7 +31,7 @@ class RenamePlaylistDialog: DialogFragment() {
         builder.setTitle("Rename $title")
                 .setView(dialogView)
                 // Add action buttons
-                .setPositiveButton("Rename", { _, _ ->
+                .setPositiveButton("Rename") { _, _ ->
                     val name = playlist.text.toString()
                     if (name != "") {
                         val playlistResolver = context!!.contentResolver
@@ -42,14 +41,14 @@ class RenamePlaylistDialog: DialogFragment() {
                         val whereVal = arrayOf("$playlistId")
                         playlistResolver.update(MediaStore.Audio.Playlists.EXTERNAL_CONTENT_URI, mInserts, where, whereVal)
                     }
-                })
-                .setNegativeButton("Cancel", { _, _ -> this@RenamePlaylistDialog.dialog.cancel() })
+                }
+                .setNegativeButton("Cancel") { _, _ -> this@RenamePlaylistDialog.dialog?.cancel() }
         return builder.create()
     }
 
     companion object {
-        val ARGUMENT_TITLE = "ARGUMENT_TITLE"
-        val ARGUMENT_ID = "ARGUMENT_ID"
+        const val ARGUMENT_TITLE = "ARGUMENT_TITLE"
+        const val ARGUMENT_ID = "ARGUMENT_ID"
 
         fun create(playlistId: Long, playlistTitle: String): RenamePlaylistDialog {
             val mDialog = RenamePlaylistDialog()

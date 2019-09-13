@@ -5,21 +5,26 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
-import android.support.v4.app.DialogFragment
-import android.support.v7.app.AlertDialog
+import androidx.appcompat.app.AlertDialog
+import androidx.navigation.findNavController
+import androidx.navigation.fragment.findNavController
 import com.udeshcoffee.android.R
-import com.udeshcoffee.android.extensions.navigateToDetail
-import com.udeshcoffee.android.extensions.navigateToEditor
 import com.udeshcoffee.android.model.Song
-import com.udeshcoffee.android.ui.MiniPlayerActivity
+import com.udeshcoffee.android.ui.MainActivity
+import com.udeshcoffee.android.ui.main.detail.albumdetail.AlbumDetailFragment
+import com.udeshcoffee.android.ui.main.detail.artistdetail.ArtistDetailFragment
+import com.udeshcoffee.android.ui.main.editor.EditorFragment
 
 /**
  * Created by Udathari on 9/27/2017.
  */
-class PlayerMoreDialog : DialogFragment() {
+class PlayerMoreDialog : androidx.fragment.app.DialogFragment() {
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val song = this.arguments!!.getParcelable<Song>(ARGUMENT_SONG)
+        if (song == null) {
+            dialog?.dismiss()
+        }
 
         val items = arrayOf(
                 getString(R.string.action_go_to_album),
@@ -31,7 +36,7 @@ class PlayerMoreDialog : DialogFragment() {
 
         val builder = AlertDialog.Builder(context!!)
 
-        builder.setTitle(song.title).setItems(items) { _, which ->
+        builder.setTitle(song!!.title).setItems(items) { _, which ->
             when (which) {
                 0 -> showAlbum(song)
                 1 -> showArtist(song)
@@ -42,7 +47,7 @@ class PlayerMoreDialog : DialogFragment() {
                     tempSongs.add(song)
                     bundle.putParcelableArrayList(AddToPlaylistDialog.ARGUMENT_SONGS, tempSongs)
                     addToPlaylistDialog.arguments = bundle
-                    addToPlaylistDialog.show(fragmentManager, "AddToPlaylistDialog")
+                    fragmentManager?.let { addToPlaylistDialog.show(it, "AddToPlaylistDialog") }
 
                 }
                 3 -> showEditor(song)
@@ -69,24 +74,24 @@ class PlayerMoreDialog : DialogFragment() {
 
     private fun showAlbum(song: Song){
         dismiss()
-        (activity as MiniPlayerActivity).closeNowPlay()
-        fragmentManager?.navigateToDetail(song.getAlbum())
+        (activity as MainActivity).closeNowPlay()
+        findNavController().navigate(R.id.albumDetailFragment, AlbumDetailFragment.createBundle(song.getAlbum()))
     }
 
     private fun showEditor(song: Song){
         dismiss()
-        (activity as MiniPlayerActivity).closeNowPlay()
-        activity?.supportFragmentManager?.navigateToEditor(song)
+        (activity as MainActivity).closeNowPlay()
+        findNavController().navigate(R.id.editorFragment, EditorFragment.createBundle(song))
     }
 
     private fun showArtist(song: Song){
         dismiss()
-        (activity as MiniPlayerActivity).closeNowPlay()
-        fragmentManager?.navigateToDetail(song.getArtist())
+        (activity as MainActivity).closeNowPlay()
+        findNavController().navigate(R.id.artistDetailFragment, ArtistDetailFragment.createBundle(song.getArtist()))
     }
 
 
     companion object {
-        val ARGUMENT_SONG = "ARGUMENT_SONG"
+        const val ARGUMENT_SONG = "ARGUMENT_SONG"
     }
 }

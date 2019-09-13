@@ -6,7 +6,6 @@ import android.app.Dialog
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
-import android.support.v4.app.DialogFragment
 import android.util.Log
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.ui.main.editor.EditorFragment
@@ -15,10 +14,10 @@ import com.udeshcoffee.android.ui.main.editor.EditorFragment
  * Created by Udathari on 12/3/2017.
  */
 
-class PermissionToSdCardDialog: DialogFragment() {
+class PermissionToSdCardDialog: androidx.fragment.app.DialogFragment() {
 
     companion object {
-        val REQUEST_CODE = 17776
+        const val REQUEST_CODE = 17776
     }
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
@@ -34,9 +33,9 @@ class PermissionToSdCardDialog: DialogFragment() {
                     (targetFragment as EditorFragment).activity?.onBackPressed()
                 }
                 .setPositiveButton(R.string.action_give_permission) { _,_ ->
-                    val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+                    val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
                     targetFragment!!.startActivityForResult(intent, REQUEST_CODE)
-                    dialog.dismiss()
+                    dialog?.dismiss()
                 }
         return builder.create()
     }

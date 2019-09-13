@@ -1,7 +1,7 @@
 package com.udeshcoffee.android.ui.miniplayer
 
 import android.app.Application
-import android.arch.lifecycle.MutableLiveData
+import androidx.lifecycle.MutableLiveData
 import com.udeshcoffee.android.extensions.getService
 import com.udeshcoffee.android.service.MusicService
 import com.udeshcoffee.android.ui.common.viewmodels.BasePlayerViewModel

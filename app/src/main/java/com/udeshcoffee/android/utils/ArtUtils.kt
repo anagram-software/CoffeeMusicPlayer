@@ -1,6 +1,5 @@
 package com.udeshcoffee.android.utils
 
-import android.content.ComponentCallbacks
 import android.content.ContentResolver
 import android.content.ContentUris
 import android.content.Context
@@ -10,9 +9,9 @@ import android.graphics.Color
 import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Environment
-import android.preference.PreferenceManager
 import android.util.Log
 import android.widget.ImageView
+import androidx.preference.PreferenceManager
 import com.bumptech.glide.Glide
 import com.bumptech.glide.RequestManager
 import com.bumptech.glide.load.DataSource
@@ -22,16 +21,13 @@ import com.bumptech.glide.load.resource.bitmap.BitmapTransitionOptions
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.RequestOptions
-import com.bumptech.glide.request.target.SimpleTarget
 import com.bumptech.glide.request.target.Target
-import com.bumptech.glide.request.transition.Transition
 import com.bumptech.glide.signature.ObjectKey
 import com.udeshcoffee.android.App
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.data.remote.RemoteDataSource
 import com.udeshcoffee.android.extensions.toLastFMArtistQuery
 import com.udeshcoffee.android.utils.blur.BlurTransformation
-import com.udeshcoffee.android.views.FadableLayout
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
@@ -43,30 +39,28 @@ import java.io.IOException
 fun loadAlbumArtwork(context: Context, id: Long, imageView: ImageView, animate: Boolean = true, isBlurred: Boolean = false,
                      callback: ((success: Boolean) -> Unit)? = null){
     val uri = ContentUris.withAppendedId(ArtworkURI, id)
-    if (uri != null) {
-        val options = RequestOptions().error(R.drawable.ic_album_white_24dp)
-        if (isBlurred)
-            options.transform(BlurTransformation())
-        val glide = Glide.with(context)
-                .load(uri)
-                .apply(options)
-        if (animate)
-            glide.transition(DrawableTransitionOptions.withCrossFade(250))
-        glide.listener(object : RequestListener<Drawable>{
-            override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<Drawable>?,
-                                      isFirstResource: Boolean): Boolean {
-                callback?.let { it(false) }
-                return false
-            }
+    val options = RequestOptions().error(R.drawable.ic_album_white_24dp)
+    if (isBlurred)
+        options.transform(BlurTransformation())
+    val glide = Glide.with(context)
+            .load(uri)
+            .apply(options)
+    if (animate)
+        glide.transition(DrawableTransitionOptions.withCrossFade(250))
+    glide.listener(object : RequestListener<Drawable>{
+        override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<Drawable>?,
+                                  isFirstResource: Boolean): Boolean {
+            callback?.let { it(false) }
+            return false
+        }
 
-            override fun onResourceReady(resource: Drawable?, model: Any?, target: Target<Drawable>?,
-                                         dataSource: DataSource?, isFirstResource: Boolean): Boolean {
-                callback?.let { it(true) }
-                return false
-            }
-        })
-                .into(imageView)
-    }
+        override fun onResourceReady(resource: Drawable?, model: Any?, target: Target<Drawable>?,
+                                     dataSource: DataSource?, isFirstResource: Boolean): Boolean {
+            callback?.let { it(true) }
+            return false
+        }
+    })
+            .into(imageView)
 }
 
 fun <T> loadAlbumArtworkFromUri(context: Context, t: T, imageView: ImageView){
@@ -149,7 +143,7 @@ fun collectArtistArtwork(context: Context,
         return
     var tempName = name
     tempName = tempName.toLastFMArtistQuery()
-    RemoteDataSource.searchLastFMArtist(tempName)
+    val disposable = RemoteDataSource.searchLastFMArtist(tempName)
             .subscribe ({
                 val image = it.artist?.image
                 glide.asBitmap().load(image?.get(image.size - 1)?.text)
@@ -184,7 +178,7 @@ fun saveArtistArt(contentResolver: ContentResolver, id: Long, uri: Uri) {
 private fun saveArtistArt(id: Long?, bm: Bitmap) {
     Log.d("saveArtistArt", "bitmap")
     val root = Environment.getExternalStorageDirectory().toString()
-    val myDir = File(root + "/CoffeePlayer/ArtistImages")
+    val myDir = File("$root/CoffeePlayer/ArtistImages")
 
     if (!myDir.exists()) {
         myDir.mkdirs()
@@ -219,9 +213,9 @@ private fun saveArtistArt(id: Long?, bm: Bitmap) {
 
 fun deleteArtistArt(id: Long) {
     val root = Environment.getExternalStorageDirectory().toString()
-    val myDir = File(root + "/CoffeePlayer/ArtistImages")
+    val myDir = File("$root/CoffeePlayer/ArtistImages")
     myDir.mkdirs()
-    val fName = id.toString() + ".jpg"
+    val fName = "$id.jpg"
     val file = File(myDir, fName)
     if (file.exists()) file.delete()
 

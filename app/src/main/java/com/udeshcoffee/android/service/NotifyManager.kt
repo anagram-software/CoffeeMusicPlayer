@@ -9,20 +9,18 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
 import android.os.Build
-import android.support.v4.app.NotificationCompat
-import android.support.v4.app.NotificationManagerCompat
-import android.support.v4.content.ContextCompat
-import android.support.v4.content.LocalBroadcastManager
 import android.support.v4.media.MediaMetadataCompat
-import android.support.v4.media.session.MediaButtonReceiver
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.SimpleTarget
 import com.bumptech.glide.request.transition.Transition
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.service.MusicService.InternalIntents
-import com.udeshcoffee.android.ui.main.MainActivity
+import com.udeshcoffee.android.ui.MainActivity
 import com.udeshcoffee.android.utils.ArtworkURI
 import com.udeshcoffee.android.utils.MediaStyleHelper
 import com.udeshcoffee.android.widget.BigAppWidget
@@ -43,7 +41,7 @@ class NotifyManager(val service: MusicService) {
     }
 
     fun notifyChange(what: String, createNotification: Boolean) {
-        Log.d(Companion.TAG, "notifyChange what: $what, createNotification: $createNotification")
+        Log.d(TAG, "notifyChange what: $what, createNotification: $createNotification")
         when (what) {
             InternalIntents.METADATA_CHANGED -> {
                 updateMetaData()
@@ -59,7 +57,7 @@ class NotifyManager(val service: MusicService) {
             }
         }
         notifyWidgets(what)
-        LocalBroadcastManager.getInstance(mContext).sendBroadcast(Intent().setAction(what))
+        androidx.localbroadcastmanager.content.LocalBroadcastManager.getInstance(mContext).sendBroadcast(Intent().setAction(what))
     }
 
     fun notifyWidgets(what: String) {
@@ -68,7 +66,7 @@ class NotifyManager(val service: MusicService) {
     }
 
     private fun updateMetaData() {
-        Log.d(Companion.TAG, "updateMetaData")
+        Log.d(TAG, "updateMetaData")
         val currentSong = service.currentSong() ?: return
         val uri = ContentUris.withAppendedId(ArtworkURI, currentSong.albumId)
 
@@ -101,7 +99,7 @@ class NotifyManager(val service: MusicService) {
     }
 
     private fun updatePlaybackState() {
-        Log.d(Companion.TAG, "updatelaybackState")
+        Log.d(TAG, "updatelaybackState")
         service.mediaSession.let {
             val isPlaying = service.isPlaying()
             if (isPlaying) {
@@ -121,7 +119,7 @@ class NotifyManager(val service: MusicService) {
 
 
     private fun createNotification(isPlay: Boolean) {
-        Log.d(Companion.TAG, "createNotification isPlay:$isPlay")
+        Log.d(TAG, "createNotification isPlay:$isPlay")
 
         val builder = MediaStyleHelper.from(service, service.mediaSession)
 
@@ -135,27 +133,27 @@ class NotifyManager(val service: MusicService) {
 
         builder.addAction(NotificationCompat.Action(R.drawable.ic_back,
                 "Back",
-                MediaButtonReceiver.buildMediaButtonPendingIntent(service, PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS)))
+                androidx.media.session.MediaButtonReceiver.buildMediaButtonPendingIntent(service, PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS)))
 
         // Actions
         if (!isPlay)
             builder.addAction(NotificationCompat.Action(R.drawable.ic_play,
                 "Play",
-                MediaButtonReceiver.buildMediaButtonPendingIntent(service, PlaybackStateCompat.ACTION_PLAY)))
+                androidx.media.session.MediaButtonReceiver.buildMediaButtonPendingIntent(service, PlaybackStateCompat.ACTION_PLAY)))
         else
             builder.addAction(NotificationCompat.Action(R.drawable.ic_pause,
                     "Pause",
-                    MediaButtonReceiver.buildMediaButtonPendingIntent(service, PlaybackStateCompat.ACTION_PAUSE)))
+                    androidx.media.session.MediaButtonReceiver.buildMediaButtonPendingIntent(service, PlaybackStateCompat.ACTION_PAUSE)))
 
         builder.addAction(NotificationCompat.Action(R.drawable.ic_next,
                 "Next",
-                MediaButtonReceiver.buildMediaButtonPendingIntent(service, PlaybackStateCompat.ACTION_SKIP_TO_NEXT)))
+                androidx.media.session.MediaButtonReceiver.buildMediaButtonPendingIntent(service, PlaybackStateCompat.ACTION_SKIP_TO_NEXT)))
 
         val stopIntent = Intent(service, MusicService::class.java)
         stopIntent.action = MusicService.ACTION_STOP
         val stopPendingIntent = PendingIntent.getService(service, 0, stopIntent, 0)
 
-        builder.setStyle(android.support.v4.media.app.NotificationCompat.MediaStyle()
+        builder.setStyle(androidx.media.app.NotificationCompat.MediaStyle()
                 .setShowActionsInCompactView(0,1,2)
                 .setMediaSession(service.mediaSession.sessionToken)
                 .setCancelButtonIntent(stopPendingIntent)
@@ -169,10 +167,10 @@ class NotifyManager(val service: MusicService) {
         //Build the notification object.
         val notification = builder.build()
 
-        NotificationManagerCompat.from(service).notify(Companion.NOTIFY_ID, notification)
+        NotificationManagerCompat.from(service).notify(NOTIFY_ID, notification)
 
         if (isPlay) {
-            service.startForeground(Companion.NOTIFY_ID, notification)
+            service.startForeground(NOTIFY_ID, notification)
         } else {
             service.stopForeground(false)
         }
@@ -199,7 +197,7 @@ class NotifyManager(val service: MusicService) {
     }
 
     private fun removeNotification(){
-        NotificationManagerCompat.from(mContext).cancel(Companion.NOTIFY_ID)
+        NotificationManagerCompat.from(mContext).cancel(NOTIFY_ID)
         service.stopForeground(true)
     }
 

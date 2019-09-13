@@ -2,8 +2,7 @@ package com.udeshcoffee.android.ui.common.dialogs
 
 import android.app.Dialog
 import android.os.Bundle
-import android.support.v4.app.DialogFragment
-import android.support.v7.app.AlertDialog
+import androidx.appcompat.app.AlertDialog
 import android.widget.Toast
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.data.DataRepository
@@ -17,7 +16,7 @@ import org.koin.android.ext.android.inject
 /**
 * Created by Udathari on 10/17/2017.
 */
-class CollectionLongDialog: DialogFragment() {
+class CollectionLongDialog: androidx.fragment.app.DialogFragment() {
 
     val dataRepository: DataRepository by inject()
     val mediaRepository: MediaRepository by inject()
@@ -51,17 +50,17 @@ class CollectionLongDialog: DialogFragment() {
         builder.setTitle(title)
                 .setItems(if (editablePlaylist == null) collectionLongItems else playlistLongItems) { _, which ->
                     when (which) {
-                        0 -> if (songs.size > 0) {
+                        0 -> if (songs!!.size > 0) {
                             playSong(0, songs, true)
                         } else {
                             Toast.makeText(context, "No songs available", Toast.LENGTH_SHORT).show()
                         }
-                        1 -> if (songs.size > 0) {
+                        1 -> if (songs!!.size > 0) {
                             queueSong(songs, true)
                         } else {
                             Toast.makeText(context, "No songs available", Toast.LENGTH_SHORT).show()
                         }
-                        2 -> if (songs.size > 0) {
+                        2 -> if (songs!!.size > 0) {
                             queueSong(songs, false)
                         } else {
                             Toast.makeText(context, "No songs available", Toast.LENGTH_SHORT).show()
@@ -73,7 +72,7 @@ class CollectionLongDialog: DialogFragment() {
                             if (editablePlaylist != null)
                                 bundle.putLong(AddToPlaylistDialog.ARGUMENT_THIS_PLAYLIST_ID, editablePlaylist.id)
                             addToPlaylistDialog.arguments = bundle
-                            addToPlaylistDialog.show(fragmentManager, "AddToPlaylistDialog")
+                            fragmentManager?.let { addToPlaylistDialog.show(it, "AddToPlaylistDialog") }
                         } else {
                             Toast.makeText(context, "No songs available", Toast.LENGTH_SHORT).show()
                         }
@@ -84,12 +83,16 @@ class CollectionLongDialog: DialogFragment() {
                             Toast.makeText(context, "No songs available", Toast.LENGTH_SHORT).show()
                         }
                         5 -> if (editablePlaylist != null) {
-                            RenamePlaylistDialog.create(editablePlaylist.id, editablePlaylist.title)
-                                    .show(fragmentManager, "RenameDialog")
+                            fragmentManager?.let {
+                                RenamePlaylistDialog.create(editablePlaylist.id, editablePlaylist.title)
+                                        .show(it, "RenameDialog")
+                            }
                         }
                         6 -> if (editablePlaylist != null) {
-                            DeletePlaylistDialog.create(editablePlaylist.id, editablePlaylist.title, false)
-                                    .show(fragmentManager, "DeletePlaylistDialog")
+                            fragmentManager?.let {
+                                DeletePlaylistDialog.create(editablePlaylist.id, editablePlaylist.title, false)
+                                        .show(it, "DeletePlaylistDialog")
+                            }
                         }
                     }
                 }
@@ -97,15 +100,15 @@ class CollectionLongDialog: DialogFragment() {
     }
 
     companion object {
-        val ARGUMENT_TITLE = "ARGUMENT_TITLE"
-        val ARGUMENT_SONGS = "ARGUMENT_SONGS"
-        val ARGUMENT_PLAYLIST = "ARGUMENT_PLAYLIST"
+        const val ARGUMENT_TITLE = "ARGUMENT_TITLE"
+        const val ARGUMENT_SONGS = "ARGUMENT_SONGS"
+        const val ARGUMENT_PLAYLIST = "ARGUMENT_PLAYLIST"
 
         fun create(title: String, songs: ArrayList<Song>): CollectionLongDialog {
             val mDialog = CollectionLongDialog()
             val bundle = Bundle()
-            bundle.putString(CollectionLongDialog.ARGUMENT_TITLE, title)
-            bundle.putParcelableArrayList(CollectionLongDialog.ARGUMENT_SONGS, songs)
+            bundle.putString(ARGUMENT_TITLE, title)
+            bundle.putParcelableArrayList(ARGUMENT_SONGS, songs)
             mDialog.arguments = bundle
             return mDialog
         }

@@ -3,14 +3,14 @@ package com.udeshcoffee.android.ui.common.dialogs
 import android.app.Dialog
 import android.os.Bundle
 import android.provider.MediaStore
-import android.support.v4.app.DialogFragment
-import android.support.v7.app.AlertDialog
+import androidx.fragment.app.DialogFragment
+import androidx.appcompat.app.AlertDialog
 import android.widget.Toast
 
 /**
 * Created by Udathari on 10/17/2017.
 */
-class DeletePlaylistDialog: DialogFragment() {
+class DeletePlaylistDialog: androidx.fragment.app.DialogFragment() {
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val playlistId = this.arguments!!.getLong(ARGUMENT_ID)

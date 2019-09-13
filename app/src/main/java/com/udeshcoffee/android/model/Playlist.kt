@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.database.Cursor
 import android.os.Parcelable
 import android.provider.MediaStore
+import kotlinx.android.parcel.IgnoredOnParcel
 import kotlinx.android.parcel.Parcelize
 
 /**
@@ -13,6 +14,7 @@ import kotlinx.android.parcel.Parcelize
 @Parcelize
 class Playlist(val type: Int, var id: Long = 0,var title: String = ""): Parcelable {
 
+    @IgnoredOnParcel
     @Transient
     var songCount: Int? = null
 
@@ -39,10 +41,10 @@ class Playlist(val type: Int, var id: Long = 0,var title: String = ""): Parcelab
 
     companion object {
 
-        val MOST_PLAYED = 0
-        val RECENTLY_ADDED = 1
-        val RECENTLY_PLAYED = 2
-        val USER = 3
+        const val MOST_PLAYED = 0
+        const val RECENTLY_ADDED = 1
+        const val RECENTLY_PLAYED = 2
+        const val USER = 3
 
         val SONGMAPPER = { cursor: Cursor ->
             val song = Song(cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Playlists.Members.AUDIO_ID)),

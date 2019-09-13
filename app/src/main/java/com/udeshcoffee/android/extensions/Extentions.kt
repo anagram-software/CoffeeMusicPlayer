@@ -1,24 +1,23 @@
 package com.udeshcoffee.android.extensions
 
-import android.arch.lifecycle.AndroidViewModel
+import androidx.lifecycle.AndroidViewModel
 import android.content.ContentResolver
 import android.content.ServiceConnection
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
-import android.support.v4.app.Fragment
-import android.support.v4.app.FragmentActivity
-import android.support.v4.app.FragmentTransaction
-import android.support.v4.content.ContextCompat
-import android.support.v7.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import androidx.appcompat.app.AppCompatActivity
 import android.transition.Fade
 import android.util.LongSparseArray
 import android.widget.TextView
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentActivity
 import com.squareup.sqlbrite2.BriteContentResolver
 import com.squareup.sqlbrite2.SqlBrite
 import com.udeshcoffee.android.service.MusicService
 import com.udeshcoffee.android.ui.BasePresenter
-import com.udeshcoffee.android.ui.main.MainActivity
+import com.udeshcoffee.android.ui.MainActivity
 import com.udeshcoffee.android.utils.ServiceConnectionUtil
 import com.udeshcoffee.android.utils.ServiceConnectionUtil.ServiceConnectionToken
 import io.reactivex.Observable
@@ -31,7 +30,7 @@ import io.reactivex.schedulers.Schedulers
  */
 
 //  Extension to add fragments to activities
-fun AppCompatActivity.replaceFragmentToActivity(fragment: Fragment, frameId: Int, tag: String) {
+fun AppCompatActivity.replaceFragmentToActivity(fragment: androidx.fragment.app.Fragment, frameId: Int, tag: String) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
         fragment.enterTransition = Fade()
         fragment.exitTransition = Fade()
@@ -42,7 +41,7 @@ fun AppCompatActivity.replaceFragmentToActivity(fragment: Fragment, frameId: Int
 }
 
 //  Extension to add fragments to activities
-fun AppCompatActivity.replaceFragmentToActivity(fragment: Fragment, frameId: Int) {
+fun AppCompatActivity.replaceFragmentToActivity(fragment: androidx.fragment.app.Fragment, frameId: Int) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
         fragment.enterTransition = Fade()
         fragment.exitTransition = Fade()
@@ -75,18 +74,18 @@ fun AndroidViewModel.getService(): MusicService? = ServiceConnectionUtil.binder?
 fun <T> BasePresenter<T>.getService(): MusicService? = ServiceConnectionUtil.binder?.service?.get()
 
 // Add a fragment
-fun Fragment.replaceFragment(container: Int, fragment: Fragment) {
+fun Fragment.replaceFragment(container: Int, fragment: androidx.fragment.app.Fragment) {
     val transaction = this.activity!!.supportFragmentManager.beginTransaction()
     transaction.replace(container, fragment)
-    transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
+    transaction.setTransition(androidx.fragment.app.FragmentTransaction.TRANSIT_FRAGMENT_FADE)
     transaction.commit()
 }
 
 // Remove Fragment
-fun Fragment.removeFragment(fragment: Fragment) {
+fun Fragment.removeFragment(fragment: androidx.fragment.app.Fragment) {
     val transaction = this.activity!!.supportFragmentManager.beginTransaction()
     transaction.remove(fragment)
-    transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
+    transaction.setTransition(androidx.fragment.app.FragmentTransaction.TRANSIT_FRAGMENT_FADE)
     transaction.commit()
 }
 
@@ -169,6 +168,6 @@ fun TextView.setTextWithMilliSecondsToTimer(milliseconds: Long) {
             }
             .subscribeOn(Schedulers.computation())
             .observeOn(AndroidSchedulers.mainThread())
-            .take(1)
-            .subscribe { this.text = it }
+            .firstOrError()
+            .subscribe ({ this.text = it }, {})
 }

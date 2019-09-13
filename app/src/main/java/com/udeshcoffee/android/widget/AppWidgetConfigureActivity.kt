@@ -1,32 +1,41 @@
 package com.udeshcoffee.android.widget
 
+import android.Manifest
 import android.app.Activity
 import android.app.WallpaperManager
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProviderInfo
+import android.content.ComponentName
 import android.content.Intent
+import android.content.ServiceConnection
+import android.content.SharedPreferences
 import android.graphics.Color
+import android.media.AudioManager
 import android.os.Bundle
-import android.preference.PreferenceManager
-import android.support.constraint.ConstraintLayout
-import android.support.constraint.ConstraintSet
-import android.support.v7.widget.Toolbar
+import android.os.IBinder
+import androidx.preference.PreferenceManager
 import android.util.Log
 import android.util.TypedValue
 import android.view.View
 import android.view.ViewStub
 import android.widget.*
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
+import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.constraintlayout.widget.ConstraintSet
+import com.greysonparrelli.permiso.Permiso
 import com.udeshcoffee.android.R
-import com.udeshcoffee.android.extensions.getColorWithAlpha
-import com.udeshcoffee.android.extensions.getService
-import com.udeshcoffee.android.extensions.loadArtwork
+import com.udeshcoffee.android.extensions.*
 import com.udeshcoffee.android.service.MusicService
-import com.udeshcoffee.android.ui.BaseActivity
+import com.udeshcoffee.android.utils.ServiceConnectionUtil
 
 /**
  * Created by Udathari on 10/26/2017.
  */
-class AppWidgetConfigureActivity : BaseActivity() {
+class AppWidgetConfigureActivity : AppCompatActivity(), ServiceConnection {
+
+    private lateinit var sharedPreferences: SharedPreferences
+    private var serviceToken: ServiceConnectionUtil.ServiceConnectionToken? = null
 
     private var appWidgetId: Int = -1
     var color: Int = 0
@@ -35,6 +44,28 @@ class AppWidgetConfigureActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_app_widget_config)
+
+        volumeControlStream = AudioManager.STREAM_MUSIC
+
+        Permiso.getInstance().setActivity(this)
+        Permiso.getInstance().requestPermissions(object : Permiso.IOnPermissionResult {
+            override fun onPermissionResult(resultSet: Permiso.ResultSet) {
+                if (resultSet.areAllPermissionsGranted()) {
+                    bindToService()
+                } else {
+                    Toast.makeText(this@AppWidgetConfigureActivity, "Permission check failed", Toast.LENGTH_LONG).show()
+                    finish()
+                }
+            }
+
+            override fun onRationaleRequested(callback: Permiso.IOnRationaleProvided, vararg permissions: String) {
+                callback.onRationaleProvided()
+            }
+        }, Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                Manifest.permission.WAKE_LOCK,
+                Manifest.permission.READ_EXTERNAL_STORAGE)
+
+        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
 
         val intent = intent
         val extras = intent.extras
@@ -189,4 +220,26 @@ class AppWidgetConfigureActivity : BaseActivity() {
             finish()
         }
     }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        Permiso.getInstance().onRequestPermissionResult(requestCode, permissions, grantResults)
+    }
+
+    fun bindToService() {
+        serviceToken = bindToService(this)
+        serviceToken?.let { Log.d(TAG, "serviceToken") }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        serviceToken?.let { unbindFromService(it) }
+    }
+
+    override fun onServiceConnected(p0: ComponentName?, p1: IBinder?) {
+        Log.d(TAG, "connected")
+        androidx.localbroadcastmanager.content.LocalBroadcastManager.getInstance(this).sendBroadcast(Intent().setAction(MusicService.InternalIntents.SERVICE_CONNECTED))
+    }
+
+    override fun onServiceDisconnected(p0: ComponentName?) {}
 }

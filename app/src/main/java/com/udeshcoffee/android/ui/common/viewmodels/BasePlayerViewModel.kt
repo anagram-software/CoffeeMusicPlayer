@@ -1,8 +1,8 @@
 package com.udeshcoffee.android.ui.common.viewmodels
 
 import android.app.Application
-import android.arch.lifecycle.AndroidViewModel
-import android.arch.lifecycle.MutableLiveData
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.MutableLiveData
 import android.content.IntentFilter
 import com.cantrowitz.rxbroadcast.RxBroadcast
 import com.udeshcoffee.android.App

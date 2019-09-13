@@ -4,8 +4,8 @@ import android.animation.Animator
 import android.animation.ArgbEvaluator
 import android.animation.ValueAnimator
 import android.graphics.Color
-import android.support.design.widget.AppBarLayout
-import android.support.v4.view.animation.FastOutSlowInInterpolator
+import com.google.android.material.appbar.AppBarLayout
+import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import android.view.View
 
 /**

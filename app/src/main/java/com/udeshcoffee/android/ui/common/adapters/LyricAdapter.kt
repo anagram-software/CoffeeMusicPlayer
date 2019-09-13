@@ -1,7 +1,7 @@
 package com.udeshcoffee.android.ui.common.adapters
 
 import android.content.Context
-import android.support.v7.widget.RecyclerView
+import androidx.recyclerview.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import com.udeshcoffee.android.R
@@ -14,7 +14,7 @@ import io.reactivex.functions.Consumer
  * Created by Udesh on 2/18/2017.
  */
 
-class LyricAdapter : RecyclerView.Adapter<LyricViewHolder>(), Consumer<List<Result>> {
+class LyricAdapter : androidx.recyclerview.widget.RecyclerView.Adapter<LyricViewHolder>(), Consumer<List<Result>> {
 
     val TAG = "LyricAdapter"
 

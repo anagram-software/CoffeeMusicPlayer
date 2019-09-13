@@ -4,8 +4,8 @@ import android.app.Dialog
 import android.content.ContentUris
 import android.os.Bundle
 import android.provider.MediaStore
-import android.support.v4.app.DialogFragment
-import android.support.v7.app.AlertDialog
+import androidx.fragment.app.DialogFragment
+import androidx.appcompat.app.AlertDialog
 import android.widget.Toast
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.utils.DopeUtil
@@ -16,7 +16,7 @@ import java.io.File
 */
 
 
-class DeleteSongDialog : DialogFragment() {
+class DeleteSongDialog : androidx.fragment.app.DialogFragment() {
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val song = this.arguments!!.getParcelable<Song>(ARGUMENT_SONG)

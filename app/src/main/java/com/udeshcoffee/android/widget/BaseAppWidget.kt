@@ -4,30 +4,19 @@ import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
-import android.content.ContentUris
 import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
 import android.graphics.Color
-import android.graphics.drawable.Drawable
-import android.os.Environment
-import android.preference.PreferenceManager
 import android.util.Log
-import android.view.View
 import android.widget.RemoteViews
-import com.bumptech.glide.Glide
-import com.bumptech.glide.request.target.SimpleTarget
-import com.bumptech.glide.request.transition.Transition
-import com.udeshcoffee.android.App
+import androidx.preference.PreferenceManager
 
 import com.udeshcoffee.android.R
-import com.udeshcoffee.android.data.MediaRepository
 import com.udeshcoffee.android.extensions.TAG
 import com.udeshcoffee.android.extensions.getColorWithAlpha
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.service.MusicService
-import com.udeshcoffee.android.ui.main.MainActivity
-import com.udeshcoffee.android.utils.ArtworkURI
+import com.udeshcoffee.android.ui.MainActivity
 
 /**
  * Implementation of App Widget functionality.
