@@ -1,6 +1,7 @@
 package com.udeshcoffee.android.ui.main.favorites
 
 import android.app.Application
+import android.util.Log
 import com.udeshcoffee.android.data.DataRepository
 import com.udeshcoffee.android.data.MediaRepository
 import com.udeshcoffee.android.ui.common.viewmodels.DetailSongViewModel
@@ -24,18 +25,20 @@ class FavoritesViewModel(
     override fun fetchSongs() {
         disposeSongs()
         disposable = mediaRepository.getFavorites()
-                .map({ songs ->
-                    com.udeshcoffee.android.utils.SortManager.sortFavoritesSongs(songs)
+                .map { songs ->
+                    Log.d("Fav", "Songs map")
+                    SortManager.sortFavoritesSongs(songs)
 
                     if (!songSortAscending) {
                         java.util.Collections.reverse(songs)
                     }
 
                     return@map songs
-                })
+                }
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe{
+                    Log.d("Fav", "Set songs")
                     songs.value = it
                 }
     }

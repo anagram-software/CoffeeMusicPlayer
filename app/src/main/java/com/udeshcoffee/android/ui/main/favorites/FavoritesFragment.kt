@@ -3,15 +3,20 @@ package com.udeshcoffee.android.ui.main.favorites
 import android.os.Bundle
 import android.view.*
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.ActionBar
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
+import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.transition.Fade
 import com.udeshcoffee.android.R
+import com.udeshcoffee.android.extensions.openAddToPlaylistDialog
 import com.udeshcoffee.android.extensions.openDrawer
+import com.udeshcoffee.android.extensions.openSongLongDialog
 import com.udeshcoffee.android.extensions.setRoundColor
 import com.udeshcoffee.android.interfaces.OnSongItemClickListener
+import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.recyclerview.EmptyRecyclerView
 import com.udeshcoffee.android.ui.common.adapters.SongAdapter
 import com.udeshcoffee.android.utils.SortManager
@@ -89,6 +94,26 @@ class FavoritesFragment : androidx.fragment.app.Fragment() {
                     viewModel.shuffleClicked()
                 }
             }
+        }
+    }
+
+    override fun onActivityCreated(savedInstanceState: Bundle?) {
+        super.onActivityCreated(savedInstanceState)
+        viewModel.apply {
+            currentSongId.observe(this@FavoritesFragment, Observer {
+                it?.let { songAdapter.currentId = it }
+            })
+            songs.observe(this@FavoritesFragment, Observer {
+                it?.let { songAdapter.accept(it) }
+            })
+
+            // Events
+            showAddToPlaylistDialog.observe(this@FavoritesFragment, Observer {
+                it?.let { openAddToPlaylistDialog(it as ArrayList<Song>) }
+            })
+            showSongLongDialog.observe(this@FavoritesFragment, Observer {
+                it?.let { openSongLongDialog(it) }
+            })
         }
     }
 
