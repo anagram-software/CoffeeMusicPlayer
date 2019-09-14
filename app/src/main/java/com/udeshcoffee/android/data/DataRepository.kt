@@ -125,12 +125,12 @@ class DataRepository(
                 .onErrorResumeNext{
                         return@onErrorResumeNext remoteDataSource.searchLastFMArtist(artistName)
                                 .map {
-                                    val bio = it.artist?.bio?.summary ?: "No Bio Found :("
-                                    val tags = it.artist?.tags?.tag
-                                    val tagsArray = if (tags != null && tags.isNotEmpty()) {
-                                        Array(Math.min(2, tags.size - 1), { it1 ->
+                                    val bio = it.artist.bio?.summary ?: "No Bio Found :("
+                                    val tags = it.artist.tags.tag
+                                    val tagsArray = if (tags.isNotEmpty()) {
+                                        Array(2.coerceAtMost(tags.size - 1)) { it1 ->
                                             tags[it1].name
-                                        })
+                                        }
                                     } else {
                                         null
                                     }
@@ -151,8 +151,5 @@ class DataRepository(
     // Metadata
     fun searchItunes(title: String, artist: String): Observable<SearchResponse> =
             remoteDataSource.searchItunes(title, artist)
-
-    fun searchLastFMArtist(artist: String): Single<ArtistResponse> =
-            remoteDataSource.searchLastFMArtist(artist)
 
 }

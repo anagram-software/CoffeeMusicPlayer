@@ -136,6 +136,7 @@ fun collectArtistArtwork(context: Context,
                          id: Long,
                          name: String,
                          imageView: ImageView) {
+    Log.d("Art", "Collecting artwork")
     val pref = PreferenceManager.getDefaultSharedPreferences(context)
     if (!pref.getBoolean(PreferenceUtil.PREF_COLLECT_CONTENT, true))
         return
@@ -143,10 +144,12 @@ fun collectArtistArtwork(context: Context,
         return
     var tempName = name
     tempName = tempName.toLastFMArtistQuery()
+    Log.d("Art", "Making artwork request")
     val disposable = RemoteDataSource.searchLastFMArtist(tempName)
             .subscribe ({
-                val image = it.artist?.image
-                glide.asBitmap().load(image?.get(image.size - 1)?.text)
+                Log.d("Art", "Got artwork response")
+                val image = it.image
+                glide.asBitmap().load(image)
                         .apply(RequestOptions().placeholder(R.drawable.ic_person_white_24dp))
                         .listener(object : RequestListener<Bitmap> {
                             override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<Bitmap>?,
@@ -160,7 +163,9 @@ fun collectArtistArtwork(context: Context,
                         })
                         .transition(BitmapTransitionOptions.withCrossFade(250))
                         .into(imageView)
-            }, {})
+            }, {
+                Log.d("Art", "Art collect error ${it.message}" )
+            })
 }
 
 

@@ -1,5 +1,6 @@
 package com.udeshcoffee.android.data.remote
 
+import android.util.Log
 import com.annimon.stream.Collectors
 import com.annimon.stream.Stream
 import com.udeshcoffee.android.data.remote.genius.Response
@@ -7,6 +8,7 @@ import com.udeshcoffee.android.data.remote.genius.SearchService
 import com.udeshcoffee.android.data.remote.itunes.ITunesService
 import com.udeshcoffee.android.data.remote.itunes.SearchResponse
 import com.udeshcoffee.android.data.remote.lastfm.ArtistResponse
+import com.udeshcoffee.android.data.remote.lastfm.ImageArtist
 import com.udeshcoffee.android.data.remote.lastfm.LastFMService
 import io.reactivex.Observable
 import io.reactivex.Single
@@ -133,7 +135,7 @@ object RemoteDataSource {
         val hits = Stream.of(searchResponse?.response?.hits)
                 .filter { it.result.primary_artist.name.contains(artist, true) }
                 .collect(Collectors.toList())
-        val equalHits = hits.filter { it.result.title_with_featured.equals(title, true)}
+        val equalHits = hits.filter { it.result.title_with_featured.equals(title, true) }
         val response = if (equalHits.isEmpty() || !shouldCheckEqual) {
             Response(hits)
         } else {
@@ -150,7 +152,7 @@ object RemoteDataSource {
                 .take(1)
     }
 
-    fun loadGeniusSynchronous(path: String): String  {
+    fun loadGeniusSynchronous(path: String): String {
         val lyricsPage: Document
         val text: String
 
@@ -187,14 +189,48 @@ object RemoteDataSource {
         return Normalizer.normalize(builder.toString(), Normalizer.Form.NFD)
     }
 
+
+    private fun loadLastFMImageSynchronous(url: String): String {
+        val lastFMPage: Document
+        val text: String
+
+        try {
+            Log.d("LastFM", "Image URL $url")
+            lastFMPage = Jsoup.connect(url).userAgent(USER_AGENT).get()
+            val lastFMImageDiv = lastFMPage.select(".header-new-background-image")
+            val lastFMImageDivHTML = lastFMImageDiv.outerHtml()
+            if (lastFMImageDivHTML.isEmpty()) {
+                Log.d("LastFM", "Image Div empty")
+                return ""
+            } else {
+                text = lastFMImageDivHTML.split("content=\"")[1].split("\"></div>")[0]
+            }
+        } catch (e: HttpStatusException) {
+            return ""
+        } catch (e: IOException) {
+            return ""
+        } catch (e: StringIndexOutOfBoundsException) {
+            return ""
+        }
+
+        Log.d("LastFM", "Image Div $text")
+        return Normalizer.normalize(text, Normalizer.Form.NFD)
+    }
+
     // LastFM
     private fun getLastFMService(): LastFMService {
         val retrofit = createRetrofit(lastFMBaseUrl, lastFMParameters, true)
         return retrofit.create<LastFMService>(LastFMService::class.java)
     }
 
-    fun searchLastFMArtist(artist: String): Single<ArtistResponse> {
+    fun searchLastFMArtist(artist: String): Single<ImageArtist> {
         return getLastFMService().getArtistInfo(artist)
+                .map {
+                    if (it.artist != null) {
+                        val image = loadLastFMImageSynchronous(it.artist.url)
+                        return@map ImageArtist(it.artist, image)
+                    } else throw Exception("Null artist")
+                }
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .firstOrError()
