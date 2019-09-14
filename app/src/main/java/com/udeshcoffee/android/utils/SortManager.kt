@@ -297,6 +297,8 @@ object SortManager {
                 Collections.sort(songs) { a, b -> compareString(a.albumName, b.albumName) }
                 Collections.sort(songs) { a, b -> compareInt(a.track, b.track) }
                 Collections.sort(songs) { a, b -> compareInt(a.discNumber, b.discNumber) }
+
+
                 Collections.sort(songs) { a, b -> compareString(a.artistName, b.artistName) }
             }
         }

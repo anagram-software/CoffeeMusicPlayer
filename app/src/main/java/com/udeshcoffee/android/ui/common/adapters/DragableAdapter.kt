@@ -36,7 +36,8 @@ class DragableAdapter(var dragable: Boolean):
     var listener: OnDragableItemListener? = null
 
     override fun accept(p0: List<Song>) {
-        this.dataset = p0 as ArrayList<Song>
+        this.dataset.clear()
+        this.dataset.addAll(p0)
         checkCurrentSong()
         notifyDataSetChanged()
     }

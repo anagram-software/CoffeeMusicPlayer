@@ -35,7 +35,7 @@ object ServiceConnectionUtil {
 
     fun unbind(serviceConnectionToken: ServiceConnectionToken) {
         val serviceBinder = serviceBinders.remove(serviceConnectionToken.context)
-        serviceConnectionToken.context.unbindService(serviceBinder)
+        serviceBinder?.let { serviceConnectionToken.context.unbindService(it) }
         if (serviceBinders.isEmpty())
             binder = null
     }
