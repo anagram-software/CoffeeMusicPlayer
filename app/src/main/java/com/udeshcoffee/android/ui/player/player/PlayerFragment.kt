@@ -160,7 +160,6 @@ class PlayerFragment : androidx.fragment.app.Fragment() {
             })
             currentSong.observe(this@PlayerFragment, Observer { it ->
                 it?.let {song ->
-                    context?.let { song.loadSongColor(it, play = play) }
                     title.fadeOut(150) {
                         title.text = song.title
                         title.fadeIn(150)
@@ -175,9 +174,9 @@ class PlayerFragment : androidx.fragment.app.Fragment() {
                 it?.let {
                     Log.d(TAG, "idplay$it")
                     if (!it) {
-                        play.setImageResource(R.drawable.ic_play_circle_filled_white_24dp)
+                        play.setImageResource(R.drawable.ic_play_white_24dp)
                     } else {
-                        play.setImageResource(R.drawable.ic_pause_circle_filled_white_24dp)
+                        play.setImageResource(R.drawable.ic_pause_white_24dp)
                     }
                 }
             })
