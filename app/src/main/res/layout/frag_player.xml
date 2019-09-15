@@ -2,18 +2,18 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_height="match_parent"
+    android:id="@+id/player_layout"
     android:layout_width="match_parent"
-    android:id="@+id/player_layout">
+    android:layout_height="match_parent">
 
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:minHeight="?attr/actionBarSize"
-        app:navigationIcon="@drawable/ic_down_white"
+        android:theme="?attr/actionBarTheme"
         app:layout_constraintTop_toTopOf="parent"
-        android:theme="?attr/actionBarTheme" />
+        app:navigationIcon="@drawable/ic_down_white" />
 
     <FrameLayout
         android:id="@+id/lyrics_container"
@@ -27,17 +27,36 @@
 
     </FrameLayout>
 
-    <androidx.viewpager.widget.ViewPager
+    <RelativeLayout
         android:id="@+id/art_container"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginBottom="8dp"
+        android:gravity="center"
         app:layout_constraintBottom_toBottomOf="@+id/lyrics_container"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/toolbar">
 
-    </androidx.viewpager.widget.ViewPager>
+        <com.udeshcoffee.android.views.SquareCardView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:layout_marginLeft="16dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginRight="16dp"
+            android:layout_marginBottom="8dp"
+            app:cardCornerRadius="4dp">
+
+            <ImageView
+                android:id="@+id/player_art"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/artBackground"
+                android:scaleType="centerCrop" />
+
+        </com.udeshcoffee.android.views.SquareCardView>
+    </RelativeLayout>
 
     <TextView
         android:id="@+id/seek_time"

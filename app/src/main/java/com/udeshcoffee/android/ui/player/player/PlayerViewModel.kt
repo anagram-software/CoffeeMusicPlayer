@@ -29,17 +29,16 @@ class PlayerViewModel(
     val repeatMode = MutableLiveData<Int>()
     val isShuffle = MutableLiveData<Boolean>()
     val current = MutableLiveData<Long>()
+    var total = 0
     val progress = MutableLiveData<Long>()
     val isFav = MutableLiveData<Boolean>()
     val playPosition = MutableLiveData<Int>()
-    val queue = MutableLiveData<List<Song>>()
     val seekTime = MutableLiveData<Long>()
     var isSeekTimeShowing = SingleLiveEvent<Boolean>()
     var isLyricsShowing = SingleLiveEvent<Boolean>()
 
     private var isSeeking: Boolean = false
 
-    private var queueDisposable: Disposable? = null
     private var currentDisposable: Disposable? = null
     private var progressDisposable: Disposable? = null
 
@@ -50,18 +49,24 @@ class PlayerViewModel(
 
         // Init Lyrics
         isLyricsShowing.value = sharedPreferences.getBoolean(PreferenceUtil.LYRICS, PreferenceUtil.DEFAULT_LYRICS)
+
+        getService()?.let {
+            if (it.isPlaying()) {
+                setCurrent()
+                setProgress()
+            }
+        }
     }
 
     override fun stop() {
         disposeCurrent()
-        disposeQueue()
+        disposeProgress()
     }
 
     override fun onInitMetadata(service: MusicService) {
         super.onInitMetadata(service)
         current.value = service.currentPosition
         progress.value = service.currentPosition
-        fetchQueue()
     }
 
     override fun onMetadataChange(service: MusicService) {
@@ -73,6 +78,7 @@ class PlayerViewModel(
                     }, {})
 
         }
+        total = service.list.size
         current.value = service.currentPosition
         progress.value = service.currentPosition
         playPosition.value = service.playPosition
@@ -120,36 +126,6 @@ class PlayerViewModel(
         currentDisposable?.let {
             if (!it.isDisposed)
                 it.dispose()
-        }
-    }
-
-    /* Queue */
-    private fun fetchQueue() {
-        disposeQueue()
-        getService()?.let {
-            queueDisposable = it.getQueueObservable()
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribeOn(Schedulers.io())
-                    .subscribe { it1 ->
-                        queue.value = it1
-                        playPosition.value = it.playPosition
-                    }
-        }
-    }
-
-    private fun disposeQueue(){
-        queueDisposable?.let {
-            if (!it.isDisposed)
-                it.dispose()
-        }
-    }
-
-    fun artScrolled(position: Int) {
-        getService()?.apply {
-            if (position > playPosition)
-                gotoNext()
-            else if (position < playPosition)
-                gotoBack()
         }
     }
 

@@ -17,9 +17,7 @@ import androidx.core.view.GravityCompat
 import androidx.core.view.ViewCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
-import androidx.navigation.NavController
-import androidx.navigation.NavDestination
-import androidx.navigation.findNavController
+import androidx.navigation.*
 import androidx.preference.PreferenceManager
 import com.cantrowitz.rxbroadcast.RxBroadcast
 import com.google.android.material.navigation.NavigationView
@@ -153,6 +151,8 @@ class MainActivity : AppCompatActivity(), ServiceConnection, NavController.OnDes
             handleIntent(it)
             this.intent = Intent()
         }
+
+        navController.addOnDestinationChangedListener(this)
     }
 
     override fun onResume() {
@@ -174,6 +174,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection, NavController.OnDes
                         }
                     }
                 }
+
         setControlBack()
     }
 
@@ -185,6 +186,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection, NavController.OnDes
 
     override fun onDestroy() {
         super.onDestroy()
+        navController.removeOnDestinationChangedListener(this)
         serviceToken?.let { unbindFromService(it) }
     }
 
@@ -208,7 +210,12 @@ class MainActivity : AppCompatActivity(), ServiceConnection, NavController.OnDes
             else -> {
                 closeDrawerLayout()
                 if (navController.currentDestination != null && navController.currentDestination!!.id != item.itemId) {
-                    navController.navigate(item.itemId)
+                    if (item.itemId == R.id.libraryFragment) {
+                        navController.popBackStack(R.id.libraryFragment, false)
+                    } else {
+                        navController.popBackStack(R.id.libraryFragment, false)
+                        navController.navigate(item.itemId)
+                    }
                 }
             }
         }

@@ -30,7 +30,7 @@ class QueueViewModel(application: Application): SongContainingViewModel(applicat
     }
 
     override fun fetchSongs() {
-        Log.d(Companion.TAG, "loadQueue")
+        Log.d(TAG, "loadQueue")
         disposeSongs()
         getService()?.let {
             queueDisposable = it.getQueueObservable()
@@ -71,12 +71,20 @@ class QueueViewModel(application: Application): SongContainingViewModel(applicat
     }
 
     fun itemMoved(fromPosition: Int, toPosition: Int) {
+        Log.d("Queue", "itemMoved $fromPosition $toPosition")
         val service = getService()
+        service?.moveInQueue(fromPosition, toPosition)
         service?.playPosition?.let { currentPos ->
             when {
-                (currentPos in (fromPosition + 1)..toPosition) -> setCurrentPosition(currentPos - 1)
-                (currentPos in toPosition..(fromPosition - 1)) -> setCurrentPosition(currentPos + 1)
-                fromPosition == currentPos -> setCurrentPosition(toPosition)
+                (currentPos in (fromPosition + 1) until (toPosition + 1)) -> {
+                    setCurrentPosition(currentPos - 1)
+                }
+                (currentPos in toPosition until fromPosition) -> {
+                    setCurrentPosition(currentPos + 1)
+                }
+                fromPosition == currentPos -> {
+                    setCurrentPosition(toPosition)
+                }
                 else -> setCurrentPosition(currentPos)
             }
         }

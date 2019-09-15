@@ -488,6 +488,10 @@ class MusicService : Service() {
         Log.d(TAG, "end stop")
     }
 
+    fun moveInQueue(from: Int, to: Int) {
+        list.move(from, to)
+    }
+
     // Playback Info
     fun isPlaying(): Boolean = player.isPlaying()
 

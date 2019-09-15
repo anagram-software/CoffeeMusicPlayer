@@ -96,6 +96,7 @@ object RemoteDataSource {
     private fun filterItunesSearch(searchResponse: SearchResponse?, artist: String): SearchResponse {
         val results = Stream.of(searchResponse?.results)
                 .filter {
+                    Log.d("Itunes", "${it.artistName} ${it.trackName}")
                     if (it.artistName != null)
                         it.artistName!!.contains(artist, true)
                     else

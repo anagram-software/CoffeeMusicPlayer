@@ -24,7 +24,7 @@ import org.koin.android.ext.android.inject
 class QueueFragment: androidx.fragment.app.Fragment() {
 
     private lateinit var adapter: DragableAdapter
-    private lateinit var recyclerView: androidx.recyclerview.widget.RecyclerView
+    private lateinit var recyclerView: RecyclerView
 
     private val viewModel: QueueViewModel by inject()
 
@@ -80,7 +80,7 @@ class QueueFragment: androidx.fragment.app.Fragment() {
 
                 override fun onItemLongClick(position: Int) {}
 
-                override fun onItemDrag(holder: androidx.recyclerview.widget.RecyclerView.ViewHolder) {
+                override fun onItemDrag(holder: RecyclerView.ViewHolder) {
                     itemHelper.startDrag(holder)
                 }
 

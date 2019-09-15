@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.SeekBar
 import android.widget.TextView
 import androidx.appcompat.widget.Toolbar
@@ -16,7 +17,6 @@ import com.udeshcoffee.android.extensions.*
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.service.MusicService
 import com.udeshcoffee.android.ui.MainActivity
-import com.udeshcoffee.android.ui.common.adapters.PlayerArtAdapter
 import com.udeshcoffee.android.ui.common.dialogs.PlayerMoreDialog
 import com.udeshcoffee.android.ui.player.lyrics.LyricsFragment
 import com.udeshcoffee.android.views.CustomScroller
@@ -35,7 +35,7 @@ class PlayerFragment : androidx.fragment.app.Fragment() {
     private lateinit var shuffle: ImageButton
     private lateinit var favorite: ImageButton
 
-    private lateinit var art: androidx.viewpager.widget.ViewPager
+    private lateinit var art: ImageView
 
     private lateinit var progress: SeekBar
     private lateinit var title: TextView
@@ -45,22 +45,8 @@ class PlayerFragment : androidx.fragment.app.Fragment() {
     private lateinit var queueSize: TextView
     private lateinit var seekTime: TextView
 
-    private lateinit var playerArtPagerAdapter: PlayerArtAdapter
-
     // Lyrics
     private var lyricFragment: LyricsFragment? = null
-
-    // Art change listener
-    private val pagerChangeListener = object : androidx.viewpager.widget.ViewPager.OnPageChangeListener {
-        override fun onPageScrollStateChanged(state: Int) {}
-
-        override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {}
-
-        override fun onPageSelected(position: Int) {
-            viewModel.artScrolled(position)
-        }
-
-    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
@@ -88,11 +74,7 @@ class PlayerFragment : androidx.fragment.app.Fragment() {
                 setNavigationOnClickListener { showMainUI() }
             }
 
-            art = findViewById(R.id.art_container)
-            art.addOnPageChangeListener(pagerChangeListener)
-            playerArtPagerAdapter = PlayerArtAdapter(context)
-            art.adapter = playerArtPagerAdapter
-            setupViewPager()
+            art = findViewById(R.id.player_art)
 
             val more = root.findViewById<ImageButton>(R.id.more)
             more.setOnClickListener{ viewModel.currentSong.value?.let { showMoreDialog(it) } }
@@ -158,8 +140,9 @@ class PlayerFragment : androidx.fragment.app.Fragment() {
             current.observe(this@PlayerFragment, Observer {
                 it?.let { it1 -> this@PlayerFragment.current.setTextWithMilliSecondsToTimer(it1) }
             })
-            currentSong.observe(this@PlayerFragment, Observer { it ->
+            currentSong.observe(this@PlayerFragment, Observer {
                 it?.let {song ->
+                    context?.let { it1 -> song.loadArtwork(it1, art) }
                     title.fadeOut(150) {
                         title.text = song.title
                         title.fadeIn(150)
@@ -193,17 +176,9 @@ class PlayerFragment : androidx.fragment.app.Fragment() {
                     this@PlayerFragment.seekTime.setTextWithMilliSecondsToTimer(it)
                 }
             })
-            queue.observe(this@PlayerFragment, Observer {
-                Log.d(TAG, "observe queue ${it?.size}")
-                it?.let {
-                    playerArtPagerAdapter.accept(it)
-                }
-            })
             playPosition.observe(this@PlayerFragment, Observer {
                 it?.let {
-                    this@PlayerFragment.queueSize.text = String.format("%d / %d", it + 1, queue.value?.size ?: 0)
-                    if (playerArtPagerAdapter.isNotifyDatasetChangedCalled && playerArtPagerAdapter.count > 0)
-                        art.setCurrentItem(it, true)
+                    this@PlayerFragment.queueSize.text = String.format("%d / %d", it + 1, total)
                 }
             })
             isFav.observe(this@PlayerFragment, Observer {
@@ -269,11 +244,6 @@ class PlayerFragment : androidx.fragment.app.Fragment() {
         viewModel.stop()
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        art.removeOnPageChangeListener(pagerChangeListener)
-    }
-
     private fun showMoreDialog(song: Song) {
         val mDialog = PlayerMoreDialog()
         val bundle = Bundle()
@@ -288,20 +258,6 @@ class PlayerFragment : androidx.fragment.app.Fragment() {
 
     private fun showMainUI() {
         (activity as MainActivity).closeNowPlay()
-    }
-
-    private fun setupViewPager() {
-        art.setPageTransformer(true, ZoomOutPageTransformer())
-        try {
-            val mScroller = androidx.viewpager.widget.ViewPager::class.java.getDeclaredField("mScroller")
-            mScroller.isAccessible = true
-            val scroller = CustomScroller(art.context, FastOutSlowInInterpolator())
-            // scroller.setFixedDuration(5000);
-            mScroller.set(art, scroller)
-        } catch (e: NoSuchFieldException) {
-        } catch (e: IllegalArgumentException) {
-        } catch (e: IllegalAccessException) {
-        }
     }
 
     companion object {

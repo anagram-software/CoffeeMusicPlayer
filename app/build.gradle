@@ -14,8 +14,8 @@ android {
         applicationId "com.udeshcoffee.android"
         minSdkVersion 16
         targetSdkVersion 29
-        versionCode 30
-        versionName '2.0.9'
+        versionCode 33
+        versionName '2.0.11'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
         multiDexEnabled = true
