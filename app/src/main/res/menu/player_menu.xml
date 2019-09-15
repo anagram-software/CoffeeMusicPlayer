@@ -3,6 +3,13 @@
     xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item
+        android:id="@+id/action_equalizer"
+        android:icon="@drawable/ic_equalizer_white_24dp"
+        android:title="@string/action_equalizer"
+        android:visible="true"
+        app:showAsAction="ifRoom" />
+
+    <item
         android:id="@+id/action_toggle_lyrics"
         android:icon="@drawable/ic_lyrics_white_24dp"
         android:title="@string/action_toggle_lyrics"

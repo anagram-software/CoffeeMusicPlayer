@@ -36,7 +36,7 @@ class LibraryChildAdapter(fm: FragmentManager) : FragmentPagerAdapter(fm) {
             1 -> "Albums"
             2 -> "Artists"
             3 -> "Folders"
-            else ->  "Genre"
+            else ->  "Genres"
         }
     }
 }

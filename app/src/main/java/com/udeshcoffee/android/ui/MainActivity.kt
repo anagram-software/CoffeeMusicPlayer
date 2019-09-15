@@ -296,8 +296,8 @@ class MainActivity : AppCompatActivity(), ServiceConnection, NavController.OnDes
 
     private fun setControlBack() {
         val service = getService()
-        service?.let {service ->
-            service.currentSong()?.let {
+        service?.let {it ->
+            it.currentSong()?.let {
                 if (controlBackSongId != it.id) {
                     it.loadSongColor(this, controlBack)
                     controlBackSongId = it.id

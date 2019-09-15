@@ -12,12 +12,14 @@ import android.widget.TextView
 import androidx.appcompat.widget.Toolbar
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import androidx.lifecycle.Observer
+import androidx.navigation.fragment.findNavController
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.extensions.*
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.service.MusicService
 import com.udeshcoffee.android.ui.MainActivity
 import com.udeshcoffee.android.ui.common.dialogs.PlayerMoreDialog
+import com.udeshcoffee.android.ui.main.detail.albumdetail.AlbumDetailFragment
 import com.udeshcoffee.android.ui.player.lyrics.LyricsFragment
 import com.udeshcoffee.android.views.CustomScroller
 import com.udeshcoffee.android.views.ZoomOutPageTransformer
@@ -62,6 +64,9 @@ class PlayerFragment : androidx.fragment.app.Fragment() {
                 inflateMenu(R.menu.player_menu)
                 setOnMenuItemClickListener {
                     when(it.itemId) {
+                        R.id.action_equalizer -> {
+                            showEqualizer()
+                        }
                         R.id.action_queue -> {
                             showQueueUI()
                         }
@@ -242,6 +247,11 @@ class PlayerFragment : androidx.fragment.app.Fragment() {
     override fun onPause() {
         super.onPause()
         viewModel.stop()
+    }
+
+    private fun showEqualizer() {
+        (activity as MainActivity).closeNowPlay()
+        findNavController().navigate(R.id.equalizerFragment)
     }
 
     private fun showMoreDialog(song: Song) {
