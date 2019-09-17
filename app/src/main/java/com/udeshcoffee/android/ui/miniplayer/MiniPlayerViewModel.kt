@@ -16,14 +16,23 @@ class MiniPlayerViewModel(application: Application): BasePlayerViewModel(applica
 
     private var progressDisposable: Disposable? = null
 
+    override fun start() {
+        super.start()
+        getService()?.let {
+            if (it.isPlaying()) {
+                setProgress()
+            }
+        }
+    }
+
     override fun stop() {
         super.stop()
         disposeProgress()
     }
 
-    fun gotoNext() {
-        getService()?.gotoNext()
-    }
+//    fun gotoNext() {
+//        getService()?.gotoNext()
+//    }
 
     override fun onInitMetadata(service: MusicService) {
         super.onInitMetadata(service)

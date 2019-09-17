@@ -1,67 +1,76 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="72dp"
     xmlns:tools="http://schemas.android.com/tools"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="72dp"
+    android:background="?attr/selectableItemBackground"
+    android:clickable="true"
+    android:focusable="true"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
     android:paddingStart="@dimen/activity_horizontal_margin"
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingEnd="@dimen/activity_horizontal_margin"
-    android:paddingRight="@dimen/activity_horizontal_margin"
-    android:gravity="center_vertical"
-    android:background="?attr/selectableItemBackground"
-    android:orientation="horizontal"
-    android:clickable="true"
-    android:focusable="true">
+    android:paddingRight="@dimen/activity_horizontal_margin">
+
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        app:cardElevation="0dp"
+        app:cardCornerRadius="4dp">
 
         <ImageView
             android:id="@+id/song_art"
             android:layout_width="60dp"
             android:layout_height="60dp"
-            android:scaleType="centerCrop"
-            android:background="@color/artBackground"/>
+            android:background="@color/artBackground"
+            android:scaleType="centerCrop" />
 
-        <RelativeLayout
+    </com.google.android.material.card.MaterialCardView>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/activity_horizontal_margin"
+        android:layout_marginLeft="@dimen/activity_horizontal_margin">
+
+        <TextView
+            android:id="@+id/song_subtitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="@dimen/activity_horizontal_margin"
-            android:layout_marginStart="@dimen/activity_horizontal_margin">
+            android:layout_marginEnd="8dp"
+            android:layout_marginRight="8dp"
+            android:layout_toStartOf="@+id/song_listening"
+            android:layout_toLeftOf="@+id/song_listening"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textSize="@dimen/item_subtitle_size"
+            tools:text="Artist" />
 
-                <TextView
-                    android:id="@+id/song_subtitle"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:maxLines="1"
-                    android:textSize="@dimen/item_subtitle_size"
-                    android:layout_toLeftOf="@+id/song_listening"
-                    android:layout_toStartOf="@+id/song_listening"
-                    android:layout_marginRight="8dp"
-                    android:layout_marginEnd="8dp"
-                    android:ellipsize="end"
-                    tools:text="Artist" />
+        <TextView
+            android:id="@+id/song_listening"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentRight="true"
+            android:text="@string/info_listening"
+            android:textAppearance="@style/TextAppearance.Compat.Notification.Line2"
+            android:textColor="@color/colorAccent"
+            android:visibility="gone" />
 
-                <TextView
-                    android:id="@+id/song_listening"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentRight="true"
-                    android:layout_alignParentEnd="true"
-                    android:text="@string/info_listening"
-                    android:visibility="gone"
-                    android:textAppearance="@style/TextAppearance.Compat.Notification.Line2"
-                    android:textColor="@color/colorAccent"/>
+        <TextView
+            android:id="@+id/song_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/song_subtitle"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="?android:textColorPrimary"
+            android:textSize="@dimen/item_title_size"
+            tools:text="Title" />
 
-                <TextView
-                    android:id="@+id/song_title"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:maxLines="1"
-                    android:textColor="?android:textColorPrimary"
-                    android:textSize="@dimen/item_title_size"
-                    android:ellipsize="end"
-                    android:layout_below="@id/song_subtitle"
-                    tools:text="Title" />
-
-        </RelativeLayout>
+    </RelativeLayout>
 
 </LinearLayout>
