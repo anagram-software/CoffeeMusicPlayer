@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -16,53 +15,19 @@
 
         <!-- Specific -->
         <LinearLayout
-            android:orientation="vertical"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
-
-            <androidx.appcompat.widget.Toolbar
-                android:id="@+id/toolbar_albums"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:theme="@style/PlayableActionToolbarTheme"
-                app:title="@string/info_albums"/>
-
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/artist_album_recycler_view"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:nestedScrollingEnabled="false"/>
-
-            <androidx.appcompat.widget.Toolbar
-                android:id="@+id/toolbar_songs"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:theme="@style/PlayableActionToolbarTheme"
-                app:title="@string/info_songs"/>
-
-            <com.udeshcoffee.android.recyclerview.EmptyRecyclerView
-                android:id="@+id/artist_song_recycler_view"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:nestedScrollingEnabled="false"
-                app:fastScrollHorizontalThumbDrawable="@drawable/thumb_drawable"
-                app:fastScrollHorizontalTrackDrawable="@drawable/line_drawable"
-                app:fastScrollVerticalThumbDrawable="@drawable/thumb_drawable"
-                app:fastScrollVerticalTrackDrawable="@drawable/line_drawable">
-
-            </com.udeshcoffee.android.recyclerview.EmptyRecyclerView>
+            android:layout_height="match_parent"
+            android:orientation="vertical">
 
             <LinearLayout
                 android:id="@+id/info"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
+                android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:padding="@dimen/activity_horizontal_margin"
+                android:layout_marginBottom="8dp"
                 android:background="@color/colorPrimaryDark"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                android:padding="@dimen/activity_horizontal_margin">
 
                 <TextView
                     android:id="@+id/info_head"
@@ -82,6 +47,41 @@
                     android:text="@string/msg_no_info_found" />
 
             </LinearLayout>
+
+            <androidx.appcompat.widget.Toolbar
+                android:id="@+id/toolbar_albums"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:theme="@style/PlayableActionToolbarTheme"
+                app:title="@string/info_albums" />
+
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/artist_album_recycler_view"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:nestedScrollingEnabled="false" />
+
+            <androidx.appcompat.widget.Toolbar
+                android:id="@+id/toolbar_songs"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:theme="@style/PlayableActionToolbarTheme"
+                app:title="@string/info_songs" />
+
+            <com.udeshcoffee.android.recyclerview.EmptyRecyclerView
+                android:id="@+id/artist_song_recycler_view"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:nestedScrollingEnabled="false"
+                app:fastScrollHorizontalThumbDrawable="@drawable/thumb_drawable"
+                app:fastScrollHorizontalTrackDrawable="@drawable/line_drawable"
+                app:fastScrollVerticalThumbDrawable="@drawable/thumb_drawable"
+                app:fastScrollVerticalTrackDrawable="@drawable/line_drawable">
+
+            </com.udeshcoffee.android.recyclerview.EmptyRecyclerView>
 
             <include layout="@layout/empty_view" />
         </LinearLayout>

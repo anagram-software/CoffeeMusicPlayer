@@ -43,7 +43,6 @@ class ArtistDetailFragment : androidx.fragment.app.Fragment(), com.google.androi
     private var mIsTheTitleContainerVisible = true
 
     private lateinit var collapsedTitle: TextView
-    private lateinit var expandedLayout: View
     private lateinit var expandedTitle: TextView
     private var tag: Array<TextView?> = arrayOfNulls(2)
     private lateinit var tagLayout: View
@@ -53,7 +52,6 @@ class ArtistDetailFragment : androidx.fragment.app.Fragment(), com.google.androi
     private lateinit var albumAdpt: AlbumAdapter
 
     private lateinit var detailImage: ImageView
-    private lateinit var blurDetailImage: ImageView
     private lateinit var toolbarAlbums: Toolbar
     private lateinit var toolbarSongs: Toolbar
     var actionBar: ActionBar? = null
@@ -73,7 +71,6 @@ class ArtistDetailFragment : androidx.fragment.app.Fragment(), com.google.androi
             val appBar = findViewById<com.google.android.material.appbar.AppBarLayout>(R.id.appbar)
             appBar.addOnOffsetChangedListener(this@ArtistDetailFragment)
 
-            expandedLayout = findViewById(R.id.expanded_layout)
             expandedTitle = findViewById(R.id.expanded_title)
             expandedTitle.text = arguments!!.getString(ARGUMENT_NAME)
             tagLayout = findViewById(R.id.expanded_tags)
@@ -87,10 +84,6 @@ class ArtistDetailFragment : androidx.fragment.app.Fragment(), com.google.androi
             detailImage = findViewById(R.id.detail_image)
             loadArtistArtwork(context, Glide.with(context), arguments!!.getLong(ARGUMENT_ID),
                     arguments!!.getString(ARGUMENT_NAME, ""), detailImage, true)
-
-            blurDetailImage = findViewById(R.id.blur_detail_image)
-            loadArtistArtwork(context, Glide.with(context), arguments!!.getLong(ARGUMENT_ID),
-                    arguments!!.getString(ARGUMENT_NAME, ""), blurDetailImage, shouldCollect = true, isBlur = true)
 
             actionBar?.apply {
                 setDisplayHomeAsUpEnabled(true)
@@ -373,22 +366,22 @@ class ArtistDetailFragment : androidx.fragment.app.Fragment(), com.google.androi
     private fun handleAlphaOnTitle(percentage: Float) {
         if (percentage >= PERCENTAGE_TO_HIDE_TITLE_DETAILS) {
             if (mIsTheTitleContainerVisible) {
-                expandedTitle.fadeOut(ALPHA_ANIMATIONS_DURATION.toLong())
-                tagLayout.fadeOut(ALPHA_ANIMATIONS_DURATION.toLong() / 2)
+                expandedTitle.fadeOut(ALPHA_ANIMATIONS_DURATION.toLong() /  2)
+                tagLayout.fadeOut(ALPHA_ANIMATIONS_DURATION.toLong())
                 mIsTheTitleContainerVisible = false
             }
 
         } else {
             if (!mIsTheTitleContainerVisible) {
-                expandedTitle.fadeIn(ALPHA_ANIMATIONS_DURATION.toLong())
-                tagLayout.fadeIn(ALPHA_ANIMATIONS_DURATION.toLong() * 2)
+                expandedTitle.fadeIn(ALPHA_ANIMATIONS_DURATION.toLong() * 2)
+                tagLayout.fadeIn(ALPHA_ANIMATIONS_DURATION.toLong())
                 mIsTheTitleContainerVisible = true
             }
         }
     }
 
     private fun handleAlphaOnImage(percentage: Float) {
-        detailImage.alpha = 1.0f - 1.0f.coerceAtMost(percentage * 1.2f)
+        detailImage.alpha = 1.0f - 1.0f.coerceAtMost(percentage * 1.8f)
     }
 
     companion object {
@@ -400,7 +393,7 @@ class ArtistDetailFragment : androidx.fragment.app.Fragment(), com.google.androi
         private const val ARGUMENT_NAME = "ARGUMENT_ARTIST"
 
         private const val PERCENTAGE_TO_SHOW_TITLE_AT_TOOLBAR = 0.9f
-        private const val PERCENTAGE_TO_HIDE_TITLE_DETAILS = 0.3f
+        private const val PERCENTAGE_TO_HIDE_TITLE_DETAILS = 0.2f
         private const val ALPHA_ANIMATIONS_DURATION = 200
 
         fun createBundle(artist: Artist): Bundle {

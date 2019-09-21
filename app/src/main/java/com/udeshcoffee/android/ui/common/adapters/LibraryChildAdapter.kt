@@ -32,11 +32,11 @@ class LibraryChildAdapter(fm: FragmentManager) : FragmentPagerAdapter(fm) {
 
     override fun getPageTitle(position: Int): CharSequence {
         return when(position) {
-            0 -> "Songs"
-            1 -> "Albums"
-            2 -> "Artists"
-            3 -> "Folders"
-            else ->  "Genres"
+            0 -> "Song"
+            1 -> "Album"
+            2 -> "Artist"
+            3 -> "Folder"
+            else ->  "Genre"
         }
     }
 }

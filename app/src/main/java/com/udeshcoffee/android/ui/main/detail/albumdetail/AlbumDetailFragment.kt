@@ -38,13 +38,11 @@ class AlbumDetailFragment : Fragment(), com.google.android.material.appbar.AppBa
     private var mIsTheTitleContainerVisible = true
 
     private lateinit var collapsedTitle: TextView
-    private lateinit var expandedLayout: View
     private lateinit var expandedTitle: TextView
     private lateinit var expandedSubtitle: TextView
 
     private lateinit var songAdpt: SongAdapter
     private lateinit var detailImage: ImageView
-    private lateinit var blurDetailImage: ImageView
     var actionBar: ActionBar? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -70,7 +68,6 @@ class AlbumDetailFragment : Fragment(), com.google.android.material.appbar.AppBa
             val appBar = findViewById<com.google.android.material.appbar.AppBarLayout>(R.id.appbar)
             appBar.addOnOffsetChangedListener(this@AlbumDetailFragment)
 
-            expandedLayout = findViewById(R.id.expanded_layout)
             expandedTitle = findViewById(R.id.expanded_title)
             expandedTitle.text = name
             expandedSubtitle = findViewById(R.id.expanded_subtitle)
@@ -84,9 +81,6 @@ class AlbumDetailFragment : Fragment(), com.google.android.material.appbar.AppBa
             loadAlbumArtwork(context, arguments!!.getLong(ARGUMENT_ID), detailImage, true) {
                 startPostponedEnterTransition()
             }
-
-            blurDetailImage = findViewById(R.id.blur_detail_image)
-            loadAlbumArtwork(context, arguments!!.getLong(ARGUMENT_ID), blurDetailImage, animate = true, isBlurred = true)
 
             actionBar?.apply {
                 setDisplayHomeAsUpEnabled(true)
@@ -253,23 +247,23 @@ class AlbumDetailFragment : Fragment(), com.google.android.material.appbar.AppBa
     private fun handleAlphaOnTitle(percentage: Float) {
         if (percentage >= PERCENTAGE_TO_HIDE_TITLE_DETAILS) {
             if (mIsTheTitleContainerVisible) {
-                expandedTitle.fadeOut(ALPHA_ANIMATIONS_DURATION.toLong())
-                expandedSubtitle.fadeOut(ALPHA_ANIMATIONS_DURATION.toLong() / 2)
+                expandedTitle.fadeOut(ALPHA_ANIMATIONS_DURATION.toLong() / 2)
+                expandedSubtitle.fadeOut(ALPHA_ANIMATIONS_DURATION.toLong())
                 mIsTheTitleContainerVisible = false
             }
 
         } else {
 
             if (!mIsTheTitleContainerVisible) {
-                expandedTitle.fadeIn(ALPHA_ANIMATIONS_DURATION.toLong())
-                expandedSubtitle.fadeIn(ALPHA_ANIMATIONS_DURATION.toLong() * 2)
+                expandedTitle.fadeIn(ALPHA_ANIMATIONS_DURATION.toLong() * 2)
+                expandedSubtitle.fadeIn(ALPHA_ANIMATIONS_DURATION.toLong())
                 mIsTheTitleContainerVisible = true
             }
         }
     }
 
     private fun handleAlphaOnImage(percentage: Float) {
-        detailImage.alpha = 1.0f - 1.0f.coerceAtMost(percentage * 1.2f)
+        detailImage.alpha = 1.0f - 1.0f.coerceAtMost(percentage * 1.8f)
     }
 
 
