@@ -59,6 +59,7 @@ class PlayerViewModel(
     }
 
     override fun stop() {
+        super.stop()
         disposeCurrent()
         disposeProgress()
     }

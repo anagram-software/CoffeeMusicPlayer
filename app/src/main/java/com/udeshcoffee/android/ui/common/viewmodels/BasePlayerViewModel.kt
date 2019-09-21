@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import android.content.IntentFilter
+import android.util.Log
 import com.cantrowitz.rxbroadcast.RxBroadcast
 import com.udeshcoffee.android.App
 import com.udeshcoffee.android.extensions.getService
@@ -48,7 +49,7 @@ abstract class BasePlayerViewModel(application: Application): AndroidViewModel(a
                     }
                 }
         val service = getService()
-        if (!isLoaded && service != null) {
+        if (service != null) {
             onInitMetadata(service)
             isLoaded = true
         }
@@ -75,11 +76,13 @@ abstract class BasePlayerViewModel(application: Application): AndroidViewModel(a
     }
 
     open fun onMetadataChange(service: MusicService) {
+        Log.d("BasePlayerViewModel", "Metadata changed")
         currentSong.value = service.currentSong()
         duration.value = service.duration
     }
 
     open fun onPlaybackChange(service: MusicService) {
+        Log.d("BasePlayerViewModel", "Playback changed")
         isPlaying.value = service.isPlaying()
     }
 
