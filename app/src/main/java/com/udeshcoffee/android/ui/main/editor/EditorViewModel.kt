@@ -121,28 +121,33 @@ class EditorViewModel(
         progressDialog.value = "Collecting Information"
         disposeCollectionDisposable()
         collectionDisposable = dataRepository.searchItunes(searchableTitle, searchableArtist)
-                .subscribe({ response ->
-                    if (response.resultCount > 0 && response.results != null) {
-                        response.results!![0].let { results ->
-                            val releaseYear = results.releaseDate?.split("-")?.get(0)
+                .subscribe({ songs ->
+                    if (songs.isNotEmpty()) {
+                        Log.d("Search", "Fuck yeah")
+                        songs[0].attributes?.let { results ->
+                            val releaseYear = results.releaseDate.split("-")[0]
                             var tempSong = song.value
-                            tempSong = results.trackName?.let { tempSong?.copy(title = it) }
-                            tempSong = results.collectionName?.let { tempSong?.copy(albumName = it) }
-                            tempSong = results.artistName?.let { tempSong?.copy(artistName = it) }
-                            tempSong = releaseYear?.let { tempSong?.copy(year = it.toInt()) }
-                            genre.value = results.primaryGenreName
+                            tempSong = results.name.let { tempSong?.copy(title = it) }
+                            tempSong = results.albumName.let { tempSong?.copy(albumName = it) }
+                            tempSong = results.artistName.let { tempSong?.copy(artistName = it) }
+                            tempSong = releaseYear.let { tempSong?.copy(year = it.toInt()) }
+                            genre.value = results.genreNames?.getOrElse(0) {
+                                ""
+                            }
                             song.value = tempSong
-                            val image = results.artworkUrl100?.replace("100x100", "500x500")
-                            image?.let {
+                            val image = results.artwork.url
+                            image.let {
                                 albumArtUrl = it
                                 reloadImage.value = ImageType.URL
                             }
                         }
                     } else {
+                        Log.d("Search", "Fuck empty")
                         showToast.value = "No tracks found"
                     }
                     progressDialog.value = null
                 }, {
+                    Log.d("Search", "Fuck ${it.message}")
                     showToast.value = "No tracks found"
                     progressDialog.value = null
                 })

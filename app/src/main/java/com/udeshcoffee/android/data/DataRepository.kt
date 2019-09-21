@@ -8,6 +8,7 @@ import com.udeshcoffee.android.data.model.EQPreset
 import com.udeshcoffee.android.data.model.Favorite
 import com.udeshcoffee.android.data.model.Lyric
 import com.udeshcoffee.android.data.remote.RemoteDataSource
+import com.udeshcoffee.android.data.remote.itunes.ItunesSong
 import com.udeshcoffee.android.model.Song
 import io.reactivex.Observable
 import io.reactivex.Single
@@ -15,8 +16,8 @@ import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
 
 /**
-* Created by Udathari on 12/19/2017.
-*/
+ * Created by Udathari on 12/19/2017.
+ */
 class DataRepository(
         private val localDataSource: LocalDataSource,
         private val remoteDataSource: RemoteDataSource
@@ -26,7 +27,7 @@ class DataRepository(
 
     // Lyric
     fun getLyrics(song: Song): Observable<String?> {
-        return Observable.fromCallable{ localDataSource.getLyrics(song.id) }
+        return Observable.fromCallable { localDataSource.getLyrics(song.id) }
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .take(1)
@@ -82,7 +83,7 @@ class DataRepository(
     fun toggleFavorite(songId: Long, callback: ((isFavorite: Boolean) -> Unit)? = null) {
         Log.d("toggleFavorite", "toggleFavorite")
         Observable.fromCallable { localDataSource.isFavorite(songId) }
-                .map{
+                .map {
                     Log.d("toggleFavorite", "doOnSuccess $it")
                     if (it) {
                         deleteFavorite(Favorite(songId))
@@ -97,7 +98,7 @@ class DataRepository(
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe({
-                    callback?.let { it1-> it1(it) }
+                    callback?.let { it1 -> it1(it) }
                 }, {
                     Log.d("toggleFavorite", "error $it")
                 })
@@ -122,23 +123,23 @@ class DataRepository(
     // Bio
     fun getBio(artistId: Long, artistName: String): Single<Pair<String, Array<String>?>> {
         return localDataSource.getBio(artistId)
-                .onErrorResumeNext{
-                        return@onErrorResumeNext remoteDataSource.searchLastFMArtist(artistName)
-                                .map {
-                                    val bio = it.artist.bio?.summary ?: "No Bio Found :("
-                                    val tags = it.artist.tags.tag
-                                    val tagsArray = if (tags.isNotEmpty()) {
-                                        Array(2.coerceAtMost(tags.size - 1)) { it1 ->
-                                            tags[it1].name
-                                        }
-                                    } else {
-                                        null
+                .onErrorResumeNext {
+                    return@onErrorResumeNext remoteDataSource.searchLastFMArtist(artistName)
+                            .map {
+                                val bio = it.artist.bio?.summary ?: "No Bio Found :("
+                                val tags = it.artist.tags.tag
+                                val tagsArray = if (tags.isNotEmpty()) {
+                                    Array(2.coerceAtMost(tags.size - 1)) { it1 ->
+                                        tags[it1].name
                                     }
-                                    return@map Pair(bio, tagsArray)
+                                } else {
+                                    null
                                 }
-                                .doAfterSuccess{
-                                    localDataSource.insertBio(artistId, it.first, it.second)
-                                }
+                                return@map Pair(bio, tagsArray)
+                            }
+                            .doAfterSuccess {
+                                localDataSource.insertBio(artistId, it.first, it.second)
+                            }
 
                 }
     }
@@ -149,7 +150,7 @@ class DataRepository(
     }
 
     // Metadata
-    fun searchItunes(title: String, artist: String): Observable<SearchResponse> =
+    fun searchItunes(title: String, artist: String): Observable<List<ItunesSong>> =
             remoteDataSource.searchItunes(title, artist)
 
 }

@@ -7,7 +7,7 @@ import com.udeshcoffee.android.data.remote.genius.Response
 import com.udeshcoffee.android.data.remote.genius.SearchService
 import com.udeshcoffee.android.data.remote.itunes.ITunesService
 import com.udeshcoffee.android.data.remote.itunes.SearchResponse
-import com.udeshcoffee.android.data.remote.lastfm.ArtistResponse
+import com.udeshcoffee.android.data.remote.itunes.ItunesSong
 import com.udeshcoffee.android.data.remote.lastfm.ImageArtist
 import com.udeshcoffee.android.data.remote.lastfm.LastFMService
 import io.reactivex.Observable
@@ -32,12 +32,8 @@ import java.util.regex.Pattern
 object RemoteDataSource {
 
     private val geniusBaseUrl: String = "http://api.genius.com/"
-    private val itunesBaseUrl: String = "https://itunes.apple.com/"
+    private val itunesBaseUrl: String = "https://api.music.apple.com/v1/catalog/us/"
     private val lastFMBaseUrl: String = "http://ws.audioscrobbler.com/"
-
-    private val itunesParameters = arrayOf(
-            Pair("country", "US")
-    )
 
     private val geniusParameters = arrayOf(
             Pair("access_token", "eACAhiFiFbGDWCsoAauVF-S-hra_cSDB5JC7RBv2RbIzmEPn7WEjhIQEZIDBgpzK")
@@ -81,29 +77,23 @@ object RemoteDataSource {
 
     // Itunes
     private fun getItunesService(): ITunesService {
-        val retrofit = createRetrofit(itunesBaseUrl, itunesParameters, true)
+        val retrofit = createRetrofit(itunesBaseUrl, null, true)
         return retrofit.create<ITunesService>(ITunesService::class.java)
     }
 
-    fun searchItunes(song: String, artist: String): Observable<SearchResponse> {
-        return getItunesService().search(song)
+    fun searchItunes(song: String, artist: String): Observable<List<ItunesSong>> {
+        return getItunesService().search(song = song)
                 .map { filterItunesSearch(it, artist) }
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .take(1)
     }
 
-    private fun filterItunesSearch(searchResponse: SearchResponse?, artist: String): SearchResponse {
-        val results = Stream.of(searchResponse?.results)
-                .filter {
-                    Log.d("Itunes", "${it.artistName} ${it.trackName}")
-                    if (it.artistName != null)
-                        it.artistName!!.contains(artist, true)
-                    else
-                        false
-                }
-                .collect(Collectors.toList())
-        return SearchResponse(results.size, results)
+    private fun filterItunesSearch(searchResponse: SearchResponse?, artist: String): List<ItunesSong> {
+        val results = searchResponse?.results?.songs?.data?.filter {
+            it.attributes?.artistName?.contains(artist, true) ?: false
+        }
+        return results ?: listOf()
     }
 
     // Genius

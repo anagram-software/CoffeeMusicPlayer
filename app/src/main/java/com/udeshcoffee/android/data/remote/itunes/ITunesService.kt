@@ -8,6 +8,6 @@ import retrofit2.http.Query
  */
 interface ITunesService {
     @GET("search")
-    fun search(@Query("term") song: String, @Query("media") media: String = "music",
-               @Query("entity") entity: String = "song", @Query("attribute") attribute: String = "songTerm"): Observable<SearchResponse>
+    fun search(@Query("term") song: String, @Query("limit") limit: Int = 10,
+               @Query("types") types: String = "songs"): Observable<SearchResponse>
 }
