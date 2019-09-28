@@ -5,10 +5,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageButton
-import android.widget.ImageView
-import android.widget.SeekBar
-import android.widget.TextView
+import android.widget.*
 import androidx.appcompat.widget.Toolbar
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import androidx.lifecycle.Observer
@@ -33,8 +30,6 @@ class PlayerFragment : androidx.fragment.app.Fragment() {
     val viewModel: PlayerViewModel by inject()
 
     private lateinit var play: ImageButton
-    private lateinit var repeat: ImageButton
-    private lateinit var shuffle: ImageButton
     private lateinit var favorite: ImageButton
 
     private lateinit var art: ImageView
@@ -44,7 +39,6 @@ class PlayerFragment : androidx.fragment.app.Fragment() {
     private lateinit var artistAlbum: TextView
     private lateinit var current: TextView
     private lateinit var duration: TextView
-    private lateinit var queueSize: TextView
     private lateinit var seekTime: TextView
 
     // Lyrics
@@ -57,27 +51,6 @@ class PlayerFragment : androidx.fragment.app.Fragment() {
 
         // Set up player view
         with(root) {
-            val toolbar: Toolbar = findViewById(R.id.toolbar)
-
-            toolbar.apply {
-                title = ""
-                inflateMenu(R.menu.player_menu)
-                setOnMenuItemClickListener {
-                    when(it.itemId) {
-                        R.id.action_equalizer -> {
-                            showEqualizer()
-                        }
-                        R.id.action_queue -> {
-                            showQueueUI()
-                        }
-                        R.id.action_toggle_lyrics -> {
-                            viewModel.lyricsToggle()
-                        }
-                    }
-                    return@setOnMenuItemClickListener false
-                }
-                setNavigationOnClickListener { showMainUI() }
-            }
 
             art = findViewById(R.id.player_art)
 
@@ -87,12 +60,6 @@ class PlayerFragment : androidx.fragment.app.Fragment() {
             favorite = root.findViewById(R.id.favorite)
             favorite.setOnClickListener{ viewModel.favToggle() }
 
-            repeat = root.findViewById(R.id.repeat)
-            repeat.setOnClickListener { viewModel.changeRepeatMode() }
-
-            shuffle = root.findViewById(R.id.shuffle)
-            shuffle.setOnClickListener { viewModel.shuffle() }
-
             play = root.findViewById(R.id.play)
             play.setOnClickListener { viewModel.playPauseToggle() }
 
@@ -101,6 +68,12 @@ class PlayerFragment : androidx.fragment.app.Fragment() {
 
             val back: ImageButton = root.findViewById(R.id.gotoBack)
             back.setOnClickListener { viewModel.gotoBack() }
+
+            val lyrics: Button = root.findViewById(R.id.lyrics)
+            lyrics.setOnClickListener { viewModel.lyricsToggle() }
+
+            val queue: Button = root.findViewById(R.id.queue)
+            queue.setOnClickListener { showQueueUI() }
 
             progress = findViewById(R.id.progress)
             progress.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener{
@@ -122,7 +95,6 @@ class PlayerFragment : androidx.fragment.app.Fragment() {
             artistAlbum = findViewById(R.id.artist_album)
             current = findViewById(R.id.current)
             duration = findViewById(R.id.duration)
-            queueSize = findViewById(R.id.queue_size)
 
             seekTime = findViewById(R.id.seek_time)
         }
@@ -181,44 +153,12 @@ class PlayerFragment : androidx.fragment.app.Fragment() {
                     this@PlayerFragment.seekTime.setTextWithMilliSecondsToTimer(it)
                 }
             })
-            playPosition.observe(this@PlayerFragment, Observer {
-                it?.let {
-                    this@PlayerFragment.queueSize.text = String.format("%d / %d", it + 1, total)
-                }
-            })
             isFav.observe(this@PlayerFragment, Observer {
                 it?.let {
                     if (it) {
                         favorite.setImageResource(R.drawable.ic_favorite_white_24dp)
                     } else {
                         favorite.setImageResource(R.drawable.ic_favorite_border_white_24dp)
-                    }
-                }
-            })
-            repeatMode.observe(this@PlayerFragment, Observer {
-                it?.let {
-                    when(it) {
-                        MusicService.RepeatMode.NONE -> {
-                            repeat.setImageResource(R.drawable.ic_repeat_white_24dp)
-                            repeat.alpha = 0.3f
-                        }
-                        MusicService.RepeatMode.ONE -> {
-                            repeat.setImageResource(R.drawable.ic_repeat_one_white_24dp)
-                            repeat.alpha = 1f
-                        }
-                        MusicService.RepeatMode.ALL -> {
-                            repeat.setImageResource(R.drawable.ic_repeat_white_24dp)
-                            repeat.alpha = 1f
-                        }
-                    }
-                }
-            })
-            isShuffle.observe(this@PlayerFragment, Observer {
-                it?.let {
-                    if (!it) {
-                        shuffle.alpha = 0.3f
-                    } else {
-                        shuffle.alpha = 1.0f
                     }
                 }
             })
@@ -249,11 +189,6 @@ class PlayerFragment : androidx.fragment.app.Fragment() {
         viewModel.stop()
     }
 
-    private fun showEqualizer() {
-        (activity as MainActivity).closeNowPlay()
-        findNavController().navigate(R.id.equalizerFragment)
-    }
-
     private fun showMoreDialog(song: Song) {
         val mDialog = PlayerMoreDialog()
         val bundle = Bundle()
@@ -264,10 +199,6 @@ class PlayerFragment : androidx.fragment.app.Fragment() {
 
     private fun showQueueUI() {
         (activity as MainActivity).showQueue()
-    }
-
-    private fun showMainUI() {
-        (activity as MainActivity).closeNowPlay()
     }
 
     companion object {

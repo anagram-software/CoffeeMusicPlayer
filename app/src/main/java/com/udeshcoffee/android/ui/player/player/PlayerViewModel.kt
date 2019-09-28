@@ -26,13 +26,10 @@ class PlayerViewModel(
         private val dataRepository: DataRepository
 ): BasePlayerViewModel(application){
 
-    val repeatMode = MutableLiveData<Int>()
-    val isShuffle = MutableLiveData<Boolean>()
+
     val current = MutableLiveData<Long>()
-    var total = 0
     val progress = MutableLiveData<Long>()
     val isFav = MutableLiveData<Boolean>()
-    val playPosition = MutableLiveData<Int>()
     val seekTime = MutableLiveData<Long>()
     var isSeekTimeShowing = SingleLiveEvent<Boolean>()
     var isLyricsShowing = SingleLiveEvent<Boolean>()
@@ -44,9 +41,6 @@ class PlayerViewModel(
 
     override fun start() {
         super.start()
-        repeatMode.value = sharedPreferences.getInt(PreferenceUtil.REPEAT_MODE, MusicService.RepeatMode.ALL)
-        isShuffle.value = sharedPreferences.getBoolean(PreferenceUtil.SHUFFLE, false)
-
         // Init Lyrics
         isLyricsShowing.value = sharedPreferences.getBoolean(PreferenceUtil.LYRICS, PreferenceUtil.DEFAULT_LYRICS)
 
@@ -79,10 +73,8 @@ class PlayerViewModel(
                     }, {})
 
         }
-        total = service.list.size
         current.value = service.currentPosition
         progress.value = service.currentPosition
-        playPosition.value = service.playPosition
     }
 
     override fun onPlaybackChange(service: MusicService) {
@@ -164,28 +156,6 @@ class PlayerViewModel(
 
     fun gotoBack() {
         getService()?.gotoBack()
-    }
-
-    fun changeRepeatMode() {
-        when(repeatMode.value) {
-            MusicService.RepeatMode.NONE -> {
-                sharedPreferences.edit { putInt(PreferenceUtil.REPEAT_MODE, MusicService.RepeatMode.ALL).apply() }
-                repeatMode.value = MusicService.RepeatMode.ALL
-            }
-            MusicService.RepeatMode.ALL -> {
-                sharedPreferences.edit { putInt(PreferenceUtil.REPEAT_MODE, MusicService.RepeatMode.ONE).apply() }
-                repeatMode.value = MusicService.RepeatMode.ONE
-            }
-            MusicService.RepeatMode.ONE -> {
-                sharedPreferences.edit { putInt(PreferenceUtil.REPEAT_MODE, MusicService.RepeatMode.NONE).apply() }
-                repeatMode.value = MusicService.RepeatMode.NONE
-            }
-        }
-    }
-
-    fun shuffle() {
-        isShuffle.value = !isShuffle.value!!
-        sharedPreferences.edit().putBoolean(PreferenceUtil.SHUFFLE, isShuffle.value!!).apply()
     }
 
     fun favToggle() {

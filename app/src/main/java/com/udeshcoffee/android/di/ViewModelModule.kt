@@ -34,5 +34,5 @@ val viewModelModule = module {
     // Player
     viewModel { MiniPlayerViewModel(get()) }
     viewModel { PlayerViewModel(get(), get(), get()) }
-    viewModel { QueueViewModel(get()) }
+    viewModel { QueueViewModel(get(), get()) }
 }

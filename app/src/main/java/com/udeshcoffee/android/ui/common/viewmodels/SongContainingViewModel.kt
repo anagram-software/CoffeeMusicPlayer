@@ -14,9 +14,9 @@ import com.udeshcoffee.android.service.MusicService
 import com.udeshcoffee.android.utils.SingleLiveEvent
 import io.reactivex.disposables.Disposable
 
-abstract class SongContainingViewModel (
+abstract class SongContainingViewModel(
         application: Application
-): AndroidViewModel(application) {
+) : AndroidViewModel(application) {
 
     private var broadcastDisposable: Disposable? = null
     val currentSongId = MutableLiveData<Long>()
@@ -35,9 +35,9 @@ abstract class SongContainingViewModel (
         val service = getService()
         broadcastDisposable = RxBroadcast.fromLocalBroadcast(App.instance, filter)
                 .subscribe {
-                    when(it.action){
+                    when (it.action) {
                         MusicService.InternalIntents.METADATA_CHANGED -> {
-                            currentSongId.value = service?.currentSong()?.id ?: -1
+                            service?.let { it1 -> onMetaDataChanged(it1) }
                         }
                     }
                 }
@@ -51,6 +51,10 @@ abstract class SongContainingViewModel (
             if (!it.isDisposed)
                 it.dispose()
         }
+    }
+
+    open fun onMetaDataChanged(service: MusicService) {
+        currentSongId.value = service.currentSong()?.id ?: -1
     }
 
     abstract fun fetchSongs()
