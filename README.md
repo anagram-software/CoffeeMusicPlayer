@@ -41,5 +41,5 @@ Any support, hugs and bugs to improve this music experience is warmly appreciate
 [1]: https://github.com/UdeshUK
 [2]: https://twitter.com/TheUdeshUK
 [3]: https://github.com/UdeshUK/CoffeeMusicPlayer/blob/master/LICENSE.txt
-[4]: mailto:udesh.upalanka@live.com
+[4]: mailto:mail@udesh.xyz
 [5]: https://play.google.com/store/apps/details?id=com.udeshcoffee.android
