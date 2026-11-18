@@ -1,0 +1,408 @@
+package com.udeshcoffee.android.ui.compose.detail
+
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DragHandle
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Shuffle
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeTopAppBar
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.fromHtml
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.udeshcoffee.android.model.Album
+import com.udeshcoffee.android.model.Artist
+import com.udeshcoffee.android.model.Playlist
+import com.udeshcoffee.android.model.Song
+import com.udeshcoffee.android.ui.compose.LocalAppActions
+import com.udeshcoffee.android.ui.compose.components.AlbumArtwork
+import com.udeshcoffee.android.ui.compose.components.AlbumCard
+import com.udeshcoffee.android.ui.compose.components.AlbumSortOptions
+import com.udeshcoffee.android.ui.compose.components.ArtistArtwork
+import com.udeshcoffee.android.ui.compose.components.EmptyState
+import com.udeshcoffee.android.ui.compose.components.SectionHeader
+import com.udeshcoffee.android.ui.compose.components.SongRow
+import com.udeshcoffee.android.ui.compose.components.SongSortOptions
+import com.udeshcoffee.android.ui.compose.components.SortMenu
+import com.udeshcoffee.android.ui.compose.components.SortSettings
+import com.udeshcoffee.android.ui.compose.components.formatDuration
+import com.udeshcoffee.android.ui.compose.components.songCount
+import com.udeshcoffee.android.ui.compose.rememberCurrentSongId
+import com.udeshcoffee.android.ui.compose.components.TopLevelScaffold
+import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.parameter.parametersOf
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyListState
+
+/** Collapsing top bar with back navigation; [content] gets the inner padding. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DetailScaffold(title: String, actions: @Composable () -> Unit = {}, content: @Composable (PaddingValues) -> Unit) {
+    val appActions = LocalAppActions.current
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    Scaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            topBar = {
+                LargeTopAppBar(
+                        title = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                        navigationIcon = {
+                            IconButton(onClick = { appActions.back() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
+                        },
+                        actions = { actions() },
+                        scrollBehavior = scrollBehavior)
+            },
+            content = content)
+}
+
+@Composable
+private fun Loading() = Box(Modifier.fillMaxWidth().padding(48.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+
+/** Play / Shuffle buttons for a song collection. */
+@Composable
+private fun PlayButtons(songs: List<Song>) {
+    val actions = LocalAppActions.current
+    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Button(onClick = { actions.play(songs) }, enabled = songs.isNotEmpty(), modifier = Modifier.weight(1f)) {
+            Icon(Icons.Default.PlayArrow, contentDescription = null); Spacer(Modifier.width(8.dp)); Text("Play")
+        }
+        OutlinedButton(onClick = { actions.shuffle(songs) }, enabled = songs.size > 1, modifier = Modifier.weight(1f)) {
+            Icon(Icons.Default.Shuffle, contentDescription = null); Spacer(Modifier.width(8.dp)); Text("Shuffle")
+        }
+    }
+}
+
+/** Overflow button opening the collection options sheet (play next, queue, add to playlist...). */
+@Composable
+private fun CollectionMenuButton(title: String, songs: List<Song>) {
+    val actions = LocalAppActions.current
+    IconButton(onClick = { actions.collectionOptions(title, songs) }, enabled = songs.isNotEmpty()) {
+        Icon(Icons.Default.MoreVert, contentDescription = "More options")
+    }
+}
+
+private fun LazyListScope.songItems(songs: List<Song>, currentId: Long?, playlist: Playlist? = null, showArtwork: Boolean = true) {
+    items(songs, key = { if (playlist != null) "${it.playlistSongId}" else "${it.id}" }) { song ->
+        val actions = LocalAppActions.current
+        SongRow(song, onClick = { actions.play(songs, songs.indexOf(song)) }, onMore = { actions.songOptions(song, playlist) },
+                isCurrent = song.id == currentId, showArtwork = showArtwork)
+    }
+}
+
+@Composable
+private fun AlbumsRow(albums: List<Album>) {
+    val actions = LocalAppActions.current
+    LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        items(albums, key = { it.id }) { album ->
+            AlbumCard(album, onClick = { actions.openAlbum(album) }, onLongClick = { actions.albumOptions(album) },
+                    onPlay = { actions.playAlbum(album) }, modifier = Modifier.width(150.dp))
+        }
+    }
+}
+
+// ---------------- Album ----------------
+
+@Composable
+fun AlbumDetailScreen(albumId: Long, title: String) {
+    val viewModel: AlbumDetailViewModel = koinViewModel(key = "album:$albumId") { parametersOf(albumId) }
+    val songs by viewModel.songs.collectAsStateWithLifecycle()
+    val sort by SortSettings.albumSongs.state.collectAsStateWithLifecycle()
+    val currentId = rememberCurrentSongId()
+    DetailScaffold(title, actions = {
+        SortMenu(SortSettings.albumSongs.group(null, SongSortOptions, sort))
+        CollectionMenuButton(title, songs.orEmpty())
+    }) { padding ->
+        LazyColumn(Modifier.fillMaxSize(), contentPadding = padding) {
+            item {
+                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    AlbumArtwork(albumId, Modifier.size(140.dp), MaterialTheme.shapes.medium)
+                    Spacer(Modifier.width(16.dp))
+                    Column {
+                        val first = songs?.firstOrNull()
+                        Text(first?.artistName ?: "", style = MaterialTheme.typography.titleMedium)
+                        if ((first?.year ?: 0) > 0) Text("${first!!.year}", style = MaterialTheme.typography.bodyMedium)
+                        Text("${songCount(songs?.size ?: 0)} • ${formatDuration(songs.orEmpty().sumOf { it.duration })}",
+                                style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                PlayButtons(songs.orEmpty())
+            }
+            if (songs == null) item { Loading() } else songItems(songs!!, currentId, showArtwork = false)
+        }
+    }
+}
+
+// ---------------- Artist ----------------
+
+@Composable
+fun ArtistDetailScreen(artistId: Long, name: String) {
+    val viewModel: ArtistDetailViewModel = koinViewModel(key = "artist:$artistId") { parametersOf(artistId, name) }
+    val songs by viewModel.songs.collectAsStateWithLifecycle()
+    val albums by viewModel.albums.collectAsStateWithLifecycle()
+    val bio by viewModel.bio.collectAsStateWithLifecycle()
+    val imageVersion by viewModel.imageVersion.collectAsStateWithLifecycle()
+    val songSort by SortSettings.artistSongs.state.collectAsStateWithLifecycle()
+    val albumSort by SortSettings.artistAlbums.state.collectAsStateWithLifecycle()
+    val currentId = rememberCurrentSongId()
+    val context = LocalContext.current
+    val pickImage = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        uri?.let { viewModel.setImage(context, it) }
+    }
+    var menu by remember { mutableStateOf(false) }
+    val actions = LocalAppActions.current
+
+    DetailScaffold(name, actions = {
+        SortMenu(SortSettings.artistAlbums.group("Albums", AlbumSortOptions, albumSort),
+                SortSettings.artistSongs.group("Songs", SongSortOptions, songSort))
+        Box {
+            IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, contentDescription = "More options") }
+            DropdownMenu(menu, onDismissRequest = { menu = false }) {
+                DropdownMenuItem(text = { Text("Choose image") }, onClick = {
+                    menu = false
+                    pickImage.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                })
+                DropdownMenuItem(text = { Text("Remove image") }, onClick = { menu = false; viewModel.removeImage() })
+                DropdownMenuItem(text = { Text("More options…") }, onClick = {
+                    menu = false; actions.collectionOptions(name, songs.orEmpty())
+                })
+            }
+        }
+    }) { padding ->
+        LazyColumn(Modifier.fillMaxSize(), contentPadding = padding) {
+            item {
+                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    androidx.compose.runtime.key(imageVersion) {
+                        ArtistArtwork(Artist(artistId, name), Modifier.size(120.dp), CircleShape, collect = true)
+                    }
+                    Spacer(Modifier.width(16.dp))
+                    Column {
+                        Text(songCount(songs?.size ?: 0), style = MaterialTheme.typography.titleMedium)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            bio?.second?.take(2)?.forEach { tag -> AssistChip(onClick = {}, label = { Text(tag) }) }
+                        }
+                    }
+                }
+                PlayButtons(songs.orEmpty())
+                bio?.first?.let { BioText(it) }
+            }
+            if (albums.isNotEmpty()) {
+                item { SectionHeader("Albums") }
+                item { AlbumsRow(albums) }
+            }
+            item { SectionHeader("Songs") }
+            if (songs == null) item { Loading() } else songItems(songs!!, currentId)
+        }
+    }
+}
+
+/** Last.fm bio (HTML with a "read more" link), collapsed to a few lines until tapped. */
+@Composable
+private fun BioText(html: String) {
+    var expanded by remember { mutableStateOf(false) }
+    val text = remember(html) { AnnotatedString.fromHtml(html.replace("\n", "<br>")) }
+    Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp).animateContentSize().clickable { expanded = !expanded }) {
+        Text("About", style = MaterialTheme.typography.titleMedium)
+        Spacer(Modifier.height(4.dp))
+        Text(text, style = MaterialTheme.typography.bodyMedium, maxLines = if (expanded) Int.MAX_VALUE else 4,
+                overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+// ---------------- Genre ----------------
+
+@Composable
+fun GenreDetailScreen(genreId: Long, name: String) {
+    val viewModel: GenreDetailViewModel = koinViewModel(key = "genre:$genreId") { parametersOf(genreId) }
+    val songs by viewModel.songs.collectAsStateWithLifecycle()
+    val albums by viewModel.albums.collectAsStateWithLifecycle()
+    val songSort by SortSettings.genreSongs.state.collectAsStateWithLifecycle()
+    val albumSort by SortSettings.genreAlbums.state.collectAsStateWithLifecycle()
+    val currentId = rememberCurrentSongId()
+    DetailScaffold(name, actions = {
+        SortMenu(SortSettings.genreAlbums.group("Albums", AlbumSortOptions, albumSort),
+                SortSettings.genreSongs.group("Songs", SongSortOptions, songSort))
+        CollectionMenuButton(name, songs.orEmpty())
+    }) { padding ->
+        LazyColumn(Modifier.fillMaxSize(), contentPadding = padding) {
+            item { PlayButtons(songs.orEmpty()) }
+            if (albums.isNotEmpty()) {
+                item { SectionHeader("Albums") }
+                item { AlbumsRow(albums) }
+            }
+            item { SectionHeader("Songs") }
+            if (songs == null) item { Loading() } else songItems(songs!!, currentId)
+        }
+    }
+}
+
+// ---------------- Favorites ----------------
+
+@Composable
+fun FavoritesScreen(viewModel: FavoritesViewModel = koinViewModel()) {
+    val songs by viewModel.songs.collectAsStateWithLifecycle()
+    val sort by SortSettings.favoriteSongs.state.collectAsStateWithLifecycle()
+    val currentId = rememberCurrentSongId()
+    TopLevelScaffold("Favorites", actions = {
+        SortMenu(SortSettings.favoriteSongs.group(null, SongSortOptions, sort))
+        CollectionMenuButton("Favorites", songs.orEmpty())
+    }) { padding ->
+        when {
+            songs == null -> Loading()
+            songs!!.isEmpty() -> EmptyState("Songs you favorite appear here", Modifier.padding(padding), Icons.Default.FavoriteBorder)
+            else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = padding) {
+                item { PlayButtons(songs!!) }
+                songItems(songs!!, currentId)
+            }
+        }
+    }
+}
+
+// ---------------- Playlist ----------------
+
+@Composable
+fun PlaylistDetailScreen(playlistId: Long, type: Int, title: String) {
+    val viewModel: PlaylistDetailViewModel = koinViewModel(key = "playlist:$type:$playlistId") { parametersOf(playlistId, type) }
+    val songs by viewModel.songs.collectAsStateWithLifecycle()
+    val actions = LocalAppActions.current
+    val currentId = rememberCurrentSongId()
+    val playlist = remember(playlistId, type, title) { Playlist(type, playlistId, title) }
+    val isUser = type == Playlist.USER
+    var menu by remember { mutableStateOf(false) }
+
+    DetailScaffold(title, actions = {
+        if (isUser) IconButton(onClick = { actions.openPlaylistAddSongs(playlist) }) { Icon(Icons.Default.Add, contentDescription = "Add songs") }
+        Box {
+            IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, contentDescription = "More options") }
+            DropdownMenu(menu, onDismissRequest = { menu = false }) {
+                DropdownMenuItem(text = { Text("Play next") }, onClick = { menu = false; actions.queue(songs.orEmpty(), true) })
+                DropdownMenuItem(text = { Text("Add to queue") }, onClick = { menu = false; actions.queue(songs.orEmpty(), false) })
+                DropdownMenuItem(text = { Text("Add to another playlist") }, onClick = { menu = false; actions.addToPlaylist(songs.orEmpty(), playlistId) })
+                if (isUser) {
+                    DropdownMenuItem(text = { Text("Rename") }, onClick = { menu = false; actions.renamePlaylist(playlist) })
+                    DropdownMenuItem(text = { Text("Delete") }, onClick = { menu = false; actions.deletePlaylist(playlist, goBack = true) })
+                }
+            }
+        }
+    }) { padding ->
+        val list = songs
+        when {
+            list == null -> Loading()
+            list.isEmpty() -> EmptyState(if (isUser) "Add songs with the + button" else "Nothing here yet", modifier = Modifier.padding(padding))
+            isUser -> ReorderablePlaylist(list, playlist, viewModel, currentId, padding)
+            else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = padding) {
+                item { PlayButtons(list) }
+                songItems(list, currentId)
+            }
+        }
+    }
+}
+
+/** User playlist with drag handles; the new order is saved when a drag ends. */
+@Composable
+private fun ReorderablePlaylist(songs: List<Song>, playlist: Playlist, viewModel: PlaylistDetailViewModel, currentId: Long?, padding: PaddingValues) {
+    val actions = LocalAppActions.current
+    val items = remember { mutableStateListOf<Song>() }
+    var dragFrom by remember { mutableIntStateOf(-1) }
+    LaunchedEffect(songs) { if (dragFrom < 0) { items.clear(); items.addAll(songs) } }
+    val listState = rememberLazyListState()
+    val headerCount = 1
+    val reorderState = rememberReorderableLazyListState(listState) { from, to ->
+        val f = from.index - headerCount
+        val t = to.index - headerCount
+        if (f in items.indices && t in items.indices) items.add(t, items.removeAt(f))
+    }
+    LazyColumn(Modifier.fillMaxSize(), state = listState, contentPadding = padding) {
+        item { PlayButtons(items) }
+        items(items, key = { it.playlistSongId }) { song ->
+            ReorderableItem(reorderState, key = song.playlistSongId) { _ ->
+                SongRow(song,
+                        onClick = { actions.play(items.toList(), items.indexOf(song)) },
+                        onMore = { actions.songOptions(song, playlist) },
+                        isCurrent = song.id == currentId,
+                        trailing = {
+                            IconButton(onClick = {}, modifier = Modifier.draggableHandle(
+                                    onDragStarted = { dragFrom = items.indexOf(song) },
+                                    onDragStopped = {
+                                        val to = items.indexOf(song)
+                                        if (dragFrom >= 0 && to != dragFrom) viewModel.move(dragFrom, to)
+                                        dragFrom = -1
+                                    })) {
+                                Icon(Icons.Default.DragHandle, contentDescription = "Reorder")
+                            }
+                        })
+            }
+        }
+    }
+}
+
+@Composable
+fun PlaylistAddSongsScreen(playlistId: Long, title: String) {
+    val viewModel: PlaylistAddSongsViewModel = koinViewModel(key = "add:$playlistId") { parametersOf(playlistId) }
+    val songs by viewModel.songs.collectAsStateWithLifecycle()
+    val selected by viewModel.selected.collectAsStateWithLifecycle()
+    DetailScaffold("Add to $title") { padding ->
+        LazyColumn(Modifier.fillMaxSize(), contentPadding = padding) {
+            items(songs, key = { it.id }) { song ->
+                ListItem(
+                        modifier = Modifier.clickable { viewModel.toggle(song) },
+                        leadingContent = { com.udeshcoffee.android.ui.compose.components.SongArtwork(song, Modifier.size(48.dp)) },
+                        headlineContent = { Text(song.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                        supportingContent = { Text(song.artistName, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                        trailingContent = { Checkbox(checked = song.id in selected, onCheckedChange = { viewModel.toggle(song) }) })
+            }
+        }
+    }
+}

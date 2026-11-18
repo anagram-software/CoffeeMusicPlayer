@@ -1,8 +1,7 @@
 <resources>
 
-    <!-- Base application theme. -->
+    <!-- Theme of the View-based widget configuration screen. -->
     <style name="AppTheme" parent="Theme.MaterialComponents.NoActionBar.Bridge">
-        <!-- Customize your theme here. -->
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
@@ -10,64 +9,6 @@
         <item name="android:colorBackground">@color/colorBackground</item>
     </style>
 
-    <style name="SettingsTheme" parent="AppTheme">
-        <!-- Customize your theme here. -->
-        <item name="colorAccent">@color/settingsAccent</item>
-        <item name="preferenceTheme">@style/PreferenceThemeOverlay.v14.Material</item>
-    </style>
-
-    <!-- Fragment themes. -->
-    <style name="HomeTheme">
-        <!-- Customize your theme here. -->
-        <item name="colorAccent">@color/eqAccent</item>
-    </style>
-
-    <style name="EqTheme">
-        <!-- Customize your theme here. -->
-        <item name="colorAccent">@color/eqAccent</item>
-    </style>
-
-    <style name="FavTheme">
-        <!-- Customize your theme here. -->
-        <item name="colorAccent">@color/favAccent</item>
-    </style>
-
-    <style name="LibTheme">
-        <!-- Customize your theme here. -->
-        <item name="colorAccent">@color/libAccent</item>
-    </style>
-
-    <style name="PlaylistTheme">
-        <!-- Customize your theme here. -->
-        <item name="colorAccent">@color/playlistAccent</item>
-    </style>
-
-    <style name="EditTheme">
-        <!-- Customize your theme here. -->
-        <item name="colorAccent">@color/editAccent</item>
-    </style>
-
-    <style name="ToolbarTheme" parent="AppTheme">
-        <item name="android:textColorPrimary">@android:color/primary_text_dark</item>
-        <item name="android:textColorSecondary">@android:color/secondary_text_dark</item>
-    </style>
-
-    <style name="PlayableActionToolbarTheme" parent="AppTheme">
-        <item name="android:textColorPrimary">#aaa</item>
-        <item name="actionMenuTextColor">#aaa</item>
-    </style>
-
-    <style name="SeekBarTheme" parent="AppTheme">
-        <item name="colorAccent">@android:color/white</item>
-    </style>
-
-    <!-- Notification bar event text -->
-    <style name="NotificationText">
-        <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:ellipsize">end</item>
-        <item name="android:fadingEdge">horizontal</item>
-        <item name="android:singleLine">true</item>
-    </style>
-
+    <!-- Window theme for the Compose activity; colours come from the Compose theme. -->
+    <style name="Theme.Coffee" parent="Theme.Material3.DayNight.NoActionBar" />
 </resources>

@@ -30,4 +30,13 @@ object MediaAccess {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
                 MediaStore.createDeleteRequest(resolver, uris).intentSender
             else null
+
+    /** API < 30 only: deletes the file directly (legacy storage) and its MediaStore row. Returns success. */
+    @Suppress("DEPRECATION")
+    fun deleteLegacy(context: android.content.Context, songId: Long): Boolean {
+        val path = DopeUtil.getRealPathFromURI(context.contentResolver, songUri(songId)) ?: return false
+        if (!java.io.File(path).delete()) return false
+        context.contentResolver.delete(songUri(songId), null, null)
+        return true
+    }
 }

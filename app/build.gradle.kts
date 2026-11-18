@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.parcelize)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
 }
 
@@ -41,6 +42,7 @@ android {
 
     buildFeatures {
         buildConfig = true
+        compose = true
     }
 
     compileOptions {
@@ -63,22 +65,12 @@ ksp {
 dependencies {
     // AndroidX
     implementation(libs.androidx.appcompat)
-    implementation(libs.androidx.cardview)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.drawerlayout)
-    implementation(libs.androidx.fragment.ktx)
-    implementation(libs.androidx.gridlayout)
-    implementation(libs.androidx.lifecycle.livedata.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
-    implementation(libs.androidx.navigation.fragment.ktx)
-    implementation(libs.androidx.navigation.ui.ktx)
     implementation(libs.androidx.palette)
     implementation(libs.androidx.preference.ktx)
-    implementation(libs.androidx.recyclerview)
-    implementation(libs.androidx.transition)
-    implementation(libs.androidx.viewpager)
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.material)
 
@@ -89,6 +81,24 @@ dependencies {
 
     // DI
     implementation(libs.koin.android)
+    implementation(libs.koin.androidx.compose)
+
+    // Compose
+    implementation(platform(libs.compose.bom))
+    implementation(libs.compose.ui)
+    implementation(libs.compose.foundation)
+    implementation(libs.compose.material3)
+    implementation(libs.compose.material3.navigation.suite)
+    implementation(libs.compose.material.icons.extended)
+    implementation(libs.compose.ui.tooling.preview)
+    debugImplementation(libs.compose.ui.tooling)
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.coil.compose)
+    implementation(libs.reorderable)
+    implementation(libs.materialkolor)
 
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
@@ -107,9 +117,6 @@ dependencies {
     implementation(libs.coil)
     implementation(libs.coil.network.okhttp)
     implementation(libs.jaudiotagger)
-
-    // Other
-    implementation(libs.slidinguppanel)
 
     testImplementation(libs.junit)
 }

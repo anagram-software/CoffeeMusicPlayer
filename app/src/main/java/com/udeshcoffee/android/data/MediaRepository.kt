@@ -167,6 +167,8 @@ class MediaRepository(
 
     suspend fun removeSongFromPlaylist(playlistId: Long, songId: Long) = playlistDao.removeSong(playlistId, songId)
 
+    suspend fun getPlaylistSongIds(playlistId: Long): List<Long> = playlistDao.getSongIds(playlistId)
+
     suspend fun movePlaylistItem(playlistId: Long, fromPosition: Int, toPosition: Int) =
             playlistDao.moveItem(playlistId, fromPosition, toPosition)
 

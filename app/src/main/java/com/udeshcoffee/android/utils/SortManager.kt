@@ -231,7 +231,7 @@ object SortManager {
         sortAlbums(albums, genreAlbumsSortOrder)
     }
 
-    private fun sortAlbums(albums: List<Album>, key: Int) {
+    fun sortAlbums(albums: List<Album>, key: Int) {
         when (key) {
             AlbumSort.DEFAULT -> Collections.sort(albums) { a, b -> a.compareTo(b)}
             AlbumSort.NAME -> {
@@ -267,7 +267,7 @@ object SortManager {
         sortSongs(songs, favoritesSongsSortOrder)
     }
 
-    private fun sortSongs(songs: List<Song>, key: Int) {
+    fun sortSongs(songs: List<Song>, key: Int) {
         when (key) {
             SongSort.DEFAULT -> Collections.sort(songs) { a, b -> a.compareTo(b) }
             SongSort.ALBUM_DEFAULT -> {
@@ -304,15 +304,19 @@ object SortManager {
         }
     }
 
-    fun sortArtists(artists: List<Artist>) {
-        when (artistSortOrder) {
+    fun sortArtists(artists: List<Artist>) = sortArtists(artists, artistSortOrder)
+
+    fun sortArtists(artists: List<Artist>, key: Int) {
+        when (key) {
             ArtistSort.DEFAULT -> Collections.sort(artists) { a, b -> a.compareTo(b) }
             ArtistSort.NAME -> Collections.sort(artists) { a, b -> compareString(a.name, b.name) }
         }
     }
 
-    fun sortFolders(folders: List<Folder>) {
-        when (folderSortOrder) {
+    fun sortFolders(folders: List<Folder>) = sortFolders(folders, folderSortOrder)
+
+    fun sortFolders(folders: List<Folder>, key: Int) {
+        when (key) {
             FolderSort.DEFAULT -> Collections.sort(folders) { a, b -> compareString(a.title, b.title) }
             FolderSort.NAME -> Collections.sort(folders) { a, b -> compareString(a.title, b.title) }
             FolderSort.SONG_COUNT -> Collections.sort(folders) { a, b -> compareInt(a.songCount, b.songCount) }

@@ -40,6 +40,7 @@ class PlayerConnection(
 
     private val eventFlow = MutableSharedFlow<String>(extraBufferCapacity = 64)
     private val queueFlow = MutableStateFlow<List<Song>>(emptyList())
+    private val stateFlow = MutableStateFlow(PlayerUiState())
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var future: ListenableFuture<MediaController>? = null
     private var users = 0
@@ -49,6 +50,9 @@ class PlayerConnection(
 
     val isConnected: Boolean
         get() = controller != null
+
+    /** Everything the UI shows about playback, except the position (see [progress]). */
+    val state: StateFlow<PlayerUiState> = stateFlow.asStateFlow()
 
     /** [PlaybackEvents] names: metadata, playback state, and connection changes. Emitted on the main thread. */
     val events: SharedFlow<String> = eventFlow.asSharedFlow()
@@ -69,6 +73,7 @@ class PlayerConnection(
                 controller = c
                 c.addListener(listener)
                 refreshQueue()
+                refreshState()
                 eventFlow.tryEmit(PlaybackEvents.SERVICE_CONNECTED)
                 eventFlow.tryEmit(PlaybackEvents.METADATA_CHANGED)
                 eventFlow.tryEmit(PlaybackEvents.PLAYBACK_STATE_CHANGED)
@@ -86,11 +91,13 @@ class PlayerConnection(
         future?.let { MediaController.releaseFuture(it) }
         future = null
         controller = null
+        stateFlow.value = PlayerUiState()
     }
 
     private val listener = object : Player.Listener {
         override fun onEvents(player: Player, events: Player.Events) {
             if (events.contains(Player.EVENT_TIMELINE_CHANGED)) refreshQueue()
+            refreshState()
             if (events.containsAny(Player.EVENT_MEDIA_ITEM_TRANSITION, Player.EVENT_MEDIA_METADATA_CHANGED,
                             Player.EVENT_TIMELINE_CHANGED, Player.EVENT_PLAYBACK_STATE_CHANGED))
                 eventFlow.tryEmit(PlaybackEvents.METADATA_CHANGED)
@@ -98,6 +105,19 @@ class PlayerConnection(
                             Player.EVENT_PLAYBACK_STATE_CHANGED))
                 eventFlow.tryEmit(PlaybackEvents.PLAYBACK_STATE_CHANGED)
         }
+    }
+
+    private fun refreshState() {
+        val c = controller ?: return
+        stateFlow.value = PlayerUiState(
+                connected = true,
+                song = c.currentMediaItem?.toSong(),
+                isPlaying = c.isPlaying,
+                duration = c.duration.takeIf { it != C.TIME_UNSET } ?: (c.currentMediaItem?.toSong()?.duration ?: 0),
+                queue = queueFlow.value,
+                index = c.currentMediaItemIndex,
+                repeatMode = RepeatModes.toPreference(c.repeatMode),
+                shuffle = c.shuffleModeEnabled)
     }
 
     private fun refreshQueue() {
@@ -242,3 +262,15 @@ class PlayerConnection(
         private const val TAG = "PlayerConnection"
     }
 }
+
+/** Snapshot of playback for the UI. [repeatMode] uses [RepeatModes] PREF_* values. */
+data class PlayerUiState(
+        val connected: Boolean = false,
+        val song: Song? = null,
+        val isPlaying: Boolean = false,
+        val duration: Long = 0,
+        val queue: List<Song> = emptyList(),
+        val index: Int = 0,
+        val repeatMode: Int = RepeatModes.PREF_ALL,
+        val shuffle: Boolean = false
+)
