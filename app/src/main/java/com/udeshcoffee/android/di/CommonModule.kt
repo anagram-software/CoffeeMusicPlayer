@@ -9,7 +9,7 @@ import com.udeshcoffee.android.ui.player.lyrics.LyricsFragment
 import com.udeshcoffee.android.ui.player.lyrics.LyricsPresenter
 import com.udeshcoffee.android.ui.player.player.PlayerFragment
 import com.udeshcoffee.android.ui.player.queue.QueueFragment
-import org.koin.dsl.module.module
+import org.koin.dsl.module
 
 /**
  * Created by Udathari on 1/14/2018.
@@ -26,8 +26,8 @@ val commonModule = module {
     factory { QueueFragment() }
 
     factory { LyricsFragment() }
-    factory { LyricsPresenter(get(), get()) as LyricsContract.Presenter }
+    factory<LyricsContract.Presenter> { LyricsPresenter(get(), get()) }
 
     // Main
-    factory { EqualizerPresenter() as EqualizerContract.Presenter }
+    factory<EqualizerContract.Presenter> { EqualizerPresenter() }
 }

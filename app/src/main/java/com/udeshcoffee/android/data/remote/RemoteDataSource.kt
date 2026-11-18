@@ -1,5 +1,7 @@
 package com.udeshcoffee.android.data.remote
 
+import com.udeshcoffee.android.BuildConfig
+
 import android.util.Log
 import com.annimon.stream.Collectors
 import com.annimon.stream.Stream
@@ -36,11 +38,11 @@ object RemoteDataSource {
     private val lastFMBaseUrl: String = "http://ws.audioscrobbler.com/"
 
     private val geniusParameters = arrayOf(
-            Pair("access_token", "eACAhiFiFbGDWCsoAauVF-S-hra_cSDB5JC7RBv2RbIzmEPn7WEjhIQEZIDBgpzK")
+            Pair("access_token", BuildConfig.GENIUS_ACCESS_TOKEN)
     )
 
     private val lastFMParameters = arrayOf(
-            Pair("api_key", "885092446fd7c7e6ef725a9289ff3740"),
+            Pair("api_key", BuildConfig.LASTFM_API_KEY),
             Pair("format", "json")
     )
 

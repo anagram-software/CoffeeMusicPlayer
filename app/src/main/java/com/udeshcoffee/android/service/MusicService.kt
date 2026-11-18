@@ -25,7 +25,6 @@ import com.udeshcoffee.android.extensions.getSharedData
 import com.udeshcoffee.android.extensions.saveQueue
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.service.players.BasePlayer
-import com.udeshcoffee.android.service.players.NewPlayer
 import com.udeshcoffee.android.service.players.Player
 import com.udeshcoffee.android.utils.ObservableList
 import com.udeshcoffee.android.utils.PreferenceUtil
@@ -123,10 +122,8 @@ class MusicService : Service() {
         notifyManger = NotifyManager(this)
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
         localBroadcastManager = androidx.localbroadcastmanager.content.LocalBroadcastManager.getInstance(this)
-        player = if (sharedPreferences.getBoolean(PreferenceUtil.PREF_NEW_PLAYER, false))
-            NewPlayer(this)
-        else
-            Player(this)
+        // The ExoPlayer 2.7 backend was removed (no longer published); Media3 replaces this in Phase 2.
+        player = Player(this)
 
         sharedPreferencesListener = SharedPreferences.OnSharedPreferenceChangeListener { sharedPreferences, s ->
             when(s) {

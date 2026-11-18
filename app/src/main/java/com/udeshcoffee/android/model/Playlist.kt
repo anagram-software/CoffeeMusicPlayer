@@ -4,8 +4,8 @@ import android.annotation.SuppressLint
 import android.database.Cursor
 import android.os.Parcelable
 import android.provider.MediaStore
-import kotlinx.android.parcel.IgnoredOnParcel
-import kotlinx.android.parcel.Parcelize
+import kotlinx.parcelize.IgnoredOnParcel
+import kotlinx.parcelize.Parcelize
 
 /**
  * Created by Udathari on 9/28/2017.

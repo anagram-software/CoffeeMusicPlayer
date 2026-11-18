@@ -12,6 +12,7 @@ import com.udeshcoffee.android.recyclerview.EmptyRecyclerView
 import com.udeshcoffee.android.ui.common.adapters.SongAdapter
 import com.udeshcoffee.android.utils.SortManager
 import org.koin.android.ext.android.inject
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
 /**
  * Created by Udathari on 8/27/2017.
@@ -19,7 +20,7 @@ import org.koin.android.ext.android.inject
 
 class TrackFragment : androidx.fragment.app.Fragment() {
 
-    private val viewModel: TrackViewModel by inject()
+    private val viewModel: TrackViewModel by viewModel()
 
     private lateinit var songAdpt: SongAdapter
 

@@ -17,6 +17,7 @@ import com.udeshcoffee.android.recyclerview.EmptyRecyclerView
 import com.udeshcoffee.android.ui.common.adapters.FolderAdapter
 import com.udeshcoffee.android.utils.SortManager
 import org.koin.android.ext.android.inject
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
 /**
  * Created by Udathari on 8/27/2017.
@@ -24,7 +25,7 @@ import org.koin.android.ext.android.inject
 
 class FolderFragment : androidx.fragment.app.Fragment() {
 
-    private val viewModel: FolderViewModel by inject()
+    private val viewModel: FolderViewModel by viewModel()
 
     private lateinit var adapter: FolderAdapter
     private lateinit var path: TextView

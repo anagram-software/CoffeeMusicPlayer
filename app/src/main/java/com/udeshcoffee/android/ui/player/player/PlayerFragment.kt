@@ -21,13 +21,14 @@ import com.udeshcoffee.android.ui.player.lyrics.LyricsFragment
 import com.udeshcoffee.android.views.CustomScroller
 import com.udeshcoffee.android.views.ZoomOutPageTransformer
 import org.koin.android.ext.android.inject
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
 /**
  * Created by Udathari on 8/25/2017.
  */
 class PlayerFragment : androidx.fragment.app.Fragment() {
 
-    val viewModel: PlayerViewModel by inject()
+    val viewModel: PlayerViewModel by viewModel()
 
     private lateinit var play: ImageButton
     private lateinit var favorite: ImageButton

@@ -1,9 +1,7 @@
 package com.udeshcoffee.android.ui.settings
 
-import android.annotation.TargetApi
 import android.content.Intent
 import android.content.SharedPreferences
-import android.os.Build
 import android.os.Bundle
 import androidx.core.content.ContextCompat
 import androidx.appcompat.app.AlertDialog
@@ -14,8 +12,6 @@ import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.appcompat.widget.Toolbar
 import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
 import android.webkit.WebView
 import android.widget.TextView
 import com.udeshcoffee.android.R
@@ -53,34 +49,28 @@ class SettingsActivity: AppCompatActivity() {
                 .commit()
     }
 
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     class PreferenceFragment : PreferenceFragmentCompat(), SharedPreferences.OnSharedPreferenceChangeListener {
 
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
             addPreferencesFromResource(R.xml.pref_main)
-        }
 
-        override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-
-            val prefLibStart = findPreference(PreferenceUtil.PREF_LIB_START) as ListPreference
+            val prefLibStart = findPreference<ListPreference>(PreferenceUtil.PREF_LIB_START)!!
             prefLibStart.summary = prefLibStart.entry
 
-            val prefCollectContent = findPreference(PreferenceUtil.PREF_COLLECT_CONTENT) as CheckBoxPreference
-            findPreference(PreferenceUtil.PREF_WIFI_ONLY).isEnabled = prefCollectContent.isChecked
+            val prefCollectContent = findPreference<CheckBoxPreference>(PreferenceUtil.PREF_COLLECT_CONTENT)!!
+            findPreference<Preference>(PreferenceUtil.PREF_WIFI_ONLY)!!.isEnabled = prefCollectContent.isChecked
 
-            val prefCollectLyrics = findPreference(PreferenceUtil.PREF_COLLECT_LYRICS)
-            prefCollectLyrics.onPreferenceClickListener = Preference.OnPreferenceClickListener {
+            findPreference<Preference>(PreferenceUtil.PREF_COLLECT_LYRICS)!!.onPreferenceClickListener = Preference.OnPreferenceClickListener {
                 val intent = Intent(context, CollectionService::class.java)
                 intent.action = CollectionService.ACTION_COLLECT_LYRICS
-                context?.let { it1 -> ContextCompat.startForegroundService(it1,intent) }
+                ContextCompat.startForegroundService(requireContext(), intent)
                 true
             }
 
-            val prefOpen = findPreference(PreferenceUtil.PREF_OPEN)
-            prefOpen.onPreferenceClickListener = Preference.OnPreferenceClickListener {
+            findPreference<Preference>(PreferenceUtil.PREF_OPEN)!!.onPreferenceClickListener = Preference.OnPreferenceClickListener {
                 val view = LayoutInflater.from(context).inflate(R.layout.dialog_licence, null) as WebView
                 view.loadUrl("file:///android_asset/licences.html")
-                AlertDialog.Builder(context!!, R.style.Theme_AppCompat_Light_Dialog_Alert)
+                AlertDialog.Builder(requireContext(), androidx.appcompat.R.style.Theme_AppCompat_Light_Dialog_Alert)
                         .setTitle("Open Source Licences")
                         .setView(view)
                         .setPositiveButton(android.R.string.ok, null)
@@ -88,42 +78,35 @@ class SettingsActivity: AppCompatActivity() {
                 true
             }
 
-            val prefWhatsNew = findPreference(PreferenceUtil.PREF_WHATS_NEW)
-            prefWhatsNew.onPreferenceClickListener = Preference.OnPreferenceClickListener {
-                fragmentManager?.let { it1 -> WhatsNewDialog.create().show(it1, "WhatsNewDialog") }
+            findPreference<Preference>(PreferenceUtil.PREF_WHATS_NEW)!!.onPreferenceClickListener = Preference.OnPreferenceClickListener {
+                WhatsNewDialog.create().show(parentFragmentManager, "WhatsNewDialog")
                 true
             }
 
-            val prefVersion = findPreference(PreferenceUtil.PREF_VERSION)
-            prefVersion.summary = activity!!.packageManager.getPackageInfo( activity!!.packageName, 0).versionName
-
-            return super.onCreateView(inflater, container, savedInstanceState)
+            findPreference<Preference>(PreferenceUtil.PREF_VERSION)!!.summary =
+                    requireActivity().packageManager.getPackageInfo(requireActivity().packageName, 0).versionName
         }
 
         override fun onResume() {
             super.onResume()
-            preferenceManager.sharedPreferences.registerOnSharedPreferenceChangeListener(this)
+            preferenceManager.sharedPreferences?.registerOnSharedPreferenceChangeListener(this)
 
         }
 
         override fun onPause() {
-            preferenceManager.sharedPreferences.unregisterOnSharedPreferenceChangeListener(this)
+            preferenceManager.sharedPreferences?.unregisterOnSharedPreferenceChangeListener(this)
             super.onPause()
         }
 
-        override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String) {
+        override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String?) {
             when (key) {
-                PreferenceUtil.PREF_NEW_PLAYER -> {
-                    val pref = findPreference(key) as CheckBoxPreference
-                    pref.summary = resources.getString(R.string.pref_new_player) + " Restart to affect the changes."
-                }
                 PreferenceUtil.PREF_LIB_START -> {
-                    val pref = findPreference(key) as ListPreference
+                    val pref = findPreference<ListPreference>(key)!!
                     pref.summary = pref.entry
                 }
                 PreferenceUtil.PREF_COLLECT_CONTENT -> {
                     val enabled = sharedPreferences.getBoolean(key, true)
-                    findPreference(PreferenceUtil.PREF_WIFI_ONLY).isEnabled = enabled
+                    findPreference<Preference>(PreferenceUtil.PREF_WIFI_ONLY)!!.isEnabled = enabled
                 }
             }
 

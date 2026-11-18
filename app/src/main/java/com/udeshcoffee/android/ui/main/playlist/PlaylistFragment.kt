@@ -60,7 +60,7 @@ class PlaylistFragment: androidx.fragment.app.Fragment() {
             }
 
             val titleView = findViewById<TextView>(R.id.title_view)
-            titleView.text = getString(R.string.info_playlists).toUpperCase()
+            titleView.text = getString(R.string.info_playlists).uppercase()
             titleView.setRoundColor(R.color.playlistAccent)
 
             val playlistView = findViewById<EmptyRecyclerView>(R.id.list)

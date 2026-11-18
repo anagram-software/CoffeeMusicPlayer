@@ -12,7 +12,7 @@ import java.net.SocketTimeoutException
 /**
  * Created by Udathari on 9/27/2017.
  */
-abstract class CallbackWrapper<T> : DisposableObserver<T>() {
+abstract class CallbackWrapper<T : Any> : DisposableObserver<T>() {
 
     protected abstract fun onSuccess(t: T)
 

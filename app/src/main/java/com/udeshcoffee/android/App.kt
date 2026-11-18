@@ -1,7 +1,7 @@
 package com.udeshcoffee.android
 
 import android.content.pm.PackageManager
-import androidx.multidex.MultiDexApplication
+import android.app.Application
 import androidx.core.content.ContextCompat
 import com.bumptech.glide.Glide
 import com.udeshcoffee.android.data.MediaRepository
@@ -9,18 +9,22 @@ import com.udeshcoffee.android.data.local.LocalDataSource
 import com.udeshcoffee.android.di.appModule
 import org.jaudiotagger.tag.TagOptionSingleton
 import org.koin.android.ext.android.inject
-import org.koin.android.ext.android.startKoin
+import org.koin.android.ext.koin.androidContext
+import org.koin.core.context.startKoin
 
 /**
 * Created by Udathari on 8/22/2017.
 */
-class App : MultiDexApplication() {
+class App : Application() {
 
     val mediaRepository by inject<MediaRepository>()
 
     override fun onCreate() {
         super.onCreate()
-        startKoin(this, appModule)
+        startKoin {
+            androidContext(this@App)
+            modules(appModule)
+        }
         instance = this
 
         TagOptionSingleton.getInstance().isAndroid = true

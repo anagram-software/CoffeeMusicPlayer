@@ -4,8 +4,8 @@ import android.database.Cursor
 import android.os.Parcelable
 import android.provider.MediaStore
 import com.udeshcoffee.android.utils.compareString
-import kotlinx.android.parcel.IgnoredOnParcel
-import kotlinx.android.parcel.Parcelize
+import kotlinx.parcelize.IgnoredOnParcel
+import kotlinx.parcelize.Parcelize
 
 /**
 * Created by Udathari on 8/22/2017.

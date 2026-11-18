@@ -14,6 +14,7 @@ import com.udeshcoffee.android.extensions.loadArtwork
 import com.udeshcoffee.android.ui.MainActivity
 import com.udeshcoffee.android.views.FadableLayout
 import org.koin.android.ext.android.inject
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
 
 /**
@@ -21,7 +22,7 @@ import org.koin.android.ext.android.inject
 */
 class MiniPlayerFragment : androidx.fragment.app.Fragment() {
 
-    private val viewModel: MiniPlayerViewModel by inject()
+    private val viewModel: MiniPlayerViewModel by viewModel()
 
     private lateinit var title: TextView
     private lateinit var subtitle: TextView

@@ -6,17 +6,22 @@ import com.udeshcoffee.android.data.MediaRepository
 import com.udeshcoffee.android.data.local.LocalDataSource
 import com.udeshcoffee.android.data.local.LocalDatabase
 import com.udeshcoffee.android.data.remote.RemoteDataSource
-import org.koin.dsl.module.module
+import org.koin.dsl.module
 
 /**
 * Created by Udathari on 1/14/2018.
 */
 val repositoryModule = module {
 
-    factory { Room.databaseBuilder(get(), LocalDatabase::class.java, "CoffeePlayer.db")
+    // One database instance for the whole app (previously a new Room instance was built per injection).
+    single {
+        Room.databaseBuilder(get(), LocalDatabase::class.java, "CoffeePlayer.db")
             .addMigrations(LocalDatabase.Migration_5_6)
             .allowMainThreadQueries()
-            .build().dataDao() }
+            .build()
+    }
+
+    factory { get<LocalDatabase>().dataDao() }
 
     factory { RemoteDataSource }
 

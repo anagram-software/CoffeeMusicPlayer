@@ -3,7 +3,7 @@ package com.udeshcoffee.android.ui.main.equalizer
 import android.util.Log
 import com.udeshcoffee.android.extensions.getService
 import com.udeshcoffee.android.service.AudioFXHelper
-import org.koin.standalone.KoinComponent
+import org.koin.core.component.KoinComponent
 import java.util.*
 
 /**

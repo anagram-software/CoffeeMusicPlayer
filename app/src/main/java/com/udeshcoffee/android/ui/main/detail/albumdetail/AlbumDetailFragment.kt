@@ -25,6 +25,7 @@ import com.udeshcoffee.android.ui.common.adapters.SongAdapter
 import com.udeshcoffee.android.utils.SortManager
 import com.udeshcoffee.android.utils.loadAlbumArtwork
 import org.koin.android.ext.android.inject
+import org.koin.androidx.viewmodel.ext.android.viewModel
 import kotlin.math.abs
 
 /**
@@ -32,7 +33,7 @@ import kotlin.math.abs
  */
 class AlbumDetailFragment : Fragment(), com.google.android.material.appbar.AppBarLayout.OnOffsetChangedListener {
 
-    val viewModel: AlbumDetailViewModel by inject()
+    val viewModel: AlbumDetailViewModel by viewModel()
 
     private var mIsTheTitleVisible = false
     private var mIsTheTitleContainerVisible = true

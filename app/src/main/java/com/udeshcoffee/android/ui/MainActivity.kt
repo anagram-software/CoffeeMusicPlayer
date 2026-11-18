@@ -31,7 +31,7 @@ import com.udeshcoffee.android.ui.player.player.PlayerFragment
 import com.udeshcoffee.android.ui.player.queue.QueueFragment
 import com.udeshcoffee.android.utils.ServiceConnectionUtil
 import com.udeshcoffee.android.views.FadableLayout
-import io.reactivex.Single
+import io.reactivex.Completable
 import io.reactivex.disposables.Disposable
 import org.koin.android.ext.android.inject
 import java.util.concurrent.TimeUnit
@@ -223,12 +223,10 @@ class MainActivity : AppCompatActivity(), ServiceConnection, NavController.OnDes
     }
 
 
-    override fun onNewIntent(intent: Intent?) {
+    override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        intent?.let {
-            handleIntent(it)
-            this.intent = Intent()
-        }
+        handleIntent(intent)
+        this.intent = Intent()
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -241,7 +239,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection, NavController.OnDes
     }
 
     private fun handleIntent(intent: Intent) {
-        Single.fromCallable {
+        Completable.fromAction {
             when (intent.action) {
                 Intent.ACTION_VIEW -> {
                     val service = getService()
@@ -257,7 +255,6 @@ class MainActivity : AppCompatActivity(), ServiceConnection, NavController.OnDes
                     else
                         service.loadLastListAndInit()
                 }
-                else -> null
             }
         }
                 .delaySubscription(350, TimeUnit.MILLISECONDS)

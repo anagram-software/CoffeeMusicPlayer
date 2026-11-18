@@ -26,13 +26,14 @@ import com.udeshcoffee.android.ui.common.adapters.SongAdapter
 import com.udeshcoffee.android.ui.main.detail.albumdetail.AlbumDetailFragment
 import com.udeshcoffee.android.utils.SortManager
 import org.koin.android.ext.android.inject
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
 /**
  * Created by Udathari on 9/12/2017.
  */
 class GenreDetailFragment : androidx.fragment.app.Fragment() {
 
-    private val viewModel: GenreDetailViewModel by inject()
+    private val viewModel: GenreDetailViewModel by viewModel()
 
     private lateinit var songAdpt: SongAdapter
     private lateinit var albumAdpt: AlbumAdapter

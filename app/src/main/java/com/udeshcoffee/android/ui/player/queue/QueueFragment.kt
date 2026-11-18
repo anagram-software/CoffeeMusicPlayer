@@ -20,6 +20,7 @@ import com.udeshcoffee.android.service.MusicService
 import com.udeshcoffee.android.ui.MainActivity
 import com.udeshcoffee.android.ui.common.adapters.DragableAdapter
 import org.koin.android.ext.android.inject
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
 /**
  * Created by Udathari on 9/16/2017.
@@ -33,7 +34,7 @@ class QueueFragment : androidx.fragment.app.Fragment() {
     private lateinit var adapter: DragableAdapter
     private lateinit var recyclerView: RecyclerView
 
-    private val viewModel: QueueViewModel by inject()
+    private val viewModel: QueueViewModel by viewModel()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         postponeEnterTransition()

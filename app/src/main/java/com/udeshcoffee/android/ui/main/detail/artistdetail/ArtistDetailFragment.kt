@@ -29,6 +29,7 @@ import com.udeshcoffee.android.ui.main.detail.albumdetail.AlbumDetailFragment
 import com.udeshcoffee.android.utils.SortManager
 import com.udeshcoffee.android.utils.loadArtistArtwork
 import org.koin.android.ext.android.inject
+import org.koin.androidx.viewmodel.ext.android.viewModel
 import kotlin.math.abs
 
 
@@ -37,7 +38,7 @@ import kotlin.math.abs
  */
 class ArtistDetailFragment : androidx.fragment.app.Fragment(), com.google.android.material.appbar.AppBarLayout.OnOffsetChangedListener {
 
-    private val viewModel: ArtistDetailViewModel by inject()
+    private val viewModel: ArtistDetailViewModel by viewModel()
 
     private var mIsTheTitleVisible = false
     private var mIsTheTitleContainerVisible = true

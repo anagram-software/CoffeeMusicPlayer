@@ -20,7 +20,6 @@ object PreferenceUtil {
     const val DEFAULT_LYRICS = false
 
     const val  PREF_LIB_START = "pref_lib_start"
-    const val  PREF_NEW_PLAYER = "pref_new_player"
     const val  PREF_CALL = "pref_call"
     const val  PREF_FADE = "pref_fade"
     const val  PREF_COLLECT_CONTENT = "pref_collect_content"

@@ -127,7 +127,7 @@ class EqualizerFragment : androidx.fragment.app.Fragment(), EqualizerContract.Vi
     override fun onPrepareOptionsMenu(menu: Menu) {
         val item = menu.findItem(R.id.switch_equalizer)
         item?.let {
-            val actionEnable = item.actionView.findViewById<Switch>(R.id.action_enable_equalizer)
+            val actionEnable = item.actionView!!.findViewById<Switch>(R.id.action_enable_equalizer)
             presenter.enabled?.let { actionEnable.isChecked = it }
             actionEnable.setOnCheckedChangeListener { _, isChecked ->
                 presenter.actionEnable(isChecked)

@@ -3,8 +3,8 @@ package com.udeshcoffee.android.model
 import android.annotation.SuppressLint
 import android.os.Parcelable
 import com.udeshcoffee.android.utils.compareString
-import kotlinx.android.parcel.IgnoredOnParcel
-import kotlinx.android.parcel.Parcelize
+import kotlinx.parcelize.IgnoredOnParcel
+import kotlinx.parcelize.Parcelize
 
 /**
 * Created by Udathari on 8/22/2017.

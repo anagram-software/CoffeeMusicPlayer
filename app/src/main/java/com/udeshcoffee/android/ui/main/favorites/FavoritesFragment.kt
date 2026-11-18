@@ -21,13 +21,14 @@ import com.udeshcoffee.android.recyclerview.EmptyRecyclerView
 import com.udeshcoffee.android.ui.common.adapters.SongAdapter
 import com.udeshcoffee.android.utils.SortManager
 import org.koin.android.ext.android.inject
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
 /**
  * Created by Udathari on 9/29/2017.
  */
 class FavoritesFragment : androidx.fragment.app.Fragment() {
 
-    val viewModel: FavoritesViewModel by inject()
+    val viewModel: FavoritesViewModel by viewModel()
 
     private lateinit var songAdapter: SongAdapter
     private lateinit var toolbarSongs: Toolbar
@@ -56,7 +57,7 @@ class FavoritesFragment : androidx.fragment.app.Fragment() {
             }
 
             val titleView = findViewById<TextView>(R.id.title_view)
-            titleView.text = getString(R.string.info_favorites).toUpperCase()
+            titleView.text = getString(R.string.info_favorites).uppercase()
             titleView.setRoundColor(R.color.favAccent)
 
             toolbarSongs = findViewById(R.id.toolbar_songs)

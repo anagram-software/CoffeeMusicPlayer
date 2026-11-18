@@ -34,6 +34,7 @@ import com.udeshcoffee.android.ui.main.detail.artistdetail.ArtistDetailFragment
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import org.koin.android.ext.android.inject
+import org.koin.androidx.viewmodel.ext.android.viewModel
 import java.util.concurrent.TimeUnit
 
 /**
@@ -41,7 +42,7 @@ import java.util.concurrent.TimeUnit
 */
 class SearchFragment : androidx.fragment.app.Fragment() {
 
-    private val viewModel: SearchViewModel by inject()
+    private val viewModel: SearchViewModel by viewModel()
 
     private lateinit var songAdpt: SongAdapter
     private lateinit var albumAdpt: AlbumAdapter

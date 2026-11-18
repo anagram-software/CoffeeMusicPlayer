@@ -14,7 +14,7 @@ import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.service.MusicService
 import com.udeshcoffee.android.utils.PreferenceUtil
 import io.reactivex.disposables.Disposable
-import org.koin.standalone.KoinComponent
+import org.koin.core.component.KoinComponent
 import java.util.*
 
 /**

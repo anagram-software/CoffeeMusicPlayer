@@ -25,6 +25,7 @@ import com.udeshcoffee.android.ui.player.lyrics.LyricsFragment
 import com.udeshcoffee.android.utils.isNetworkAvailable
 import com.udeshcoffee.android.utils.loadAlbumArtworkFromUri
 import org.koin.android.ext.android.inject
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
 
 /**
@@ -32,7 +33,7 @@ import org.koin.android.ext.android.inject
  */
 class EditorFragment : androidx.fragment.app.Fragment() {
 
-    private val viewModel: EditorViewModel by inject()
+    private val viewModel: EditorViewModel by viewModel()
     @Suppress("DEPRECATION")
     lateinit var dialog: ProgressDialog
 

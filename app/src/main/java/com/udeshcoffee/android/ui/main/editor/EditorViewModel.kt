@@ -252,7 +252,7 @@ class EditorViewModel(
                 val scaledBitmap = Bitmap.createScaledBitmap(it, 500, 500, false)
 
                 val stream = ByteArrayOutputStream()
-                scaledBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream as OutputStream?)
+                scaledBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
 
                 val byteArray = stream.toByteArray()
 

@@ -12,8 +12,8 @@ import com.udeshcoffee.android.ui.main.search.SearchViewModel
 import com.udeshcoffee.android.ui.miniplayer.MiniPlayerViewModel
 import com.udeshcoffee.android.ui.player.player.PlayerViewModel
 import com.udeshcoffee.android.ui.player.queue.QueueViewModel
-import org.koin.android.viewmodel.ext.koin.viewModel
-import org.koin.dsl.module.module
+import org.koin.core.module.dsl.viewModel
+import org.koin.dsl.module
 
 val viewModelModule = module {
     // Detail

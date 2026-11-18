@@ -23,6 +23,7 @@ import com.udeshcoffee.android.ui.common.adapters.DragableAdapter
 import com.udeshcoffee.android.ui.common.dialogs.DeletePlaylistDialog
 import com.udeshcoffee.android.ui.common.dialogs.RenamePlaylistDialog
 import org.koin.android.ext.android.inject
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
 /**
 * Created by Udathari on 9/12/2017.
@@ -30,7 +31,7 @@ import org.koin.android.ext.android.inject
 
 class PlaylistDetailFragment : androidx.fragment.app.Fragment() {
 
-    private val viewModel: PlaylistDetailViewModel by inject()
+    private val viewModel: PlaylistDetailViewModel by viewModel()
 
     private lateinit var songAdpt: DragableAdapter
     private lateinit var songView: EmptyRecyclerView

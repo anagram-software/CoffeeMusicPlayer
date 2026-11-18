@@ -118,7 +118,7 @@ fun ContentResolver.toBrite(): BriteContentResolver {
 /* String */
 
 fun String.toLastFMArtistQuery(): String {
-    return this.toLowerCase()
+    return this.lowercase()
             .split("ft\\.".toRegex())[0]
             .split("feat\\.".toRegex())[0]
             .split("\\[".toRegex())[0]
