@@ -1,5 +1,8 @@
 package com.udeshcoffee.android.ui.compose.components
 
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -67,12 +70,16 @@ fun AlbumArtwork(album: Album, modifier: Modifier = Modifier, shape: Shape = Mat
 @Composable
 fun ArtistArtwork(artist: Artist, modifier: Modifier = Modifier, shape: Shape = MaterialTheme.shapes.small, collect: Boolean = false) {
     val context = LocalContext.current
-    var version by remember(artist.id) { mutableIntStateOf(0) }
-    val file = artistImageFile(artist.id)
-    androidx.compose.runtime.LaunchedEffect(artist.id, collect) {
-        if (collect && !file.exists() && artist.name != "<unknown>" && collectArtistImage(context, artist.id, artist.name)) version++
+    // File checks run off the main thread; the cache key changes whenever the image file does.
+    val model by produceState<Any?>(null, artist.id, collect) {
+        suspend fun stored(): Any? = withContext(Dispatchers.IO) {
+            val file = artistImageFile(artist.id)
+            if (!file.exists()) null
+            else coil3.request.ImageRequest.Builder(context).data(file)
+                    .memoryCacheKey("artist:${file.path}:${file.lastModified()}").build()
+        }
+        value = stored()
+        if (value == null && collect && artist.name != "<unknown>" && collectArtistImage(context, artist.id, artist.name)) value = stored()
     }
-    val model = if (file.exists()) coil3.request.ImageRequest.Builder(context).data(file)
-            .memoryCacheKey("artist:${file.path}:${file.lastModified()}:$version").build() else null
     ArtworkImage(model, Icons.Default.Person, modifier, shape)
 }

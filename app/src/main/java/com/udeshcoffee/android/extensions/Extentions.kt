@@ -1,8 +1,6 @@
 package com.udeshcoffee.android.extensions
 
 import android.graphics.Color
-import android.util.LongSparseArray
-import androidx.core.util.size
 import androidx.appcompat.app.AppCompatActivity
 import com.udeshcoffee.android.playback.PlayerConnection
 import kotlinx.coroutines.flow.SharedFlow
@@ -16,12 +14,6 @@ fun connectedPlayer(): PlayerConnection? = GlobalContext.get().get<PlayerConnect
 fun playbackEvents(): SharedFlow<String> = GlobalContext.get().get<PlayerConnection>().events
 
 fun AppCompatActivity.getPlayer(): PlayerConnection? = connectedPlayer()
-
-fun <T> LongSparseArray<T>.toList(): ArrayList<T> {
-    val list = ArrayList<T>(size)
-    for (i in 0 until size) list.add(valueAt(i))
-    return list
-}
 
 fun Int.getColorWithAlpha(alpha: Int): Int =
         Color.argb(alpha, Color.red(this), Color.green(this), Color.blue(this))

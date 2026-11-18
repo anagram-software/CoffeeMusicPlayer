@@ -54,7 +54,7 @@ fun saveArtistArt(contentResolver: ContentResolver, id: Long, uri: Uri) {
 
 private fun saveArtistArt(id: Long, bitmap: Bitmap) {
     try {
-        File(artistImageDir(), "$id.jpg").outputStream().use { bitmap.compress(Bitmap.CompressFormat.JPEG, 90, it) }
+        artistImageFile(id).apply { parentFile?.mkdirs() }.outputStream().use { bitmap.compress(Bitmap.CompressFormat.JPEG, 90, it) }
     } catch (e: Exception) {
         Log.w("ArtUtils", "Couldn't save artist image", e)
     }
@@ -68,7 +68,7 @@ fun deleteArtistArt(id: Long) {
  * Downloaded artist images. App-private storage needs no permission and isn't scanned into the
  * user's gallery (images used to live in /sdcard/CoffeePlayer/ArtistImages).
  */
-private fun artistImageDir(): File = File(App.instance.filesDir, "ArtistImages").apply { mkdirs() }
+private fun artistImageDir(): File = File(App.instance.filesDir, "ArtistImages")
 
 /** Where the artist's downloaded or chosen image is stored. */
 fun artistImageFile(artistId: Long): File = File(artistImageDir(), "$artistId.jpg")
@@ -78,9 +78,12 @@ fun artistImageFile(artistId: Long): File = File(artistImageDir(), "$artistId.jp
  * Returns true if an image was saved.
  */
 suspend fun collectArtistImage(context: Context, id: Long, name: String): Boolean {
-    val pref = PreferenceManager.getDefaultSharedPreferences(context)
-    if (!pref.getBoolean(PreferenceUtil.PREF_COLLECT_CONTENT, true)) return false
-    if (!isNetworkAvailable(context, pref.getBoolean(PreferenceUtil.PREF_WIFI_ONLY, true))) return false
+    val allowed = withContext(Dispatchers.IO) {
+        val pref = PreferenceManager.getDefaultSharedPreferences(context)
+        pref.getBoolean(PreferenceUtil.PREF_COLLECT_CONTENT, true) &&
+                isNetworkAvailable(context, pref.getBoolean(PreferenceUtil.PREF_WIFI_ONLY, true))
+    }
+    if (!allowed) return false
     val url = RemoteDataSource.searchLastFMArtist(name.toLastFMArtistQuery())?.image?.takeIf { it.isNotEmpty() } ?: return false
     val bitmap = loadBitmap(context, url) ?: return false
     withContext(Dispatchers.IO) { saveArtistArt(id, bitmap) }

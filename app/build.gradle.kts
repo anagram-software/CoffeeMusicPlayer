@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.baselineprofile)
 }
 
 // API keys are read from local.properties (not committed). Missing keys build as empty strings.
@@ -35,7 +36,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
@@ -48,6 +50,16 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    sourceSets {
+        // Room schemas for MigrationTestHelper (androidTest/assets adds the hand-made pre-export v6 schema).
+        getByName("androidTest").assets.directories.add("$projectDir/schemas")
+    }
+
+    testOptions {
+        // android.jar stubs (e.g. Log) return defaults instead of throwing in JVM tests.
+        unitTests.isReturnDefaultValues = true
     }
 
     lint {
@@ -72,6 +84,7 @@ dependencies {
     implementation(libs.androidx.palette)
     implementation(libs.androidx.preference.ktx)
     implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.profileinstaller)
     implementation(libs.material)
 
     // Room
@@ -118,5 +131,14 @@ dependencies {
     implementation(libs.coil.network.okhttp)
     implementation(libs.jaudiotagger)
 
+    baselineProfile(project(":baselineprofile"))
+
     testImplementation(libs.junit)
+
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.room.testing)
+    androidTestImplementation(platform(libs.compose.bom))
+    androidTestImplementation(libs.compose.ui.test.junit4)
+    debugImplementation(libs.compose.ui.test.manifest)
 }

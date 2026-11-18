@@ -1,77 +1,38 @@
 package com.udeshcoffee.android.data.media
 
-import android.util.LongSparseArray
 import com.udeshcoffee.android.data.model.AlbumStat
 import com.udeshcoffee.android.data.model.ArtistStat
-import com.udeshcoffee.android.model.*
-import com.udeshcoffee.android.extensions.toList
+import com.udeshcoffee.android.model.Album
+import com.udeshcoffee.android.model.Artist
+import com.udeshcoffee.android.model.Song
 
-/**
-* Created by Udathari on 9/5/2017.
-*/
-        private val TAG = "Operators"
-
+/** Albums of [songs] in order of first appearance, each with its song count. */
 fun songsToAlbums(songs: List<Song>): List<Album> {
-
-    val albumMap = LongSparseArray<Album>()
-
+    val albums = LinkedHashMap<Long, Album>()
     for (song in songs) {
-
-        //Create an album representing the album this song belongs to
-        val album = Album(song.albumId, song.albumName, song.artistName, song.year, song.dateModified)
-
-        //Now check if there's already an equivalent album in our albumMap
-        val oldAlbum = albumMap[album.id]
-
-        if (oldAlbum == null) {
-            //Couldn't find an existing entry for this album. Add a new one.
-            album.songCount++
-            albumMap.put(album.id, album)
-        } else {
-            oldAlbum.songCount++
-        }
+        albums.getOrPut(song.albumId) { Album(song.albumId, song.albumName, song.artistName, song.year, song.dateModified) }
+                .songCount++
     }
-
-    return albumMap.toList()
+    return albums.values.toList()
 }
 
+/** Artists of [songs] in order of first appearance, each with its song count. */
 fun songsToArtists(songs: List<Song>): List<Artist> {
-
-    val artistMap = LongSparseArray<Artist>()
-
+    val artists = LinkedHashMap<Long, Artist>()
     for (song in songs) {
-
-        //Create an album representing the album this song belongs to
-        val artist = Artist(song.artistId, song.artistName)
-
-        //Now check if there's already an equivalent album in our albumMap
-        val oldArtist = artistMap[artist.id]
-
-        if (oldArtist == null) {
-            artist.songCount++
-            artistMap.put(artist.id, artist)
-        }else {
-            oldArtist.songCount++
-        }
+        artists.getOrPut(song.artistId) { Artist(song.artistId, song.artistName) }.songCount++
     }
-
-    return artistMap.toList()
+    return artists.values.toList()
 }
 
+/** [albums] ordered by [stats] (e.g. most played first); albums without a stat are left out. */
 fun statsToAlbums(stats: List<AlbumStat>, albums: List<Album>): List<Album> {
-    val tempAlbums = ArrayList<Album>()
-    stats.forEach { stat ->
-        albums.filter {  stat.id == it.id }
-                .forEach { tempAlbums.add(it) }
-    }
-    return tempAlbums
+    val byId = albums.groupBy { it.id }
+    return stats.flatMap { byId[it.id].orEmpty() }
 }
 
+/** [artists] ordered by [stats]; artists without a stat are left out. */
 fun statsToArtists(stats: List<ArtistStat>, artists: List<Artist>): List<Artist> {
-    val tempArtists = ArrayList<Artist>()
-    stats.forEach { stat ->
-        artists.filter { stat.id == it.id }
-                .forEach { tempArtists.add(it) }
-    }
-    return tempArtists
+    val byId = artists.groupBy { it.id }
+    return stats.flatMap { byId[it.id].orEmpty() }
 }

@@ -14,7 +14,7 @@ import java.util.*
 */
 object SortManager {
 
-    private val mPrefs : SharedPreferences = PreferenceManager.getDefaultSharedPreferences(App.instance)
+    private val mPrefs: SharedPreferences by lazy { PreferenceManager.getDefaultSharedPreferences(App.instance) }
 
     object SortType {
         const val Song = 0

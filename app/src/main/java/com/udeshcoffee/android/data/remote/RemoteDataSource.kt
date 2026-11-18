@@ -41,9 +41,12 @@ object RemoteDataSource {
         isLenient = true
     }
 
-    private fun client(params: Map<String, String>): OkHttpClient = OkHttpClient.Builder()
-            .connectTimeout(15, TimeUnit.SECONDS)
-            .readTimeout(20, TimeUnit.SECONDS)
+    /** One client (connection pool, TLS setup) shared by every service; built off the main thread. */
+    private val baseClient: OkHttpClient by lazy {
+        OkHttpClient.Builder().connectTimeout(15, TimeUnit.SECONDS).readTimeout(20, TimeUnit.SECONDS).build()
+    }
+
+    private fun client(params: Map<String, String>): OkHttpClient = baseClient.newBuilder()
             .addInterceptor { chain ->
                 val original = chain.request()
                 val url = original.url.newBuilder().apply {
@@ -59,20 +62,24 @@ object RemoteDataSource {
             .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
             .build()
 
-    private val genius: GeniusService by lazy {
+    private val geniusService: GeniusService by lazy {
         retrofit(GENIUS_BASE_URL, mapOf("access_token" to BuildConfig.GENIUS_ACCESS_TOKEN)).create(GeniusService::class.java)
     }
 
-    private val lastFm: LastFmService by lazy {
+    private val lastFmService: LastFmService by lazy {
         retrofit(LASTFM_BASE_URL, mapOf("api_key" to BuildConfig.LASTFM_API_KEY, "format" to "json")).create(LastFmService::class.java)
     }
+
+    // Services are created lazily on first use; do that on the IO dispatcher (TLS setup does disk reads).
+    private suspend fun genius(): GeniusService = withContext(Dispatchers.IO) { geniusService }
+    private suspend fun lastFm(): LastFmService = withContext(Dispatchers.IO) { lastFmService }
 
     // ---- Genius ----
 
     /** Genius hits by the given artist; only exact title matches when [exactTitle] and any exist. */
     suspend fun searchGenius(title: String, artist: String, exactTitle: Boolean): List<Hit> {
         val hits = try {
-            genius.search(title).response?.hits ?: emptyList()
+            genius().search(title).response?.hits ?: emptyList()
         } catch (e: Exception) {
             Log.w(TAG, "Genius search failed", e)
             return emptyList()
@@ -95,10 +102,6 @@ object RemoteDataSource {
         }
     }
 
-    private val pageClient: OkHttpClient by lazy {
-        OkHttpClient.Builder().connectTimeout(15, TimeUnit.SECONDS).readTimeout(20, TimeUnit.SECONDS).build()
-    }
-
     /** Fetches a web page with browser-like headers; null on any HTTP error. */
     private fun fetchPage(url: String): String? {
         val request = okhttp3.Request.Builder()
@@ -107,7 +110,7 @@ object RemoteDataSource {
                 .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
                 .header("Accept-Language", "en-US,en;q=0.9")
                 .build()
-        pageClient.newCall(request).execute().use { response ->
+        baseClient.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {
                 Log.w(TAG, "HTTP ${response.code} for $url")
                 return null
@@ -154,7 +157,7 @@ object RemoteDataSource {
     /** Artist bio/tags plus an image scraped from the artist's Last.fm page (the API no longer serves images). */
     suspend fun searchLastFMArtist(artist: String): ImageArtist? {
         val info = try {
-            lastFm.getArtistInfo(artist).artist
+            lastFm().getArtistInfo(artist).artist
         } catch (e: Exception) {
             Log.w(TAG, "Last.fm artist lookup failed", e)
             null
@@ -181,11 +184,11 @@ object RemoteDataSource {
     suspend fun searchTrackMetadata(title: String, artist: String): TrackMetadata? {
         try {
             // "Not found" can come back as an error body or an HTTP error; either way, fall back to search.
-            var info = runCatching { lastFm.getTrackInfo(title, artist).track }.getOrNull()
+            var info = runCatching { lastFm().getTrackInfo(title, artist).track }.getOrNull()
             if (info == null) {
-                val match = lastFm.searchTrack(title, artist.ifBlank { null }).results?.trackMatches?.track?.firstOrNull()
+                val match = lastFm().searchTrack(title, artist.ifBlank { null }).results?.trackMatches?.track?.firstOrNull()
                         ?: return null
-                info = lastFm.getTrackInfo(match.name, match.artist).track ?: return null
+                info = lastFm().getTrackInfo(match.name, match.artist).track ?: return null
             }
             val artwork = info.album?.image
                     ?.lastOrNull { it.url.isNotEmpty() && !it.url.contains(LASTFM_PLACEHOLDER) }?.url

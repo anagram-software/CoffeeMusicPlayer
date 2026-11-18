@@ -69,31 +69,25 @@ class SessionPlayer(
 
     /** Moves the current item to the front and shuffles everything else after it. */
     private fun shuffleAroundCurrent() {
-        val p = player
-        val count = p.mediaItemCount
-        if (count < 2) return
-        val current = p.currentMediaItemIndex
-        val rest = items().filterIndexed { i, _ -> i != current }.shuffled()
-        if (current + 1 < count) p.removeMediaItems(current + 1, count)
-        if (current > 0) p.removeMediaItems(0, current)
-        p.addMediaItems(1, rest)
+        if (player.mediaItemCount < 2) return
+        applyOrder(QueueOrder.shuffledAround(items(), player.currentMediaItemIndex))
     }
 
     /** Puts the queue back in its pre-shuffle order, keeping songs added or removed meanwhile. */
     private fun restoreOriginalOrder() {
+        if (player.mediaItemCount < 2 || originalOrder.isEmpty()) return
+        applyOrder(QueueOrder.restored(items(), originalOrder))
+    }
+
+    /**
+     * Rearranges the queue into [target] without touching the current item, so playback
+     * continues uninterrupted. [target] must hold the same items as the queue.
+     */
+    private fun applyOrder(target: List<MediaItem>) {
         val p = player
         val count = p.mediaItemCount
-        if (count < 2 || originalOrder.isEmpty()) return
         val current = p.currentMediaItemIndex
-        val currentItem = p.getMediaItemAt(current)
-
-        // Original order of the songs still queued (as a multiset), then songs added while shuffled.
-        val remaining = items().toMutableList()
-        val target = ArrayList<MediaItem>(count)
-        for (item in originalOrder) if (remaining.remove(item)) target.add(item)
-        target.addAll(remaining)
-
-        val k = target.indexOf(currentItem).coerceAtLeast(0)
+        val k = target.indexOf(p.getMediaItemAt(current)).coerceAtLeast(0)
         if (current + 1 < count) p.removeMediaItems(current + 1, count)
         if (current > 0) p.removeMediaItems(0, current)
         p.addMediaItems(0, target.subList(0, k))

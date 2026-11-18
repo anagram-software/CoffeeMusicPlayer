@@ -1,6 +1,7 @@
 package com.udeshcoffee.android
 
 import android.app.Application
+import android.os.StrictMode
 import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
@@ -11,12 +12,10 @@ import org.jaudiotagger.tag.TagOptionSingleton
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 
-/**
-* Created by Udathari on 8/22/2017.
-*/
 class App : Application(), SingletonImageLoader.Factory {
 
     override fun onCreate() {
+        if (BuildConfig.DEBUG) enableStrictMode()
         super.onCreate()
         startKoin {
             androidContext(this@App)
@@ -25,7 +24,23 @@ class App : Application(), SingletonImageLoader.Factory {
         instance = this
 
         TagOptionSingleton.getInstance().isAndroid = true
+    }
 
+    /** Debug builds log disk/network access on the main thread and leaked resources. */
+    private fun enableStrictMode() {
+        StrictMode.setThreadPolicy(StrictMode.ThreadPolicy.Builder()
+                .detectAll()
+                .penaltyLog()
+                .build())
+        StrictMode.setVmPolicy(StrictMode.VmPolicy.Builder()
+                .detectLeakedClosableObjects()
+                .detectLeakedSqlLiteObjects()
+                .detectLeakedRegistrationObjects()
+                .detectActivityLeaks()
+                .detectFileUriExposure()
+                .detectContentUriWithoutPermission()
+                .penaltyLog()
+                .build())
     }
 
     /** Coil's app-wide loader, with MediaStore album art support (see [AlbumArt]). */
