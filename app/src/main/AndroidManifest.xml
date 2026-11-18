@@ -50,6 +50,11 @@
                 <category android:name="android.intent.category.APP_MUSIC" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
+            <!-- "Play X on Coffee Player" from Assistant / Android Auto. -->
+            <intent-filter>
+                <action android:name="android.media.action.MEDIA_PLAY_FROM_SEARCH" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 
@@ -74,15 +79,15 @@
             android:name=".ui.settings.SettingsActivity"
             android:parentActivityName=".ui.MainActivity" />
 
+        <!-- Media3 playback service; also exposed to media browsers such as Android Auto. -->
         <service
-            android:name=".service.MusicService"
-            android:exported="false"
+            android:name=".playback.PlaybackService"
+            android:exported="true"
+            tools:ignore="ExportedService"
             android:foregroundServiceType="mediaPlayback">
             <intent-filter>
-                <action android:name="android.intent.action.MEDIA_BUTTON" />
-                <action android:name="com.udeshcoffee.android.widgetintents.previous" />
-                <action android:name="com.udeshcoffee.android.widgetintents.play_pause" />
-                <action android:name="com.udeshcoffee.android.widgetintents.next" />
+                <action android:name="androidx.media3.session.MediaLibraryService" />
+                <action android:name="android.media.browse.MediaBrowserService" />
             </intent-filter>
         </service>
         <!-- WorkManager's foreground service, used by LyricsCollectionWorker. -->
@@ -92,7 +97,7 @@
             tools:node="merge" />
 
         <receiver
-            android:name="androidx.media.session.MediaButtonReceiver"
+            android:name="androidx.media3.session.MediaButtonReceiver"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
@@ -131,6 +136,10 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/big_app_widget_info" />
         </receiver>
+
+        <meta-data
+            android:name="com.google.android.gms.car.application"
+            android:resource="@xml/automotive_app_desc" />
 
         <meta-data
             android:name="preloaded_fonts"

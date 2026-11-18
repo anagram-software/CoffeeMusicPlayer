@@ -6,6 +6,8 @@ import com.udeshcoffee.android.data.MediaRepository
 import com.udeshcoffee.android.data.local.LocalDataSource
 import com.udeshcoffee.android.data.local.LocalDatabase
 import com.udeshcoffee.android.data.remote.RemoteDataSource
+import com.udeshcoffee.android.playback.PlayerConnection
+import com.udeshcoffee.android.playback.QueueStore
 import org.koin.dsl.module
 
 /**
@@ -32,5 +34,9 @@ val repositoryModule = module {
     single { DataRepository(get(), get()) }
 
     single { MediaRepository(get(), get()) }
+
+    single { QueueStore(get(), get()) }
+
+    single { PlayerConnection(get(), get(), get()) }
 
 }

@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Coffee Music Player: an Android local-music player (package `com.udeshcoffee.android`, published on the Play Store). Single `:app` module, mostly Kotlin with a few legacy Java files. minSdk 26, compileSdk 37, targetSdk 37.
 
-A phased modernization is in progress (0 build system, 1 latest target SDK, 2 Media3, 3 library replacements, 4 Compose + Material 3, 5 hardening). Phases 0 (build system) and 1 (target SDK 37, scoped storage, permissions) are done.
+A phased modernization is in progress (0 build system, 1 latest target SDK, 2 Media3, 3 library replacements, 4 Compose + Material 3, 5 hardening). Phases 0 (build system), 1 (target SDK 37, scoped storage, permissions) and 2 (Media3 playback) are done.
 
 ## Build & test
 
@@ -38,8 +38,8 @@ The only test is the placeholder `app/src/test/.../ExampleUnitTest.kt`. `android
 - Folders are derived from MediaStore paths (`MediaRepository.getChildFolders`), not by listing the file system. Storage roots come from `utils/Storage.getStorageRoots`.
 - Activities are drawn edge to edge; View-based screens pad their root with `padForSystemBars()` / `padContentForSystemBars()` (`extensions/InsetsExtensions.kt`).
 - Back handling uses `OnBackPressedCallback` (predictive back is enabled); call `onBackPressedDispatcher.onBackPressed()`, not `onBackPressed()`.
-- PendingIntents are `FLAG_IMMUTABLE`, except the media session's media-button receiver intent, which must be `FLAG_MUTABLE` so the system can attach the KeyEvent.
-- `MusicService` is a `mediaPlayback` foreground service. Widget and media-button intents arrive via `startForegroundService`, so `onStartCommand` calls `NotifyManager.ensureForeground()` first.
+- PendingIntents are `FLAG_IMMUTABLE`.
+- Home-screen widget buttons send media key events to Media3's `MediaButtonReceiver` (explicit, immutable PendingIntents with distinct request codes).
 
 ## Architecture
 
@@ -55,13 +55,15 @@ The only test is the placeholder `app/src/test/.../ExampleUnitTest.kt`. `android
 - `remote/RemoteDataSource` is a Kotlin `object` that builds Retrofit clients on demand. It covers Genius (lyrics search, with the lyrics page scraped via Jsoup), Last.fm (artist info and images), and the `itunes/` package. Despite the package name, `itunes/` now calls the **Apple Music catalog API** (`api.music.apple.com/v1/catalog/us/`), which is used for tag and metadata lookup in the tag editor. API keys come from `BuildConfig` and go in as query params via an OkHttp interceptor. The Apple Music API sends no developer token, so tag lookup is broken; it is being replaced with Last.fm (authenticated).
 - RxJava 2 is used throughout. Repository methods usually apply `subscribeOn(io)` / `observeOn(mainThread)` themselves.
 
-**Playback (`service/`).**
-- `MusicService` is the foreground service that owns the queue, MediaSession, notification (`NotifyManager`), audio effects (`AudioFXHelper`: EQ, bass boost, virtualizer), and widget updates.
-- The only backend is `players/Player` (Android `MediaPlayer`) behind `players/BasePlayer`. The ExoPlayer 2.7 backend and the `pref_new_player` setting were removed in Phase 0, because ExoPlayer 2.7 was only published to jcenter. Phase 2 replaces all of this with Media3 (`MediaLibraryService` + ExoPlayer).
-- UI code reaches the service through the static `ServiceConnectionUtil.binder`, using the `getService()` extensions in `extensions/Extentions.kt`. Start playback through the helpers in `extensions/PlaybackExtensions.kt` (`playSong`, `queueSong`, `shuffle`).
-- The service tells the UI about changes with **LocalBroadcasts** (`MusicService.InternalIntents.METADATA_CHANGED`, `PLAYBACK_STATE_CHANGED`, `SERVICE_CONNECTED`). `ui/common/viewmodels/BasePlayerViewModel` subscribes to these via RxBroadcast. Player-aware ViewModels extend it, and their fragments must call `start()`/`stop()`.
-- The queue and position are saved to SharedPreferences (`extensions/ServiceExtentions.kt`, with keys in `utils/Config.kt` → `PreferenceUtil`).
-- `LyricsCollectionWorker` (WorkManager, `dataSync` foreground) bulk-downloads missing lyrics; it replaced the old `CollectionService`.
+**Playback (`playback/`, Media3).**
+- `PlaybackService` is a `MediaLibraryService` owning an ExoPlayer. Media3 provides the notification, foreground state, media buttons (`androidx.media3.session.MediaButtonReceiver`), audio focus, becoming-noisy and playback resumption (`onPlaybackResumption`). The service adds queue persistence (`QueueStore`, same prefs keys/encoding as older releases), play counts, widget updates, the "on call" setting, audio effects (`AudioFXHelper` on a fixed audio session ID, exposed via `AudioEffects.helper`), voice search, and a browse tree for Android Auto (`LibraryBrowser`).
+- The session exposes `SessionPlayer` (a `ForwardingSimpleBasePlayer`), not ExoPlayer directly. It implements fade on play/pause and the app's **visible shuffle**: shuffling reorders the queue itself (current song first) instead of ExoPlayer's hidden shuffle order, so queue indices in the UI are always play order. ExoPlayer's own `shuffleModeEnabled` stays false.
+- `Song` <-> `MediaItem` conversion is in `playback/MediaItems.kt` (media ID = MediaStore audio ID). Controllers don't send playback URIs, so the session restores them in `onAddMediaItems` (`withPlaybackUri`).
+- UI code talks to playback through `PlayerConnection` (Koin single wrapping a `MediaController`). `MainActivity`/`AppWidgetConfigureActivity` call `connect()`/`disconnect()`. Elsewhere use `getPlayer()`/`connectedPlayer()` (null until connected) and the helpers in `extensions/PlaybackExtensions.kt` (`playSong`, `queueSong`, `shuffle`).
+- **`MediaController` (so every `PlayerConnection` method) must be called on the main thread**; calling it from an Rx background thread throws "MediaController method is called from a wrong thread". The playback helpers hop to main automatically.
+- Change notifications: `playbackEvents()` (Rx stream of `PlaybackEvents` names: `METADATA_CHANGED`, `PLAYBACK_STATE_CHANGED`, `SERVICE_CONNECTED`). `METADATA_CHANGED` fires often (any timeline/state change), so check whether the song actually changed before doing expensive work. `ui/common/viewmodels/BasePlayerViewModel` subscribes for player-aware ViewModels, whose fragments must call `start()`/`stop()`.
+- Repeat mode is stored in prefs as 1 = one, 2 = all, 3 = none (`RepeatModes` maps to `Player.REPEAT_MODE_*`).
+- `LyricsCollectionWorker` (WorkManager, `dataSync` foreground) bulk-downloads missing lyrics.
 
 **UI (`ui/`).**
 - `MainActivity` hosts a Navigation Component graph (`res/navigation/nav_graph.xml`) for library, detail, search, editor, and equalizer screens. The player sits in a `SlidingUpPanelLayout` with `MiniPlayerFragment` and `PlayerFragment` (which contains the queue and lyrics).

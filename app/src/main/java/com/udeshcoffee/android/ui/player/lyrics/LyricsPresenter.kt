@@ -1,17 +1,16 @@
 package com.udeshcoffee.android.ui.player.lyrics
 
-import android.content.IntentFilter
+import com.udeshcoffee.android.playback.PlaybackEvents
+import com.udeshcoffee.android.extensions.getPlayer
+import com.udeshcoffee.android.extensions.playbackEvents
 import android.content.SharedPreferences
 import android.util.Log
-import com.cantrowitz.rxbroadcast.RxBroadcast
 import com.udeshcoffee.android.App
 import com.udeshcoffee.android.data.remote.genius.Result
 import com.udeshcoffee.android.data.DataRepository
 import com.udeshcoffee.android.data.model.Lyric
-import com.udeshcoffee.android.extensions.getService
 import com.udeshcoffee.android.extensions.toLastFMArtistQuery
 import com.udeshcoffee.android.model.Song
-import com.udeshcoffee.android.service.MusicService
 import com.udeshcoffee.android.utils.PreferenceUtil
 import io.reactivex.disposables.Disposable
 import org.koin.core.component.KoinComponent
@@ -39,17 +38,11 @@ class LyricsPresenter(private val dataRepository: DataRepository,
     var lyricDisposable: Disposable? = null
 
     override fun start() {
-        val filter = IntentFilter()
-        filter.addAction(MusicService.InternalIntents.METADATA_CHANGED)
-
-        broadcastDisposable = RxBroadcast.fromLocalBroadcast(App.instance, filter)
-                .subscribe {
-                    when(it.action){
-                        MusicService.InternalIntents.METADATA_CHANGED -> {
-                            fetchLyrics()
-                        }
-                    }
-                }
+        broadcastDisposable = playbackEvents()
+                .filter { it == PlaybackEvents.METADATA_CHANGED || it == PlaybackEvents.SERVICE_CONNECTED }
+                // Metadata events also fire for playback state changes; reload only for a new song.
+                .filter { getPlayer()?.currentSong()?.id != currentSong?.id }
+                .subscribe { fetchLyrics() }
         fetchLyrics()
         view.setLyricsSize(lyricsSize)
     }
@@ -63,7 +56,7 @@ class LyricsPresenter(private val dataRepository: DataRepository,
     }
 
     override fun fetchLyrics() {
-        currentSong = getService()?.currentSong()
+        currentSong = getPlayer()?.currentSong()
         currentSong?.let {
             dataRepository.getLyrics(it).subscribe({ it1 ->
                 it1?.let { it2 -> view.setLyrics(it2) }

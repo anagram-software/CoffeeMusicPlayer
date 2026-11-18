@@ -13,7 +13,6 @@ import androidx.navigation.fragment.findNavController
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.extensions.*
 import com.udeshcoffee.android.model.Song
-import com.udeshcoffee.android.service.MusicService
 import com.udeshcoffee.android.ui.MainActivity
 import com.udeshcoffee.android.ui.common.dialogs.PlayerMoreDialog
 import com.udeshcoffee.android.ui.main.detail.albumdetail.AlbumDetailFragment

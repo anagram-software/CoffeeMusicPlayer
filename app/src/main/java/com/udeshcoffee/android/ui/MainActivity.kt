@@ -1,13 +1,16 @@
 package com.udeshcoffee.android.ui
 
+import com.udeshcoffee.android.playback.PlaybackEvents
+import com.udeshcoffee.android.extensions.getPlayer
 import com.udeshcoffee.android.extensions.padForSystemBars
 import android.app.Activity.RESULT_OK
+import android.app.SearchManager
+import android.provider.MediaStore
 import android.content.*
 import android.media.AudioManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.IBinder
 import android.transition.Fade
 import android.util.Log
 import android.view.MenuItem
@@ -21,15 +24,13 @@ import androidx.core.content.edit
 import androidx.core.view.GravityCompat
 import androidx.core.view.ViewCompat
 import androidx.drawerlayout.widget.DrawerLayout
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.*
 import androidx.preference.PreferenceManager
-import com.cantrowitz.rxbroadcast.RxBroadcast
 import com.google.android.material.navigation.NavigationView
 import com.sothree.slidinguppanel.SlidingUpPanelLayout
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.extensions.*
-import com.udeshcoffee.android.service.MusicService
+import com.udeshcoffee.android.playback.PlayerConnection
 import com.udeshcoffee.android.ui.miniplayer.MiniPlayerFragment
 import com.udeshcoffee.android.ui.player.player.PlayerFragment
 import com.udeshcoffee.android.ui.player.queue.QueueFragment
@@ -39,24 +40,23 @@ import com.udeshcoffee.android.ui.common.dialogs.DeleteSongDialog
 import com.udeshcoffee.android.utils.MediaAccess
 import com.udeshcoffee.android.utils.Permissions
 import com.udeshcoffee.android.utils.PreferenceUtil
-import com.udeshcoffee.android.utils.ServiceConnectionUtil
 import com.udeshcoffee.android.views.FadableLayout
-import io.reactivex.Completable
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
 import io.reactivex.disposables.Disposable
 import org.koin.android.ext.android.inject
-import java.util.concurrent.TimeUnit
 
 /**
  * Created by Udathari on 8/25/2017.
  */
 
-class MainActivity : AppCompatActivity(), ServiceConnection, NavController.OnDestinationChangedListener, NavigationView.OnNavigationItemSelectedListener {
+class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedListener, NavigationView.OnNavigationItemSelectedListener {
 
     private lateinit var sharedPreferences: SharedPreferences
-    private var serviceToken: ServiceConnectionUtil.ServiceConnectionToken? = null
+    private val playerConnection: PlayerConnection by inject()
+    private var isPlayerConnected = false
+    private var connectionDisposable: Disposable? = null
 
     private val miniPlayerFragment: MiniPlayerFragment by inject()
     private val playerFragment: PlayerFragment by inject()
@@ -70,6 +70,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection, NavController.OnDes
 
     private var loadListOnConnection = false
     private var pendingUri: Uri? = null
+    private var pendingSearch: String? = null
 
     private lateinit var navController: NavController
 
@@ -201,21 +202,9 @@ class MainActivity : AppCompatActivity(), ServiceConnection, NavController.OnDes
     override fun onResume() {
         super.onResume()
 
-        val filter = IntentFilter()
-        filter.addAction(MusicService.InternalIntents.METADATA_CHANGED)
-        filter.addAction(MusicService.InternalIntents.SERVICE_CONNECTED)
-
-        broadcastDisposable = RxBroadcast.fromLocalBroadcast(this, filter)
-                .subscribe {
-                    when (it.action) {
-                        MusicService.InternalIntents.METADATA_CHANGED -> {
-                            setControlBack()
-                        }
-                        MusicService.InternalIntents.SERVICE_CONNECTED -> {
-                            setControlBack()
-                        }
-                    }
-                }
+        broadcastDisposable = playbackEvents()
+                .filter { it == PlaybackEvents.METADATA_CHANGED || it == PlaybackEvents.SERVICE_CONNECTED }
+                .subscribe { setControlBack() }
 
         setControlBack()
     }
@@ -229,7 +218,8 @@ class MainActivity : AppCompatActivity(), ServiceConnection, NavController.OnDes
     override fun onDestroy() {
         super.onDestroy()
         navController.removeOnDestinationChangedListener(this)
-        serviceToken?.let { unbindFromService(it) }
+        connectionDisposable?.dispose()
+        if (isPlayerConnected) playerConnection.disconnect()
     }
 
     override fun onDestinationChanged(controller: NavController, destination: NavDestination, arguments: Bundle?) {
@@ -275,27 +265,25 @@ class MainActivity : AppCompatActivity(), ServiceConnection, NavController.OnDes
         return super.onOptionsItemSelected(item)
     }
 
+    /**
+     * Handles launch intents on the main thread (MediaController must be used there). If the
+     * player isn't connected yet, the action is remembered and run in [onPlayerConnected].
+     */
     private fun handleIntent(intent: Intent) {
-        Completable.fromAction {
-            when (intent.action) {
-                Intent.ACTION_VIEW -> {
-                    val service = getService()
-                    if (service == null)
-                        pendingUri = intent.data
-                    else
-                        intent.data?.let { service.initFile(it) }
-                }
-                Intent.ACTION_MAIN -> {
-                    val service = getService()
-                    if (service == null)
-                        loadListOnConnection = true
-                    else
-                        service.loadLastListAndInit()
-                }
+        val player = getPlayer()
+        when (intent.action) {
+            Intent.ACTION_VIEW -> {
+                if (player == null) pendingUri = intent.data
+                else intent.data?.let { player.playUri(it) }
+            }
+            MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH -> {
+                val query = intent.getStringExtra(SearchManager.QUERY) ?: ""
+                if (player == null) pendingSearch = query else player.playFromSearch(query)
+            }
+            Intent.ACTION_MAIN -> {
+                if (player == null) loadListOnConnection = true else player.restoreQueueIfEmpty()
             }
         }
-                .delaySubscription(350, TimeUnit.MILLISECONDS)
-                .subscribe()
     }
 
     fun openDrawerLayout() {
@@ -329,7 +317,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection, NavController.OnDes
     }
 
     private fun setControlBack() {
-        val service = getService()
+        val service = getPlayer()
         service?.let {it ->
             it.currentSong()?.let {
                 if (controlBackSongId != it.id) {
@@ -375,7 +363,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection, NavController.OnDes
     }
 
     private fun onAudioPermissionGranted() {
-        bindToService()
+        connectPlayer()
         importMediaStorePlaylistsOnce()
     }
 
@@ -394,25 +382,29 @@ class MainActivity : AppCompatActivity(), ServiceConnection, NavController.OnDes
     }
 
 
-    fun bindToService() {
-        serviceToken = bindToService(this)
-        serviceToken?.let { Log.d(TAG, "serviceToken") }
+    private fun connectPlayer() {
+        if (isPlayerConnected) return
+        connectionDisposable = playbackEvents()
+                .filter { it == PlaybackEvents.SERVICE_CONNECTED }
+                .subscribe { onPlayerConnected() }
+        playerConnection.connect()
+        isPlayerConnected = true
     }
 
-    override fun onServiceConnected(p0: ComponentName?, p1: IBinder?) {
-        Log.d(TAG, "connected")
-        LocalBroadcastManager.getInstance(this).sendBroadcast(Intent().setAction(MusicService.InternalIntents.SERVICE_CONNECTED))
+    private fun onPlayerConnected() {
+        pendingSearch?.let {
+            getPlayer()?.playFromSearch(it)
+            pendingSearch = null
+        }
         pendingUri?.let {
-            getService()?.initFile(it)
+            getPlayer()?.playUri(it)
             pendingUri = null
         }
         if (loadListOnConnection) {
-            getService()?.loadLastListAndInit()
+            getPlayer()?.restoreQueueIfEmpty()
             loadListOnConnection = false
         }
     }
-
-    override fun onServiceDisconnected(p0: ComponentName?) {}
 
     companion object {
         private const val TAG = "MainActivity"

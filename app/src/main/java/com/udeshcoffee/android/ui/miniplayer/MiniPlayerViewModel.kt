@@ -1,9 +1,9 @@
 package com.udeshcoffee.android.ui.miniplayer
 
+import com.udeshcoffee.android.playback.PlayerConnection
+import com.udeshcoffee.android.extensions.getPlayer
 import android.app.Application
 import androidx.lifecycle.MutableLiveData
-import com.udeshcoffee.android.extensions.getService
-import com.udeshcoffee.android.service.MusicService
 import com.udeshcoffee.android.ui.common.viewmodels.BasePlayerViewModel
 import io.reactivex.disposables.Disposable
 
@@ -18,7 +18,7 @@ class MiniPlayerViewModel(application: Application): BasePlayerViewModel(applica
 
     override fun start() {
         super.start()
-        getService()?.let {
+        getPlayer()?.let {
             if (it.isPlaying()) {
                 setProgress()
             }
@@ -31,15 +31,15 @@ class MiniPlayerViewModel(application: Application): BasePlayerViewModel(applica
     }
 
 //    fun gotoNext() {
-//        getService()?.gotoNext()
+//        getPlayer()?.next()
 //    }
 
-    override fun onInitMetadata(service: MusicService) {
+    override fun onInitMetadata(service: PlayerConnection) {
         super.onInitMetadata(service)
         progress.value = service.currentPosition
     }
 
-    override fun onPlaybackChange(service: MusicService) {
+    override fun onPlaybackChange(service: PlayerConnection) {
         super.onPlaybackChange(service)
         if (service.isPlaying())
             setProgress()
@@ -51,7 +51,7 @@ class MiniPlayerViewModel(application: Application): BasePlayerViewModel(applica
 
     override fun setProgress() {
         disposeProgress()
-        progressDisposable = getService()?.getProgressObservable()
+        progressDisposable = getPlayer()?.progressObservable()
                 ?.subscribe {
                     progress.value = it
                 }

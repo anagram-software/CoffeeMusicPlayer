@@ -1,5 +1,7 @@
 package com.udeshcoffee.android.widget
 
+import com.udeshcoffee.android.playback.PlaybackEvents
+import com.udeshcoffee.android.extensions.getPlayer
 import com.udeshcoffee.android.extensions.padContentForSystemBars
 import android.app.Activity
 import android.app.WallpaperManager
@@ -27,16 +29,17 @@ import com.udeshcoffee.android.utils.Permissions
 import androidx.activity.result.contract.ActivityResultContracts
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.extensions.*
-import com.udeshcoffee.android.service.MusicService
-import com.udeshcoffee.android.utils.ServiceConnectionUtil
+import com.udeshcoffee.android.playback.PlayerConnection
+import org.koin.android.ext.android.inject
 
 /**
  * Created by Udathari on 10/26/2017.
  */
-class AppWidgetConfigureActivity : AppCompatActivity(), ServiceConnection {
+class AppWidgetConfigureActivity : AppCompatActivity() {
 
     private lateinit var sharedPreferences: SharedPreferences
-    private var serviceToken: ServiceConnectionUtil.ServiceConnectionToken? = null
+    private val playerConnection: PlayerConnection by inject()
+    private var isPlayerConnected = false
 
     private var appWidgetId: Int = -1
     var color: Int = 0
@@ -44,7 +47,7 @@ class AppWidgetConfigureActivity : AppCompatActivity(), ServiceConnection {
 
     private val permissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) {
-            bindToService()
+            connectPlayer()
         } else {
             Toast.makeText(this, R.string.permission_audio_required, Toast.LENGTH_LONG).show()
             finish()
@@ -59,7 +62,7 @@ class AppWidgetConfigureActivity : AppCompatActivity(), ServiceConnection {
         volumeControlStream = AudioManager.STREAM_MUSIC
 
         if (Permissions.hasReadAudio(this))
-            bindToService()
+            connectPlayer()
         else
             permissionLauncher.launch(Permissions.readAudio)
 
@@ -131,7 +134,7 @@ class AppWidgetConfigureActivity : AppCompatActivity(), ServiceConnection {
         val playBtn = findViewById<ImageButton>(R.id.play_button)
         val nextBtn = findViewById<ImageButton>(R.id.next_button)
 
-        getService()?.let {
+        getPlayer()?.let {
             it.currentSong()?.apply {
                 line1.text = title
                 if (line3 == null)
@@ -200,20 +203,13 @@ class AppWidgetConfigureActivity : AppCompatActivity(), ServiceConnection {
             editor.putBoolean(buttonKey + appWidgetId, buttonCheckBox.isChecked)
             editor.putInt(alphaKey + appWidgetId, alphaSeekBar.progress)
             editor.apply()
-            getService()?.let {
-                if (appWidgetProvider?.provider?.className == MediumAppWidget::class.java.name) {
-                    MediumAppWidget.getInstance().notifyChange(it.applicationContext,
-                            MusicService.InternalIntents.PLAYBACK_STATE_CHANGED, it.currentSong(), it.isPlaying())
-                    MediumAppWidget.getInstance().notifyChange(it.applicationContext,
-                            MusicService.InternalIntents.METADATA_CHANGED, it.currentSong(), it.isPlaying())
-                } else {
-                    BigAppWidget.getInstance().notifyChange(it.applicationContext,
-                            MusicService.InternalIntents.PLAYBACK_STATE_CHANGED, it.currentSong(), it.isPlaying())
-                    BigAppWidget.getInstance().notifyChange(it.applicationContext,
-                            MusicService.InternalIntents.METADATA_CHANGED, it.currentSong(), it.isPlaying())
-                }
-
-            }
+            val player = getPlayer()
+            val song = player?.currentSong()
+            val playing = player?.isPlaying() ?: false
+            val widget = if (appWidgetProvider?.provider?.className == MediumAppWidget::class.java.name)
+                MediumAppWidget.getInstance() else BigAppWidget.getInstance()
+            widget.notifyChange(applicationContext, PlaybackEvents.PLAYBACK_STATE_CHANGED, song, playing)
+            widget.notifyChange(applicationContext, PlaybackEvents.METADATA_CHANGED, song, playing)
             val resultValue = Intent()
             resultValue.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
             setResult(Activity.RESULT_OK, resultValue)
@@ -221,20 +217,14 @@ class AppWidgetConfigureActivity : AppCompatActivity(), ServiceConnection {
         }
     }
 
-    fun bindToService() {
-        serviceToken = bindToService(this)
-        serviceToken?.let { Log.d(TAG, "serviceToken") }
+    private fun connectPlayer() {
+        if (isPlayerConnected) return
+        playerConnection.connect()
+        isPlayerConnected = true
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        serviceToken?.let { unbindFromService(it) }
+        if (isPlayerConnected) playerConnection.disconnect()
     }
-
-    override fun onServiceConnected(p0: ComponentName?, p1: IBinder?) {
-        Log.d(TAG, "connected")
-        androidx.localbroadcastmanager.content.LocalBroadcastManager.getInstance(this).sendBroadcast(Intent().setAction(MusicService.InternalIntents.SERVICE_CONNECTED))
-    }
-
-    override fun onServiceDisconnected(p0: ComponentName?) {}
 }

@@ -8,19 +8,8 @@
         errorLine2="                                      ~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/udeshcoffee/android/widget/AppWidgetConfigureActivity.kt"
-            line="92"
+            line="95"
             column="39"/>
-    </issue>
-
-    <issue
-        id="MissingPermission"
-        message="Call requires permission which may be rejected by user: code should explicitly check to see if permission is available (with `checkPermission`) or explicitly handle a potential `SecurityException`"
-        errorLine1="        NotificationManagerCompat.from(service).notify(NOTIFY_ID, notification)"
-        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/udeshcoffee/android/service/NotifyManager.kt"
-            line="128"
-            column="9"/>
     </issue>
 
     <issue
@@ -74,7 +63,7 @@
         errorLine2="    ^">
         <location
             file="src/main/java/com/udeshcoffee/android/extensions/Extentions.kt"
-            line="136"
+            line="128"
             column="5"/>
     </issue>
 
@@ -129,7 +118,7 @@
         errorLine2="            ^">
         <location
             file="src/main/java/com/udeshcoffee/android/ui/player/lyrics/LyricsPresenter.kt"
-            line="129"
+            line="122"
             column="13"/>
     </issue>
 
@@ -690,7 +679,7 @@
         errorLine2="                      ~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/udeshcoffee/android/extensions/Extentions.kt"
-            line="78"
+            line="70"
             column="23"/>
     </issue>
 
@@ -701,7 +690,7 @@
         errorLine2="                      ~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/udeshcoffee/android/extensions/Extentions.kt"
-            line="86"
+            line="78"
             column="23"/>
     </issue>
 
@@ -1570,7 +1559,7 @@
         errorLine2="                             ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/udeshcoffee/android/ui/player/player/PlayerFragment.kt"
-            line="109"
+            line="108"
             column="30"/>
     </issue>
 
@@ -1581,7 +1570,7 @@
         errorLine2="                             ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/udeshcoffee/android/ui/player/player/PlayerFragment.kt"
-            line="115"
+            line="114"
             column="30"/>
     </issue>
 
@@ -1592,7 +1581,7 @@
         errorLine2="                            ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/udeshcoffee/android/ui/player/player/PlayerFragment.kt"
-            line="118"
+            line="117"
             column="29"/>
     </issue>
 
@@ -1603,7 +1592,7 @@
         errorLine2="                                ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/udeshcoffee/android/ui/player/player/PlayerFragment.kt"
-            line="121"
+            line="120"
             column="33"/>
     </issue>
 
@@ -1614,7 +1603,7 @@
         errorLine2="                              ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/udeshcoffee/android/ui/player/player/PlayerFragment.kt"
-            line="134"
+            line="133"
             column="31"/>
     </issue>
 
@@ -1625,7 +1614,7 @@
         errorLine2="                                      ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/udeshcoffee/android/ui/player/player/PlayerFragment.kt"
-            line="144"
+            line="143"
             column="39"/>
     </issue>
 
@@ -1636,7 +1625,7 @@
         errorLine2="                             ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/udeshcoffee/android/ui/player/player/PlayerFragment.kt"
-            line="152"
+            line="151"
             column="30"/>
     </issue>
 
@@ -1647,7 +1636,7 @@
         errorLine2="                          ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/udeshcoffee/android/ui/player/player/PlayerFragment.kt"
-            line="157"
+            line="156"
             column="27"/>
     </issue>
 
@@ -1658,7 +1647,7 @@
         errorLine2="                                    ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/udeshcoffee/android/ui/player/player/PlayerFragment.kt"
-            line="166"
+            line="165"
             column="37"/>
     </issue>
 
@@ -1977,7 +1966,7 @@
         errorLine2="                                                ~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/udeshcoffee/android/widget/AppWidgetConfigureActivity.kt"
-            line="125"
+            line="128"
             column="49"/>
     </issue>
 
@@ -1988,7 +1977,7 @@
         errorLine2="                                              ~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/udeshcoffee/android/widget/AppWidgetConfigureActivity.kt"
-            line="126"
+            line="129"
             column="47"/>
     </issue>
 
@@ -1999,7 +1988,7 @@
         errorLine2="                                           ~~~~~~~~~~">
         <location
             file="src/main/java/com/udeshcoffee/android/widget/AppWidgetConfigureActivity.kt"
-            line="127"
+            line="130"
             column="44"/>
     </issue>
 
@@ -2010,7 +1999,7 @@
         errorLine2="                                           ~~~~~~~~~~">
         <location
             file="src/main/java/com/udeshcoffee/android/widget/AppWidgetConfigureActivity.kt"
-            line="128"
+            line="131"
             column="44"/>
     </issue>
 
@@ -2021,7 +2010,7 @@
         errorLine2="                                           ~~~~~~~~~~">
         <location
             file="src/main/java/com/udeshcoffee/android/widget/AppWidgetConfigureActivity.kt"
-            line="129"
+            line="132"
             column="44"/>
     </issue>
 
@@ -2032,7 +2021,7 @@
         errorLine2="                                                ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/udeshcoffee/android/widget/AppWidgetConfigureActivity.kt"
-            line="130"
+            line="133"
             column="49"/>
     </issue>
 
@@ -2043,7 +2032,7 @@
         errorLine2="                                                ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/udeshcoffee/android/widget/AppWidgetConfigureActivity.kt"
-            line="131"
+            line="134"
             column="49"/>
     </issue>
 
@@ -2054,7 +2043,7 @@
         errorLine2="                                                ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/udeshcoffee/android/widget/AppWidgetConfigureActivity.kt"
-            line="132"
+            line="135"
             column="49"/>
     </issue>
 
@@ -2142,7 +2131,7 @@
         errorLine2="        ~~~~~~~">
         <location
             file="$HOME/Projects/CoffeeMusicPlayer/gradle/libs.versions.toml"
-            line="29"
+            line="28"
             column="9"/>
     </issue>
 
@@ -2153,7 +2142,7 @@
         errorLine2="         ~~~~~~~">
         <location
             file="$HOME/Projects/CoffeeMusicPlayer/gradle/libs.versions.toml"
-            line="31"
+            line="30"
             column="10"/>
     </issue>
 
@@ -2164,7 +2153,7 @@
         errorLine2="           ~~~~~~~">
         <location
             file="$HOME/Projects/CoffeeMusicPlayer/gradle/libs.versions.toml"
-            line="32"
+            line="31"
             column="12"/>
     </issue>
 
@@ -2175,7 +2164,7 @@
         errorLine2="                 ~~~~~~~">
         <location
             file="$HOME/Projects/CoffeeMusicPlayer/gradle/libs.versions.toml"
-            line="34"
+            line="33"
             column="18"/>
     </issue>
 
@@ -2186,7 +2175,7 @@
         errorLine2="            ~~~~~~~">
         <location
             file="$HOME/Projects/CoffeeMusicPlayer/gradle/libs.versions.toml"
-            line="36"
+            line="34"
             column="13"/>
     </issue>
 
@@ -2197,7 +2186,7 @@
         errorLine2="           ~~~~~~~">
         <location
             file="$HOME/Projects/CoffeeMusicPlayer/gradle/libs.versions.toml"
-            line="37"
+            line="35"
             column="12"/>
     </issue>
 
@@ -2208,7 +2197,7 @@
         errorLine2="           ~~~~~~~">
         <location
             file="$HOME/Projects/CoffeeMusicPlayer/gradle/libs.versions.toml"
-            line="37"
+            line="35"
             column="12"/>
     </issue>
 
@@ -2219,7 +2208,7 @@
         errorLine2="           ~~~~~~~">
         <location
             file="$HOME/Projects/CoffeeMusicPlayer/gradle/libs.versions.toml"
-            line="37"
+            line="35"
             column="12"/>
     </issue>
 
@@ -2230,7 +2219,7 @@
         errorLine2="         ~~~~~~~~">
         <location
             file="$HOME/Projects/CoffeeMusicPlayer/gradle/libs.versions.toml"
-            line="38"
+            line="36"
             column="10"/>
     </issue>
 
@@ -2241,7 +2230,7 @@
         errorLine2="       ~~~~~~~">
         <location
             file="$HOME/Projects/CoffeeMusicPlayer/gradle/libs.versions.toml"
-            line="39"
+            line="37"
             column="8"/>
     </issue>
 
@@ -2252,7 +2241,7 @@
         errorLine2="        ~~~~~~~~">
         <location
             file="$HOME/Projects/CoffeeMusicPlayer/gradle/libs.versions.toml"
-            line="40"
+            line="38"
             column="9"/>
     </issue>
 
@@ -2263,7 +2252,7 @@
         errorLine2="                 ~~~~~~~">
         <location
             file="$HOME/Projects/CoffeeMusicPlayer/gradle/libs.versions.toml"
-            line="42"
+            line="40"
             column="18"/>
     </issue>
 
@@ -3014,7 +3003,7 @@
         errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/udeshcoffee/android/extensions/Extentions.kt"
-            line="34"
+            line="32"
             column="9"/>
     </issue>
 
@@ -3025,7 +3014,7 @@
         errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/udeshcoffee/android/extensions/Extentions.kt"
-            line="45"
+            line="43"
             column="9"/>
     </issue>
 
@@ -3047,7 +3036,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/udeshcoffee/android/ui/MainActivity.kt"
-            line="347"
+            line="335"
             column="13"/>
     </issue>
 
@@ -3058,51 +3047,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/udeshcoffee/android/ui/MainActivity.kt"
-            line="361"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is always >= 26"
-        errorLine1="        if ( Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ) {"
-        errorLine2="             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/udeshcoffee/android/service/MusicService.kt"
-            line="565"
-            column="14"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is always >= 26"
-        errorLine1="        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/udeshcoffee/android/service/MusicService.kt"
-            line="608"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is always >= 26"
-        errorLine1="        channel?.let { if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {"
-        errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/udeshcoffee/android/service/NotifyManager.kt"
-            line="170"
-            column="28"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is always >= 26"
-        errorLine1="        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/udeshcoffee/android/service/NotifyManager.kt"
-            line="215"
+            line="349"
             column="13"/>
     </issue>
 
@@ -4265,7 +4210,7 @@
         errorLine2="                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/udeshcoffee/android/widget/AppWidgetConfigureActivity.kt"
-            line="198"
+            line="201"
             column="26"/>
     </issue>
 
@@ -4408,7 +4353,7 @@
         errorLine2="                   ~~~~~~~~~~~">
         <location
             file="src/main/java/com/udeshcoffee/android/extensions/Extentions.kt"
-            line="95"
+            line="87"
             column="20"/>
     </issue>
 
@@ -4419,7 +4364,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/udeshcoffee/android/ui/player/lyrics/LyricsPresenter.kt"
-            line="177"
+            line="170"
             column="13"/>
     </issue>
 
@@ -4441,30 +4386,8 @@
         errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/udeshcoffee/android/ui/player/player/PlayerViewModel.kt"
-            line="173"
+            line="178"
             column="9"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="        sharedPreferences.edit().putBoolean(PreferenceUtil.SHUFFLE, isShuffle.value!!).apply()"
-        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/udeshcoffee/android/ui/player/queue/QueueViewModel.kt"
-            line="115"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="    val editor = this.sharedPreferences.edit()"
-        errorLine2="                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/udeshcoffee/android/extensions/ServiceExtentions.kt"
-            line="64"
-            column="18"/>
     </issue>
 
     <issue

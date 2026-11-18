@@ -1,14 +1,14 @@
 package com.udeshcoffee.android.ui.player.queue
 
+import com.udeshcoffee.android.playback.RepeatModes
+import com.udeshcoffee.android.playback.PlayerConnection
+import com.udeshcoffee.android.extensions.getPlayer
 import android.app.Application
 import android.content.SharedPreferences
 import android.util.Log
-import androidx.core.content.edit
 import androidx.lifecycle.MutableLiveData
-import com.udeshcoffee.android.extensions.getService
 import com.udeshcoffee.android.extensions.playSong
 import com.udeshcoffee.android.model.Song
-import com.udeshcoffee.android.service.MusicService
 import com.udeshcoffee.android.ui.common.viewmodels.SongContainingViewModel
 import com.udeshcoffee.android.utils.PreferenceUtil
 import com.udeshcoffee.android.utils.SingleLiveEvent
@@ -39,16 +39,17 @@ class QueueViewModel(
 
     override fun start() {
         loadFirstTime = true
-        repeatMode.value = sharedPreferences.getInt(PreferenceUtil.REPEAT_MODE, MusicService.RepeatMode.ALL)
-        isShuffle.value = sharedPreferences.getBoolean(PreferenceUtil.SHUFFLE, false)
+        val player = getPlayer()
+        repeatMode.value = player?.repeatMode ?: sharedPreferences.getInt(PreferenceUtil.REPEAT_MODE, RepeatModes.PREF_ALL)
+        isShuffle.value = player?.shuffleEnabled ?: sharedPreferences.getBoolean(PreferenceUtil.SHUFFLE, false)
         super.start()
     }
 
     override fun fetchSongs() {
         Log.d(TAG, "loadQueue")
         disposeSongs()
-        getService()?.let {
-            queueDisposable = it.getQueueObservable()
+        getPlayer()?.let {
+            queueDisposable = it.queueObservable()
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribeOn(Schedulers.io())
                     .subscribe { it1 ->
@@ -59,14 +60,14 @@ class QueueViewModel(
                             loadFirstTime = false
                         }
                     }
-            total = it.list.size
+            total = it.queue.size
             playPosition.value = it.playPosition
         }
     }
 
-    override fun onMetaDataChanged(service: MusicService) {
+    override fun onMetaDataChanged(service: PlayerConnection) {
         super.onMetaDataChanged(service)
-        total = service.list.size
+        total = service.queue.size
         playPosition.value = service.playPosition
     }
 
@@ -82,8 +83,8 @@ class QueueViewModel(
     }
 
     fun addToPlaylist() {
-        getService()?.let {
-            it.getQueueObservable()
+        getPlayer()?.let {
+            it.queueObservable()
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribeOn(Schedulers.io())
                     .firstOrError()
@@ -94,73 +95,38 @@ class QueueViewModel(
     }
 
     fun changeRepeatMode() {
-        when(repeatMode.value) {
-            MusicService.RepeatMode.NONE -> {
-                sharedPreferences.edit { putInt(PreferenceUtil.REPEAT_MODE, MusicService.RepeatMode.ALL).apply() }
-                repeatMode.value = MusicService.RepeatMode.ALL
-            }
-            MusicService.RepeatMode.ALL -> {
-                sharedPreferences.edit { putInt(PreferenceUtil.REPEAT_MODE, MusicService.RepeatMode.ONE).apply() }
-                repeatMode.value = MusicService.RepeatMode.ONE
-            }
-            MusicService.RepeatMode.ONE -> {
-                sharedPreferences.edit { putInt(PreferenceUtil.REPEAT_MODE, MusicService.RepeatMode.NONE).apply() }
-                repeatMode.value = MusicService.RepeatMode.NONE
-            }
+        val next = when (repeatMode.value) {
+            RepeatModes.PREF_NONE -> RepeatModes.PREF_ALL
+            RepeatModes.PREF_ALL -> RepeatModes.PREF_ONE
+            else -> RepeatModes.PREF_NONE
         }
+        // The service persists the mode.
+        getPlayer()?.repeatMode = next
+        repeatMode.value = next
     }
 
     fun shuffle() {
-        isShuffle.value = !isShuffle.value!!
-        sharedPreferences.edit().putBoolean(PreferenceUtil.SHUFFLE, isShuffle.value!!).apply()
+        val enabled = !(isShuffle.value ?: false)
+        getPlayer()?.shuffleEnabled = enabled
+        isShuffle.value = enabled
     }
 
+    /** The player keeps track of the current song's index when items move. */
     fun itemMoved(fromPosition: Int, toPosition: Int) {
-        Log.d("Queue", "itemMoved $fromPosition $toPosition")
-        val service = getService()
-        service?.moveInQueue(fromPosition, toPosition)
-        service?.playPosition?.let { currentPos ->
-            when {
-                (currentPos in (fromPosition + 1) until (toPosition + 1)) -> {
-                    setCurrentPosition(currentPos - 1)
-                }
-                (currentPos in toPosition until fromPosition) -> {
-                    setCurrentPosition(currentPos + 1)
-                }
-                fromPosition == currentPos -> {
-                    setCurrentPosition(toPosition)
-                }
-                else -> setCurrentPosition(currentPos)
-            }
-        }
-    }
-
-    private fun setCurrentPosition(position: Int) {
-        getService()?.playPosition = position
+        getPlayer()?.moveInQueue(fromPosition, toPosition)
     }
 
     fun queueItemClicked(position: Int) {
-        getService()?.initSong(position, true)
+        getPlayer()?.playAt(position)
     }
 
     fun itemRemoved(position: Int) {
-        getService()?.let {
-            it.list.remove(position)
-            if (it.list.size >= 1) {
-                val currentPos = it.playPosition
-                if (position == currentPos) {
-                    it.initSong(position, true)
-                } else if (position < it.playPosition) {
-                    it.playPosition = currentPos - 1
-                }
-            } else {
-                clearQueue()
-            }
-        }
+        val player = getPlayer() ?: return
+        if (player.queue.size > 1) player.removeFromQueue(position) else clearQueue()
     }
 
     fun clearQueue() {
-        getService()?.clearSongList()
+        getPlayer()?.clearQueue()
         hideNowPlay.call()
         closeQueue()
     }

@@ -1,63 +1,27 @@
 package com.udeshcoffee.android.extensions
 
+import android.os.Handler
+import android.os.Looper
 import com.udeshcoffee.android.model.Song
-import com.udeshcoffee.android.utils.ServiceConnectionUtil
-import java.util.*
 
-/**
-* Created by Udathari on 9/17/2017.
-*/
-// Init Song
-private fun playSongLogic(position: Int, allItems: List<Song>, shouldPlay: Boolean) {
-    if (allItems.isNotEmpty()) {
-        val service = ServiceConnectionUtil.binder?.service?.get()
+private val mainHandler = Handler(Looper.getMainLooper())
 
-        service?.setSongList(allItems as ArrayList<Song>)
-        service?.initSong(position, shouldPlay)
-        service?.checkAndShuffle()
-    }
+/** MediaController must be used on the main thread; run there even if called from a background callback. */
+private inline fun onMain(crossinline block: () -> Unit) {
+    if (Looper.myLooper() == Looper.getMainLooper()) block() else mainHandler.post { block() }
 }
 
+/** Replaces the queue with [allItems] and starts at [position]. */
 fun playSong(position: Int, allItems: List<Song>, shouldPlay: Boolean) {
-    if (allItems.isNotEmpty()) {
-        playSongLogic(position, allItems, shouldPlay)
-    }
+    if (allItems.isNotEmpty()) onMain { connectedPlayer()?.setQueue(allItems, position, shouldPlay) }
 }
 
-// Queue Song
-private fun queueSongLogic(allItems: List<Song>, isNext: Boolean) {
-    if (allItems.isNotEmpty()) {
-        val service = ServiceConnectionUtil.binder?.service?.get()
-
-        service?.apply {
-            val shouldPlay = list.isEmpty()
-            if (isNext) {
-                list.addAll(playPosition + 1, allItems)
-            } else {
-                list.addAll(allItems)
-            }
-
-            checkAndAddToUnshuffledList(allItems as ArrayList<Song>)
-
-            if (shouldPlay) {
-                initSong(0, true)
-                checkAndShuffle()
-            }
-        }
-    }
-}
-
+/** Adds songs after the current one ([isNext]) or at the end of the queue. */
 fun queueSong(allItems: List<Song>, isNext: Boolean) {
-    if (allItems.isNotEmpty()) {
-        queueSongLogic(allItems, isNext)
-    }
+    if (allItems.isNotEmpty()) onMain { connectedPlayer()?.addToQueue(allItems, isNext) }
 }
 
+/** Plays [allItems] in random order. */
 fun shuffle(allItems: List<Song>) {
-    if (allItems.isNotEmpty()) {
-        val tempList = allItems.toMutableList() as ArrayList<Song>
-        if (tempList.size > 1)
-            tempList.shuffle()
-        playSongLogic(0, tempList, true)
-    }
+    if (allItems.isNotEmpty()) playSong(0, allItems.shuffled(), true)
 }

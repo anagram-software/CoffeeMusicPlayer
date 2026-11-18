@@ -2,7 +2,6 @@ package com.udeshcoffee.android.extensions
 
 import androidx.lifecycle.AndroidViewModel
 import android.content.ContentResolver
-import android.content.ServiceConnection
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
@@ -15,11 +14,10 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import com.squareup.sqlbrite2.BriteContentResolver
 import com.squareup.sqlbrite2.SqlBrite
-import com.udeshcoffee.android.service.MusicService
 import com.udeshcoffee.android.ui.BasePresenter
 import com.udeshcoffee.android.ui.MainActivity
-import com.udeshcoffee.android.utils.ServiceConnectionUtil
-import com.udeshcoffee.android.utils.ServiceConnectionUtil.ServiceConnectionToken
+import com.udeshcoffee.android.playback.PlayerConnection
+import org.koin.core.context.GlobalContext
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
@@ -51,27 +49,21 @@ fun AppCompatActivity.replaceFragmentToActivity(fragment: androidx.fragment.app.
     transaction.commit()
 }
 
-//  Extension to bind activities to the service
-fun AppCompatActivity.bindToService(callback: ServiceConnection?): ServiceConnectionToken? =
-        ServiceConnectionUtil.bind(this, callback)
-
-//  Extension to unbind activities from the service
-fun AppCompatActivity.unbindFromService(token: ServiceConnectionToken) {
-    ServiceConnectionUtil.unbind(token)
-}
-
 fun FragmentActivity.openDrawer() {
     (this as MainActivity).openDrawerLayout()
 }
 
-fun AppCompatActivity.getService(): MusicService? = ServiceConnectionUtil.binder?.service?.get()
+/** The playback connection while it is connected to [com.udeshcoffee.android.playback.PlaybackService], else null. */
+fun connectedPlayer(): PlayerConnection? = GlobalContext.get().get<PlayerConnection>().takeIf { it.isConnected }
 
-fun AndroidViewModel.getService(): MusicService? = ServiceConnectionUtil.binder?.service?.get()
+/** Playback change events ([com.udeshcoffee.android.playback.PlaybackEvents] names), delivered on the main thread. */
+fun playbackEvents(): Observable<String> = GlobalContext.get().get<PlayerConnection>().events
 
-/* Presenter */
+fun AppCompatActivity.getPlayer(): PlayerConnection? = connectedPlayer()
 
-//  Extension to get service from presenters
-fun <T> BasePresenter<T>.getService(): MusicService? = ServiceConnectionUtil.binder?.service?.get()
+fun AndroidViewModel.getPlayer(): PlayerConnection? = connectedPlayer()
+
+fun <T> BasePresenter<T>.getPlayer(): PlayerConnection? = connectedPlayer()
 
 // Add a fragment
 fun Fragment.replaceFragment(container: Int, fragment: androidx.fragment.app.Fragment) {

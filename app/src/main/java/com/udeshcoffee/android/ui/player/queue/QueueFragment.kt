@@ -1,5 +1,6 @@
 package com.udeshcoffee.android.ui.player.queue
 
+import com.udeshcoffee.android.playback.RepeatModes
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -16,7 +17,6 @@ import com.udeshcoffee.android.extensions.openSongLongDialog
 import com.udeshcoffee.android.interfaces.OnDragableItemListener
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.recyclerview.ItemTouchHelperCallback
-import com.udeshcoffee.android.service.MusicService
 import com.udeshcoffee.android.ui.MainActivity
 import com.udeshcoffee.android.ui.common.adapters.DragableAdapter
 import org.koin.android.ext.android.inject
@@ -126,15 +126,15 @@ class QueueFragment : androidx.fragment.app.Fragment() {
             repeatMode.observe(this@QueueFragment, Observer {
                 it?.let {
                     when (it) {
-                        MusicService.RepeatMode.NONE -> {
+                        RepeatModes.PREF_NONE -> {
                             repeat.setImageResource(R.drawable.ic_repeat_white_24dp)
                             repeat.alpha = 0.3f
                         }
-                        MusicService.RepeatMode.ONE -> {
+                        RepeatModes.PREF_ONE -> {
                             repeat.setImageResource(R.drawable.ic_repeat_one_white_24dp)
                             repeat.alpha = 1f
                         }
-                        MusicService.RepeatMode.ALL -> {
+                        RepeatModes.PREF_ALL -> {
                             repeat.setImageResource(R.drawable.ic_repeat_white_24dp)
                             repeat.alpha = 1f
                         }

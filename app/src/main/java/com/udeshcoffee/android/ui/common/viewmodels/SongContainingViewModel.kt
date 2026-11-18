@@ -1,16 +1,15 @@
 package com.udeshcoffee.android.ui.common.viewmodels
 
+import com.udeshcoffee.android.playback.PlayerConnection
+import com.udeshcoffee.android.playback.PlaybackEvents
+import com.udeshcoffee.android.extensions.getPlayer
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
-import android.content.IntentFilter
-import com.cantrowitz.rxbroadcast.RxBroadcast
-import com.udeshcoffee.android.App
-import com.udeshcoffee.android.extensions.getService
+import com.udeshcoffee.android.extensions.playbackEvents
 import com.udeshcoffee.android.extensions.playSong
 import com.udeshcoffee.android.extensions.shuffle
 import com.udeshcoffee.android.model.Song
-import com.udeshcoffee.android.service.MusicService
 import com.udeshcoffee.android.utils.SingleLiveEvent
 import io.reactivex.disposables.Disposable
 
@@ -29,19 +28,10 @@ abstract class SongContainingViewModel(
     open fun start() {
         fetchSongs()
 
-        val filter = IntentFilter()
-        filter.addAction(MusicService.InternalIntents.METADATA_CHANGED)
-
-        val service = getService()
-        broadcastDisposable = RxBroadcast.fromLocalBroadcast(App.instance, filter)
-                .subscribe {
-                    when (it.action) {
-                        MusicService.InternalIntents.METADATA_CHANGED -> {
-                            service?.let { it1 -> onMetaDataChanged(it1) }
-                        }
-                    }
-                }
-        currentSongId.value = service?.currentSong()?.id ?: -1
+        broadcastDisposable = playbackEvents()
+                .filter { it == PlaybackEvents.METADATA_CHANGED || it == PlaybackEvents.SERVICE_CONNECTED }
+                .subscribe { getPlayer()?.let { player -> onMetaDataChanged(player) } }
+        currentSongId.value = getPlayer()?.currentSong()?.id ?: -1
     }
 
     open fun stop() {
@@ -53,7 +43,7 @@ abstract class SongContainingViewModel(
         }
     }
 
-    open fun onMetaDataChanged(service: MusicService) {
+    open fun onMetaDataChanged(service: PlayerConnection) {
         currentSongId.value = service.currentSong()?.id ?: -1
     }
 

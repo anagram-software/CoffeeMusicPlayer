@@ -1,14 +1,14 @@
 package com.udeshcoffee.android.ui.player.player
 
+import com.udeshcoffee.android.playback.PlayerConnection
+import com.udeshcoffee.android.extensions.getPlayer
 import android.app.Application
 import androidx.lifecycle.MutableLiveData
 import android.content.SharedPreferences
 import android.util.Log
 import androidx.core.content.edit
 import com.udeshcoffee.android.data.DataRepository
-import com.udeshcoffee.android.extensions.getService
 import com.udeshcoffee.android.model.Song
-import com.udeshcoffee.android.service.MusicService
 import com.udeshcoffee.android.ui.common.viewmodels.BasePlayerViewModel
 import com.udeshcoffee.android.utils.PreferenceUtil
 import com.udeshcoffee.android.utils.SingleLiveEvent
@@ -38,13 +38,15 @@ class PlayerViewModel(
 
     private var currentDisposable: Disposable? = null
     private var progressDisposable: Disposable? = null
+    /** Song whose favourite state is loaded, so frequent metadata events don't re-query it. */
+    private var favCheckedSongId: Long = -1
 
     override fun start() {
         super.start()
         // Init Lyrics
         isLyricsShowing.value = sharedPreferences.getBoolean(PreferenceUtil.LYRICS, PreferenceUtil.DEFAULT_LYRICS)
 
-        getService()?.let {
+        getPlayer()?.let {
             if (it.isPlaying()) {
                 setCurrent()
                 setProgress()
@@ -58,26 +60,29 @@ class PlayerViewModel(
         disposeProgress()
     }
 
-    override fun onInitMetadata(service: MusicService) {
+    override fun onInitMetadata(service: PlayerConnection) {
         super.onInitMetadata(service)
         current.value = service.currentPosition
         progress.value = service.currentPosition
     }
 
-    override fun onMetadataChange(service: MusicService) {
+    @Suppress("CheckResult") // Single-shot lookup.
+    override fun onMetadataChange(service: PlayerConnection) {
         super.onMetadataChange(service)
         service.currentSong()?.let {
-            dataRepository.isFavorite(it.id)
-                    .subscribe ({
-                        isFav.value = it
-                    }, {})
-
+            if (it.id != favCheckedSongId) {
+                favCheckedSongId = it.id
+                dataRepository.isFavorite(it.id)
+                        .subscribe ({
+                            isFav.value = it
+                        }, {})
+            }
         }
         current.value = service.currentPosition
         progress.value = service.currentPosition
     }
 
-    override fun onPlaybackChange(service: MusicService) {
+    override fun onPlaybackChange(service: PlayerConnection) {
         super.onPlaybackChange(service)
         if (service.isPlaying()) {
             setCurrent()
@@ -91,7 +96,7 @@ class PlayerViewModel(
     /* Progress */
     override fun setProgress(){
         disposeProgress()
-        progressDisposable = getService()?.getProgressObservable()
+        progressDisposable = getPlayer()?.progressObservable()
                 ?.subscribe{
                     if (!isSeeking)
                         progress.value = it
@@ -108,7 +113,7 @@ class PlayerViewModel(
     /* Current */
     private fun setCurrent(){
         disposeCurrent()
-        currentDisposable = getService()?.getCurrentObservable()
+        currentDisposable = getPlayer()?.progressObservable(1000)
                 ?.observeOn(AndroidSchedulers.mainThread())
                 ?.subscribe{
                     current.value = it
@@ -125,7 +130,7 @@ class PlayerViewModel(
     fun startSeek() {
         disposeProgress()
         isSeeking = true
-        getService()?.currentPosition?.let {
+        getPlayer()?.currentPosition?.let {
             seekTime.value = it
         }
         isSeekTimeShowing.value = true
@@ -136,7 +141,7 @@ class PlayerViewModel(
     }
 
     fun seeked(progress: Long) {
-        getService()?.let {
+        getPlayer()?.let {
             it.currentPosition = progress
             isSeeking = false
             if (isPlaying.value!!)
@@ -151,16 +156,16 @@ class PlayerViewModel(
     }
 
     fun gotoNext() {
-        getService()?.gotoNext()
+        getPlayer()?.next()
     }
 
     fun gotoBack() {
-        getService()?.gotoBack()
+        getPlayer()?.previous()
     }
 
     fun favToggle() {
         Log.d("toggleFavorite", "favToggle")
-        getService()?.currentSong()?.let {
+        getPlayer()?.currentSong()?.let {
             dataRepository.toggleFavorite(it.id){
                 isFav.value = it
                 Log.d("toggleFavorite", "subscribe $it")

@@ -72,8 +72,6 @@ dependencies {
     implementation(libs.androidx.gridlayout)
     implementation(libs.androidx.lifecycle.livedata.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
-    implementation(libs.androidx.localbroadcastmanager)
-    implementation(libs.androidx.media)
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
     implementation(libs.androidx.palette)
@@ -97,7 +95,6 @@ dependencies {
     implementation(libs.rxjava)
     implementation(libs.rxkotlin)
     implementation(libs.sqlbrite)
-    implementation(libs.rxbroadcast)
     implementation(libs.rxbinding.appcompat)
     implementation(libs.annimon.stream)
 
@@ -110,6 +107,8 @@ dependencies {
     implementation(libs.jsoup)
 
     // Media
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.session)
     implementation(libs.glide)
 
     // Other

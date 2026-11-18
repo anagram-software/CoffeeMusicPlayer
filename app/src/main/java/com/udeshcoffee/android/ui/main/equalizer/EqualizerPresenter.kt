@@ -1,7 +1,7 @@
 package com.udeshcoffee.android.ui.main.equalizer
 
+import com.udeshcoffee.android.playback.AudioEffects
 import android.util.Log
-import com.udeshcoffee.android.extensions.getService
 import com.udeshcoffee.android.service.AudioFXHelper
 import org.koin.core.component.KoinComponent
 import java.util.*
@@ -15,7 +15,7 @@ class EqualizerPresenter: EqualizerContract.Presenter, KoinComponent {
 
     override lateinit var view: EqualizerContract.View
 
-    override val helper: AudioFXHelper? = getService()?.audioFXHelper
+    override val helper: AudioFXHelper? = AudioEffects.helper
 
     override val enabled: Boolean?
         get() = helper?.equalizerEnabled
