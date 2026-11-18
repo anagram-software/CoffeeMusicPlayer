@@ -23,8 +23,8 @@ class LyricViewHolder(itemView: View, val listener: OnItemClickListener?) :
     }
 
     fun bindData(currentItem: Result) {
-        titleView.text = currentItem.title_with_featured
-        subtitleView.text = currentItem.primary_artist.name
+        titleView.text = currentItem.titleWithFeatured
+        subtitleView.text = currentItem.primaryArtist.name
     }
 
 

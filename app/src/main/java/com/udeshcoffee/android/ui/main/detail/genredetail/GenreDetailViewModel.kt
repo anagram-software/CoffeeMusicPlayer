@@ -5,8 +5,6 @@ import com.udeshcoffee.android.data.DataRepository
 import com.udeshcoffee.android.data.MediaRepository
 import com.udeshcoffee.android.ui.common.viewmodels.DetailSongAlbumViewModel
 import com.udeshcoffee.android.utils.SortManager
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.Disposable
 import java.util.*
 
 /**
@@ -20,57 +18,13 @@ class GenreDetailViewModel(
 
     var genreId: Long = -1
 
-    private var songsDisposable: Disposable? = null
-    private var albumsDisposable: Disposable? = null
 
     override fun fetchSongs() {
-        disposeSongs()
-        songsDisposable = mediaRepository.getGenreSongs(genreId)
-                .observeOn(AndroidSchedulers.mainThread())
-                .map({ songs ->
-                    SortManager.sortGenreSongs(songs)
-
-                    if (!songSortAscending) {
-                        Collections.reverse(songs)
-                    }
-
-                    return@map songs
-                })
-                .subscribe{
-                    songs.value = it
-                }
+        collectSongs(mediaRepository.observeGenreSongs(genreId), SortManager::sortGenreSongs) { songSortAscending }
     }
 
     override fun fetchAlbums() {
-        disposeAlbums()
-        albumsDisposable = mediaRepository.getGenreAlbums(genreId)
-                .observeOn(AndroidSchedulers.mainThread())
-                .map({ albums ->
-                    SortManager.sortGenreAlbums(albums)
-
-                    if (!albumSortAscending) {
-                        Collections.reverse(albums)
-                    }
-
-                    return@map albums
-                })
-                .subscribe{
-                    albums.value = it
-                }
-    }
-
-    override fun disposeSongs() {
-        songsDisposable?.let {
-            if (!it.isDisposed)
-                it.dispose()
-        }
-    }
-
-    override fun disposeAlbums() {
-        albumsDisposable?.let {
-            if (!it.isDisposed)
-                it.dispose()
-        }
+        collectAlbums(mediaRepository.observeGenreAlbums(genreId), SortManager::sortGenreAlbums) { albumSortAscending }
     }
 
     override var songSortOrder: Int

@@ -12,7 +12,6 @@ import com.udeshcoffee.android.R
 import com.udeshcoffee.android.extensions.loadArtwork
 import com.udeshcoffee.android.interfaces.OnItemSelectListener
 import com.udeshcoffee.android.model.Song
-import io.reactivex.functions.Consumer
 import java.util.ArrayList
 
 /**
@@ -20,13 +19,13 @@ import java.util.ArrayList
  */
 
 class PlaylistAddAdapter// Provide a suitable constructor (depends on the kind of dataset)
-(private val count: TextView) : RecyclerView.Adapter<PlaylistAddAdapter.ViewHolder>(), Consumer<List<Song>> {
+(private val count: TextView) : RecyclerView.Adapter<PlaylistAddAdapter.ViewHolder>() {
     private var mDataset: List<Song>? = null
     private val selected: MutableList<Int>
     private var context: Context? = null
     var listener: OnItemSelectListener? = null
 
-    override fun accept(songs: List<Song>) {
+    fun accept(songs: List<Song>) {
         this.mDataset = songs
         notifyDataSetChanged()
     }

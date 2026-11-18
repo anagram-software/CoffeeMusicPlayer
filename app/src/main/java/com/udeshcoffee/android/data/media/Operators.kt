@@ -1,17 +1,10 @@
 package com.udeshcoffee.android.data.media
 
-import android.content.ContentResolver
-import android.provider.MediaStore
 import android.util.LongSparseArray
-import com.annimon.stream.Collectors
-import com.annimon.stream.Stream
-import com.squareup.sqlbrite2.BriteContentResolver
 import com.udeshcoffee.android.data.model.AlbumStat
 import com.udeshcoffee.android.data.model.ArtistStat
-import com.udeshcoffee.android.data.model.SongStat
 import com.udeshcoffee.android.model.*
 import com.udeshcoffee.android.extensions.toList
-import io.reactivex.Observable
 
 /**
 * Created by Udathari on 9/5/2017.
@@ -63,31 +56,6 @@ fun songsToArtists(songs: List<Song>): List<Artist> {
     }
 
     return artistMap.toList()
-}
-
-fun statsToSongs(stats: List<SongStat>, briteContentResolver: BriteContentResolver, songQuery: Query): Observable<List<Song>> {
-    val query = songQuery.copy(
-            selection = MediaStore.Audio.Media.IS_MUSIC + "=1 AND " + MediaStore.Audio.Media._ID + " IN (" +
-                    Stream.of(stats)
-                            .map({ it.id.toString() })
-                            .collect(Collectors.joining(",")) + ")"
-    )
-    return briteContentResolver
-            .createQuery(query.uri, query.projection, query.selection, query.args, query.sort, false)
-            .mapToList{ Song(it) }
-            .map { songs ->
-                Stream.of(songs)
-                        .forEach { song ->
-                            Stream.of(stats)
-                                    .forEach {
-                                        if (it.id == song.id) {
-                                            song.playcount = it.playCount
-                                            song.lastplayed = (it.playTime).toInt()
-                                        }
-                                    }
-                        }
-                songs
-            }
 }
 
 fun statsToAlbums(stats: List<AlbumStat>, albums: List<Album>): List<Album> {

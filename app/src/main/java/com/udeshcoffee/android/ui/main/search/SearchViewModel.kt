@@ -1,9 +1,13 @@
 package com.udeshcoffee.android.ui.main.search
 
+import com.udeshcoffee.android.model.Song
+import com.udeshcoffee.android.data.media.songsToArtists
+import com.udeshcoffee.android.data.media.songsToAlbums
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import androidx.lifecycle.viewModelScope
 import android.app.Application
 import androidx.lifecycle.MutableLiveData
-import com.annimon.stream.Collectors
-import com.annimon.stream.Stream
 import com.udeshcoffee.android.data.DataRepository
 import com.udeshcoffee.android.data.MediaRepository
 import com.udeshcoffee.android.extensions.playSong
@@ -11,8 +15,6 @@ import com.udeshcoffee.android.model.Artist
 import com.udeshcoffee.android.ui.common.viewmodels.DetailSongAlbumViewModel
 import com.udeshcoffee.android.utils.SingleLiveEvent
 import com.udeshcoffee.android.utils.SortManager
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.schedulers.Schedulers
 import java.util.*
 import kotlin.collections.ArrayList
 
@@ -35,102 +37,39 @@ class SearchViewModel(
     override fun fetchAlbums() {}
     override fun disposeAlbums() {}
 
+    private var searchJob: Job? = null
+
     fun search(query: String) {
+        searchJob?.cancel()
         if (query == "") {
             songs.value = ArrayList()
             albums.value = ArrayList()
             artists.value = ArrayList()
             return
         }
-        fetchSongs(query)
-        fetchAlbums(query)
-        fetchArtist(query)
+        searchJob = viewModelScope.launch {
+            val allSongs = mediaRepository.loadSongs()
+            songs.value = allSongs.filter { it.title.contains(query, true) }
+            albums.value = songsToAlbums(allSongs).filter { it.title.contains(query, true) }
+            artists.value = songsToArtists(allSongs).filter { it.name.contains(query, true) }
+        }
     }
-
-    private fun fetchSongs(query: String) {
-        mediaRepository.getSongs()
-                .map { songs ->
-                    Stream.of(songs).filter { it.title.contains(query, true) }.collect(Collectors.toList())
-                }
-                .firstOrError()
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe({
-                    songs.value = it
-                }, {})
-    }
-
-    private fun fetchAlbums(query: String) {
-        mediaRepository.getAlbums()
-                .map { albums ->
-                    Stream.of(albums).filter{ it.title.contains(query, true) }.collect(Collectors.toList())
-                }
-                .take(1)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe{
-                    albums.value = it
-                }
-    }
-
-    private fun fetchArtist(query: String) {
-        mediaRepository.getArtists()
-                .map { artists ->
-                    Stream.of(artists).filter{ it.name.contains(query, true) }.collect(Collectors.toList())
-                }
-                .take(1)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe {
-                    artists.value = it
-                }
-    }
-
 
     fun artistItemClicked(position: Int) {
         artists.value?.get(position)?.let { showArtist.value = it }
     }
 
+    private suspend fun sortedArtistSongs(artist: Artist): List<Song> =
+            mediaRepository.loadArtistSongs(artist.id).sortedWith(SortManager::sortArtistSongs, SortManager.artistSongsAscending)
+
     fun artistItemLongClicked(position: Int) {
-        artists.value?.get(position)?.let {artist ->
-            mediaRepository.getAlbumSongs(artist.id)
-                    .map({ songs ->
-                        SortManager.sortArtistSongs(songs)
-
-                        if (!SortManager.artistSongsAscending) {
-                            Collections.reverse(songs)
-                        }
-
-                        return@map songs
-                    })
-                    .subscribeOn(Schedulers.io())
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .firstOrError()
-                    .subscribe({
-                        showCollectionLongDialog.value = artist.name to it
-                    }, {})
-        }
+        val artist = artists.value?.getOrNull(position) ?: return
+        viewModelScope.launch { showCollectionLongDialog.value = artist.name to sortedArtistSongs(artist) }
     }
 
     fun artistItemOptionClicked(position: Int) {
-        artists.value?.get(position)?.let { artist ->
-            mediaRepository.getAlbumSongs(artist.id)
-                    .map({ songs ->
-                        SortManager.sortArtistSongs(songs)
-
-                        if (!SortManager.artistSongsAscending) {
-                            Collections.reverse(songs)
-                        }
-
-                        return@map songs
-                    })
-                    .subscribeOn(Schedulers.io())
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .firstOrError()
-                    .subscribe({
-                        playSong(0, it, true)
-                    }, {})
-        }
+        val artist = artists.value?.getOrNull(position) ?: return
+        viewModelScope.launch { playSong(0, sortedArtistSongs(artist), true) }
     }
 
     // Redundant

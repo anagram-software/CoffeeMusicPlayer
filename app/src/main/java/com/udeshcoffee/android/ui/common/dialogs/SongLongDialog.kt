@@ -1,5 +1,9 @@
 package com.udeshcoffee.android.ui.common.dialogs
 
+import androidx.lifecycle.lifecycleScope
+import android.widget.ArrayAdapter
+import kotlinx.coroutines.launch
+import com.udeshcoffee.android.utils.ProcessLifecycleScope
 import android.app.Dialog
 import android.content.Intent
 import android.net.Uri
@@ -45,13 +49,18 @@ class SongLongDialog : androidx.fragment.app.DialogFragment() {
                 getString(R.string.action_add_to_favorites),
                 getString(R.string.action_share))
 
-        if (dataRepository.isFavoriteSync(song!!.id)) {
-            items[8] = getString(R.string.action_rem_from_favorites)
+        song!!
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.select_dialog_item, items)
+        lifecycleScope.launch {
+            if (dataRepository.isFavorite(song.id)) {
+                items[8] = getString(R.string.action_rem_from_favorites)
+                adapter.notifyDataSetChanged()
+            }
         }
 
-        val builder = AlertDialog.Builder(context!!)
+        val builder = AlertDialog.Builder(requireContext())
 
-        builder.setTitle(song.title).setItems(items) { _, which ->
+        builder.setTitle(song.title).setAdapter(adapter) { _, which ->
             when (which) {
                 0 -> playSong(0, ArrayList<Song>().also {
                     it.add(song)
@@ -79,12 +88,10 @@ class SongLongDialog : androidx.fragment.app.DialogFragment() {
                     (activity as? MainActivity)?.deleteSongs(listOf(song))
                 }
                 8 -> {
-                    dataRepository.toggleFavorite(song.id) {
-                        if (it) {
-                            Toast.makeText(context, "Added to favorites", Toast.LENGTH_SHORT).show()
-                        } else {
-                            Toast.makeText(context, "Removed from favorites", Toast.LENGTH_SHORT).show()
-                        }
+                    val appContext = requireContext().applicationContext
+                    ProcessLifecycleScope.launch {
+                        val added = dataRepository.toggleFavorite(song.id)
+                        Toast.makeText(appContext, if (added) "Added to favorites" else "Removed from favorites", Toast.LENGTH_SHORT).show()
                     }
                 }
                 9 -> {

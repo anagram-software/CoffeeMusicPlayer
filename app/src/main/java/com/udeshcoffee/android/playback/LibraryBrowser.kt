@@ -5,41 +5,41 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import com.udeshcoffee.android.data.MediaRepository
 import com.udeshcoffee.android.utils.ArtworkURI
+import kotlinx.coroutines.flow.first
 
 /**
  * Browse tree for media browsers such as Android Auto:
  * root → Songs | Albums | Artists | Playlists → songs.
- * All calls block on MediaStore/Room; run them off the main thread.
  */
 class LibraryBrowser(private val mediaRepository: MediaRepository) {
 
     val root: MediaItem = browsable(ROOT, "Coffee Player", MediaMetadata.MEDIA_TYPE_FOLDER_MIXED)
 
-    fun children(parentId: String): List<MediaItem> = when {
+    suspend fun children(parentId: String): List<MediaItem> = when {
         parentId == ROOT -> listOf(
                 browsable(SONGS, "Songs", MediaMetadata.MEDIA_TYPE_FOLDER_MIXED),
                 browsable(ALBUMS, "Albums", MediaMetadata.MEDIA_TYPE_FOLDER_ALBUMS),
                 browsable(ARTISTS, "Artists", MediaMetadata.MEDIA_TYPE_FOLDER_ARTISTS),
                 browsable(PLAYLISTS, "Playlists", MediaMetadata.MEDIA_TYPE_FOLDER_PLAYLISTS))
-        parentId == SONGS -> mediaRepository.getSongs().blockingFirst().map { it.toMediaItem() }
-        parentId == ALBUMS -> mediaRepository.getAlbums().blockingFirst().map { album ->
+        parentId == SONGS -> mediaRepository.loadSongs().map { it.toMediaItem() }
+        parentId == ALBUMS -> mediaRepository.loadAlbums().map { album ->
             browsable("$ALBUM_PREFIX${album.id}", album.title, MediaMetadata.MEDIA_TYPE_ALBUM, album.artist) {
                 setArtworkUri(ContentUris.withAppendedId(ArtworkURI, album.id))
             }
         }
-        parentId == ARTISTS -> mediaRepository.getArtists().blockingFirst().map { artist ->
+        parentId == ARTISTS -> mediaRepository.loadArtists().map { artist ->
             browsable("$ARTIST_PREFIX${artist.id}", artist.name, MediaMetadata.MEDIA_TYPE_ARTIST)
         }
-        parentId == PLAYLISTS -> mediaRepository.getPlaylists().blockingFirst().map { playlist ->
+        parentId == PLAYLISTS -> mediaRepository.observePlaylists().first().map { playlist ->
             browsable("$PLAYLIST_PREFIX${playlist.type}:${playlist.id}", playlist.title, MediaMetadata.MEDIA_TYPE_PLAYLIST)
         }
         parentId.startsWith(ALBUM_PREFIX) ->
-            mediaRepository.getAlbumSongs(parentId.removePrefix(ALBUM_PREFIX).toLong()).blockingFirst().map { it.toMediaItem() }
+            mediaRepository.loadAlbumSongs(parentId.removePrefix(ALBUM_PREFIX).toLong()).map { it.toMediaItem() }
         parentId.startsWith(ARTIST_PREFIX) ->
-            mediaRepository.getArtistSongs(parentId.removePrefix(ARTIST_PREFIX).toLong()).blockingFirst().map { it.toMediaItem() }
+            mediaRepository.loadArtistSongs(parentId.removePrefix(ARTIST_PREFIX).toLong()).map { it.toMediaItem() }
         parentId.startsWith(PLAYLIST_PREFIX) -> {
             val (type, id) = parentId.removePrefix(PLAYLIST_PREFIX).split(":").map { it.toLong() }
-            mediaRepository.getPlaylistSongs(id, type.toInt())?.blockingFirst()?.map { it.toMediaItem() } ?: emptyList()
+            mediaRepository.loadPlaylistSongs(id, type.toInt()).map { it.toMediaItem() }
         }
         else -> emptyList()
     }
@@ -48,8 +48,8 @@ class LibraryBrowser(private val mediaRepository: MediaRepository) {
      * Songs matching a voice/search query ("play X"), title matches first, then artist and album.
      * An empty query means "play something": the whole library, shuffled.
      */
-    fun search(query: String): List<MediaItem> {
-        val songs = mediaRepository.getSongs().blockingFirst()
+    suspend fun search(query: String): List<MediaItem> {
+        val songs = mediaRepository.loadSongs()
         val q = query.trim()
         if (q.isEmpty()) return songs.shuffled().map { it.toMediaItem() }
         val byTitle = songs.filter { it.title.contains(q, ignoreCase = true) }
@@ -59,9 +59,9 @@ class LibraryBrowser(private val mediaRepository: MediaRepository) {
     }
 
     /** A playable item by media ID (a MediaStore song ID), or null. */
-    fun song(mediaId: String): MediaItem? {
+    suspend fun song(mediaId: String): MediaItem? {
         val id = mediaId.toLongOrNull() ?: return null
-        return mediaRepository.getSongs().blockingFirst().firstOrNull { it.id == id }?.toMediaItem()
+        return mediaRepository.loadSongs().firstOrNull { it.id == id }?.toMediaItem()
     }
 
     private fun browsable(id: String, title: String, type: Int, subtitle: String? = null,

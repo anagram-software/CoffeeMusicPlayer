@@ -1,7 +1,6 @@
 package com.udeshcoffee.android.extensions
 
 import androidx.lifecycle.AndroidViewModel
-import android.content.ContentResolver
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
@@ -12,15 +11,12 @@ import android.util.LongSparseArray
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
-import com.squareup.sqlbrite2.BriteContentResolver
-import com.squareup.sqlbrite2.SqlBrite
 import com.udeshcoffee.android.ui.BasePresenter
 import com.udeshcoffee.android.ui.MainActivity
 import com.udeshcoffee.android.playback.PlayerConnection
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.SharedFlow
 import org.koin.core.context.GlobalContext
-import io.reactivex.Observable
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.schedulers.Schedulers
 
 
 /**
@@ -57,7 +53,7 @@ fun FragmentActivity.openDrawer() {
 fun connectedPlayer(): PlayerConnection? = GlobalContext.get().get<PlayerConnection>().takeIf { it.isConnected }
 
 /** Playback change events ([com.udeshcoffee.android.playback.PlaybackEvents] names), delivered on the main thread. */
-fun playbackEvents(): Observable<String> = GlobalContext.get().get<PlayerConnection>().events
+fun playbackEvents(): SharedFlow<String> = GlobalContext.get().get<PlayerConnection>().events
 
 fun AppCompatActivity.getPlayer(): PlayerConnection? = connectedPlayer()
 
@@ -102,10 +98,6 @@ fun Int.getColorWithAlpha(factor: Float): Int =
 /* SQL Brite Utils */
 
 // Get a wrapped content resolver
-fun ContentResolver.toBrite(): BriteContentResolver {
-    val sqlBrite = SqlBrite.Builder().build()
-    return sqlBrite.wrapContentProvider(this, Schedulers.io())
-}
 
 /* String */
 
@@ -125,41 +117,22 @@ fun TextView.setRoundColor(color: Int) {
 }
 
 fun TextView.setTextWithMilliSecondsToTimer(milliseconds: Long) {
-    Observable.just(milliseconds)
-            .map {
-                var finalTimerString = ""
-                val secondsString: String
-                var minuteString: String
-
-                // Convert total duration into time
-                val hours = (milliseconds / (1000 * 60 * 60)).toInt()
-                val minutes = (milliseconds % (1000 * 60 * 60)).toInt() / (1000 * 60)
-                val seconds = (milliseconds % (1000 * 60 * 60) % (1000 * 60) / 1000).toInt()
-
-                minuteString = "" + minutes
-
-                // Add hours if there
-                if (hours > 0) {
-                    finalTimerString = hours.toString() + ":"
-                    if (minutes < 10) {
-                        minuteString = "0" + minutes
-                    }
-                }
-
-                // Prepending 0 to seconds if it is one digit
-                secondsString = if (seconds < 10) {
-                    "0" + seconds
-                } else {
-                    "" + seconds
-                }
-
-                finalTimerString = finalTimerString + minuteString + ":" + secondsString
-
-                // return timer string
-                return@map finalTimerString
-            }
-            .subscribeOn(Schedulers.computation())
-            .observeOn(AndroidSchedulers.mainThread())
-            .firstOrError()
-            .subscribe ({ this.text = it }, {})
+    val totalSeconds = milliseconds / 1000
+    val hours = totalSeconds / 3600
+    val minutes = (totalSeconds % 3600) / 60
+    val seconds = totalSeconds % 60
+    text = if (hours > 0) String.format(java.util.Locale.ROOT, "%d:%02d:%02d", hours, minutes, seconds)
+    else String.format(java.util.Locale.ROOT, "%d:%02d", minutes, seconds)
+}
+/** The SearchView's query text, starting with the current value. */
+fun androidx.appcompat.widget.SearchView.queryTextChanges(): kotlinx.coroutines.flow.Flow<String> = kotlinx.coroutines.flow.callbackFlow {
+    setOnQueryTextListener(object : androidx.appcompat.widget.SearchView.OnQueryTextListener {
+        override fun onQueryTextSubmit(query: String?): Boolean = false
+        override fun onQueryTextChange(newText: String?): Boolean {
+            trySend(newText ?: "")
+            return true
+        }
+    })
+    trySend(query?.toString() ?: "")
+    awaitClose { setOnQueryTextListener(null) }
 }

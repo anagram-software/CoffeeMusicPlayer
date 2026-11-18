@@ -13,32 +13,21 @@ import com.udeshcoffee.android.extensions.loadArtwork
 import com.udeshcoffee.android.interfaces.OnItemClickListener
 import com.udeshcoffee.android.model.Genre
 import com.udeshcoffee.android.utils.DopeUtil
-import io.reactivex.Observable
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.functions.Consumer
-import io.reactivex.schedulers.Schedulers
 
 /**
  * Created by Udathari on 5/30/2017.
  */
 
-class GenreAdapter : androidx.recyclerview.widget.RecyclerView.Adapter<androidx.recyclerview.widget.RecyclerView.ViewHolder>(), Consumer<List<Genre>> {
+class GenreAdapter : androidx.recyclerview.widget.RecyclerView.Adapter<androidx.recyclerview.widget.RecyclerView.ViewHolder>() {
 
     private var mDataset: List<Genre>? = null
     private var context: Context? = null
     private var listener: OnItemClickListener? = null
 
-    override fun accept(p0: List<Genre>) {
+    fun accept(p0: List<Genre>) {
+        // Song counts and artwork are filled in by MediaRepository.observeGenres().
         this.mDataset = p0
         notifyDataSetChanged()
-        Observable.fromIterable(mDataset)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe({
-                    it.setArtsAndSongCount(context!!.contentResolver)
-                }, {}, {
-                    notifyDataSetChanged()
-                })
     }
 
     internal inner class ViewHolder(itemView: View) : androidx.recyclerview.widget.RecyclerView.ViewHolder(itemView), View.OnClickListener, View.OnLongClickListener {

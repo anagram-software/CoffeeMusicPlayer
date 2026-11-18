@@ -1,6 +1,8 @@
 package com.udeshcoffee.android.ui.common.viewmodels
 
 import android.app.Application
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
 import com.udeshcoffee.android.data.DataRepository
 import com.udeshcoffee.android.extensions.playSong
 import com.udeshcoffee.android.extensions.queueSong
@@ -32,7 +34,7 @@ abstract class DetailSongViewModel (
     fun addToFavoritesClick() {
         songs.value?.let {
             if (it.isNotEmpty()) {
-                dataRepository.addToFavorites(it)
+                viewModelScope.launch { dataRepository.addToFavorites(it) }
                 showFavoriteToast.setMessage("Added to favorites")
             } else {
                 showFavoriteToast.setMessage("Removed from favorites")

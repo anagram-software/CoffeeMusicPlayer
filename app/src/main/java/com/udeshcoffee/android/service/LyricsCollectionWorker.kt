@@ -40,7 +40,7 @@ class LyricsCollectionWorker(context: Context, params: WorkerParameters) : Corou
         createChannel(applicationContext)
         setForeground(foregroundInfo(collected = 0))
 
-        val songs = mediaRepository.getSongs().blockingFirst()
+        val songs = mediaRepository.loadSongs()
         var collected = 0
         for (song in songs) {
             if (isStopped) break

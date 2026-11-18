@@ -1,5 +1,14 @@
 package com.udeshcoffee.android.ui.main.editor
 
+import com.udeshcoffee.android.utils.loadBitmap
+import android.content.Context
+import kotlin.coroutines.resume
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.Dispatchers
+import androidx.lifecycle.viewModelScope
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
@@ -16,15 +25,9 @@ import com.udeshcoffee.android.data.DataRepository
 import com.udeshcoffee.android.data.MediaRepository
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.utils.*
-import io.reactivex.Completable
-import io.reactivex.Observable
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.Disposable
-import io.reactivex.observers.DisposableObserver
-import io.reactivex.schedulers.Schedulers
 import org.jaudiotagger.audio.AudioFileIO
 import org.jaudiotagger.tag.FieldKey
-import org.jaudiotagger.tag.datatype.Artwork
+import org.jaudiotagger.tag.images.ArtworkFactory
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
@@ -67,11 +70,15 @@ class EditorViewModel(
 
     private var file: File? = null
 
-    private var collectionDisposable: Disposable? = null
-    private var saveDisposable: Disposable? = null
+    private var searchJob: Job? = null
+
+    /** The song as it was when editing started; tags are written only where they differ. */
+    private var original: Song? = null
+    private var originalGenre: String? = null
 
     fun start(song: Song) {
         this.song.value = song
+        original = song
 
         fetchFile()
         fetchData()
@@ -79,8 +86,12 @@ class EditorViewModel(
     }
 
     fun stop() {
-        disposeCollectionDisposable()
-        disposeSaveDisposable()
+        cancelSearch()
+    }
+
+    fun cancelSearch() {
+        searchJob?.cancel()
+        progressDialog.value = null
     }
 
     /** MediaStore URI of the song being edited. */
@@ -88,16 +99,21 @@ class EditorViewModel(
         get() = MediaAccess.songUri(song.value!!.id)
 
     private fun fetchFile() {
-        val trackUri = songUri
-        val path = mediaRepository.getRealPath(trackUri)
-        if (path != null) {
-            this.path.value = path
-            file = File(path)
+        viewModelScope.launch {
+            mediaRepository.getRealPath(songUri)?.let { path ->
+                this@EditorViewModel.path.value = path
+                file = File(path)
+            }
         }
     }
 
     private fun fetchData() {
-        genre.value = mediaRepository.getGenreOfSong(song.value!!.id)?.name
+        val songId = song.value!!.id
+        viewModelScope.launch {
+            val name = mediaRepository.getGenreOfSong(songId)?.name
+            originalGenre = name
+            genre.value = name
+        }
         reloadImage.value = ImageType.SONG
     }
 
@@ -113,42 +129,27 @@ class EditorViewModel(
         reloadImage.value = ImageType.SONG
     }
 
+    /** Looks the song up on Last.fm and fills in title, artist, album, genre and artwork (Last.fm has no year). */
     fun search(title: String, artist: String) {
-        val searchableTitle = title.trim()
-        val searchableArtist = artist.trim()
         progressDialog.value = "Collecting Information"
-        disposeCollectionDisposable()
-        collectionDisposable = dataRepository.searchItunes(searchableTitle, searchableArtist)
-                .subscribe({ songs ->
-                    if (songs.isNotEmpty()) {
-                        Log.d("Search", "Fuck yeah")
-                        songs[0].attributes?.let { results ->
-                            val releaseYear = results.releaseDate.split("-")[0]
-                            var tempSong = song.value
-                            tempSong = results.name.let { tempSong?.copy(title = it) }
-                            tempSong = results.albumName.let { tempSong?.copy(albumName = it) }
-                            tempSong = results.artistName.let { tempSong?.copy(artistName = it) }
-                            tempSong = releaseYear.let { tempSong?.copy(year = it.toInt()) }
-                            genre.value = results.genreNames?.getOrElse(0) {
-                                ""
-                            }
-                            song.value = tempSong
-                            val image = results.artwork.url
-                            image.let {
-                                albumArtUrl = it
-                                reloadImage.value = ImageType.URL
-                            }
-                        }
-                    } else {
-                        Log.d("Search", "Fuck empty")
-                        showToast.value = "No tracks found"
-                    }
-                    progressDialog.value = null
-                }, {
-                    Log.d("Search", "Fuck ${it.message}")
-                    showToast.value = "No tracks found"
-                    progressDialog.value = null
-                })
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
+            val metadata = dataRepository.searchTrackMetadata(title.trim(), artist.trim())
+            progressDialog.value = null
+            if (metadata == null) {
+                showToast.value = "No tracks found"
+                return@launch
+            }
+            song.value = song.value?.copy(
+                    title = metadata.title,
+                    artistName = metadata.artist,
+                    albumName = metadata.album ?: song.value!!.albumName)
+            metadata.genre?.let { genre.value = it }
+            metadata.artworkUrl?.let {
+                albumArtUrl = it
+                reloadImage.value = ImageType.URL
+            }
+        }
     }
 
     /**
@@ -157,78 +158,64 @@ class EditorViewModel(
      * first obtain write consent ([MediaAccess.writeRequest]).
      */
     fun save(title: String, album: String, artist: String, genre: String, year: String, trackNo: String, discNo: String) {
-        Log.d(TAG, "save")
         progressDialog.value = "Saving"
         val uri = songUri
         val context = App.instance
         // jaudiotagger picks the format from the file extension.
         val fileName = file?.name ?: "${song.value!!.id}.mp3"
-        saveDisposable = Completable.fromAction {
-            val resolver = context.contentResolver
-            val tempFile = File(File(context.cacheDir, "tag-edit").apply { mkdirs() }, fileName)
+        val path = path.value
+        viewModelScope.launch {
             try {
-                resolver.openInputStream(uri)!!.use { input -> tempFile.outputStream().use { input.copyTo(it) } }
-                setTags(tempFile, title, album, artist, genre, year, trackNo, discNo)
-                resolver.openOutputStream(uri, "wt")!!.use { output -> tempFile.inputStream().use { it.copyTo(output) } }
-            } finally {
-                tempFile.delete()
+                val artwork = when {
+                    albumArtUri != null -> loadBitmap(context, albumArtUri)
+                    albumArtUrl != null -> loadBitmap(context, albumArtUrl)
+                    else -> null
+                }
+                withContext(Dispatchers.IO) {
+                    val resolver = context.contentResolver
+                    val tempFile = File(File(context.cacheDir, "tag-edit").apply { mkdirs() }, fileName)
+                    try {
+                        resolver.openInputStream(uri)!!.use { input -> tempFile.outputStream().use { input.copyTo(it) } }
+                        setTags(tempFile, title, album, artist, genre, year, trackNo, discNo, artwork)
+                        resolver.openOutputStream(uri, "wt")!!.use { output -> tempFile.inputStream().use { it.copyTo(output) } }
+                    } finally {
+                        tempFile.delete()
+                    }
+                }
+                // Refresh MediaStore so the library shows the new tags.
+                if (path != null) scanFile(context, path)
+                progressDialog.value = null
+                showToast.value = "Song changed"
+                finish.call()
+            } catch (e: Exception) {
+                Log.w(TAG, "save failed", e)
+                progressDialog.value = null
+                showToast.value = "Couldn't edit the song"
             }
         }
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe({
-                    val onDone = {
-                        progressDialog.value = null
-                        showToast.value = "Song changed"
-                        finish.call()
-                    }
-                    val path = path.value
-                    if (path == null) {
-                        onDone()
-                    } else {
-                        // Refresh MediaStore so the library shows the new tags.
-                        MediaScannerConnection.scanFile(context, arrayOf(path), null) { _, _ ->
-                            AndroidSchedulers.mainThread().scheduleDirect { onDone() }
-                        }
-                    }
-                }, {
-                    Log.w(TAG, "save failed", it)
-                    progressDialog.value = null
-                    showToast.value = "Couldn't edit the song"
-                })
     }
 
-    fun disposeCollectionDisposable() {
-        collectionDisposable?.let {
-            if (!it.isDisposed)
-                it.dispose()
-        }
-    }
-
-    private fun disposeSaveDisposable() {
-        saveDisposable?.let {
-            if (!it.isDisposed)
-                it.dispose()
-        }
+    private suspend fun scanFile(context: Context, path: String) = suspendCancellableCoroutine { cont ->
+        MediaScannerConnection.scanFile(context, arrayOf(path), null) { _, _ -> if (cont.isActive) cont.resume(Unit) }
     }
 
     private fun setTags(file: File, title: String, album: String, artist: String, genre: String,
-                        year: String, trackNo: String, discNo: String) {
+                        year: String, trackNo: String, discNo: String, artworkBitmap: Bitmap?) {
         Log.d(TAG, "setTags")
         val audioFile = AudioFileIO.read(file)
 
         if (audioFile != null) {
             val tag = audioFile.tag
 
-            if (title != song.value!!.title)
+            if (title != original!!.title)
                 tag.setField(FieldKey.TITLE, title)
-            if (album != song.value!!.albumName)
+            if (album != original!!.albumName)
                 tag.setField(FieldKey.ALBUM, album)
-            if (artist != song.value!!.artistName)
+            if (artist != original!!.artistName)
                 tag.setField(FieldKey.ARTIST, artist)
-            if (year != song.value!!.year.toString())
+            if (year != original!!.year.toString())
                 tag.setField(FieldKey.YEAR, year)
-            if (genre != this.genre.value)
+            if (genre != originalGenre)
                 tag.setField(FieldKey.GENRE, genre)
             if (trackNo != "")
                 tag.setField(FieldKey.TRACK, trackNo)
@@ -237,11 +224,6 @@ class EditorViewModel(
                 tag.setField(FieldKey.DISC_NO, discNo)
 
             Log.d(TAG, "try to save art")
-            val artworkBitmap = when {
-                albumArtUri != null -> loadAlbumArtworkFromUriSynchronous(albumArtUri)
-                albumArtUrl != null -> loadAlbumArtworkFromUriSynchronous(albumArtUrl)
-                else -> null
-            }
 
             artworkBitmap?.let {
                 val scaledBitmap = Bitmap.createScaledBitmap(it, 500, 500, false)
@@ -259,7 +241,7 @@ class EditorViewModel(
                 val out = FileOutputStream(artworkFile)
                 scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
 
-                val artwork = Artwork.createArtworkFromFile(artworkFile)
+                val artwork = ArtworkFactory.createArtworkFromFile(artworkFile)
 
                 artwork.binaryData = byteArray
 

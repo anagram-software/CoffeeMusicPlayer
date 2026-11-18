@@ -1,5 +1,8 @@
 package com.udeshcoffee.android.ui.main.library.nested
 
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import androidx.lifecycle.lifecycleScope
 import android.os.Bundle
 import android.view.*
 import androidx.fragment.app.Fragment
@@ -18,8 +21,6 @@ import com.udeshcoffee.android.recyclerview.GridItemDecor
 import com.udeshcoffee.android.ui.common.adapters.AlbumAdapter
 import com.udeshcoffee.android.ui.main.detail.albumdetail.AlbumDetailFragment
 import com.udeshcoffee.android.utils.SortManager
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.Disposable
 import org.koin.android.ext.android.inject
 
 /**
@@ -30,7 +31,7 @@ class AlbumFragment : Fragment() {
 
     private val mediaRepository: MediaRepository by inject()
 
-    private var disposable: Disposable? = null
+    private var dataJob: Job? = null
     private var albumAdpt: AlbumAdapter? = null
 
     private var sortOrder: Int
@@ -66,10 +67,8 @@ class AlbumFragment : Fragment() {
 
             override fun onItemLongClick(position: Int) {
                 albumAdpt?.getItem(position)?.let {
-                    mediaRepository.getAlbumSongs(it.id)
-                            .observeOn(AndroidSchedulers.mainThread())
-                            .take(1)
-                            .subscribe { songs ->
+                    viewLifecycleOwner.lifecycleScope.launch {
+                                val songs = mediaRepository.loadAlbumSongs(it.id)
                                 openCollectionLongDialog(it.title, songs)
                             }
                 }
@@ -78,10 +77,8 @@ class AlbumFragment : Fragment() {
             override fun onItemOptionClick(position: Int) {
                 albumAdpt?.getItem(position)?.let {
                     showPlayingToast(it)
-                    mediaRepository.getAlbumSongs(it.id)
-                            .observeOn(AndroidSchedulers.mainThread())
-                            .take(1)
-                            .subscribe { songs ->
+                    viewLifecycleOwner.lifecycleScope.launch {
+                                val songs = mediaRepository.loadAlbumSongs(it.id)
                                 playSong(0, songs, true)
                             }
                 }
@@ -140,26 +137,18 @@ class AlbumFragment : Fragment() {
 
     private fun fetchData() {
         dispose()
-
-        disposable = mediaRepository.getAlbums()
-                .observeOn(AndroidSchedulers.mainThread())
-                .map { albums ->
-                    SortManager.sortAlbums(albums)
-
-                    if (!SortManager.albumsAscending) {
-                        return@map albums.reversed()
-                    }
-
-                    return@map albums
-                }
-                .subscribe { albumAdpt?.accept(it) }
+        dataJob = viewLifecycleOwner.lifecycleScope.launch {
+            mediaRepository.observeAlbums().collect { albums ->
+                albumAdpt?.accept(albums.toMutableList().also {
+                    SortManager.sortAlbums(it)
+                    if (!SortManager.albumsAscending) it.reverse()
+                })
+            }
+        }
     }
 
     fun dispose() {
-        disposable?.let {
-            if (!it.isDisposed)
-                it.dispose()
-        }
+        dataJob?.cancel()
     }
 
     fun showDetailUI(detail: Album) {

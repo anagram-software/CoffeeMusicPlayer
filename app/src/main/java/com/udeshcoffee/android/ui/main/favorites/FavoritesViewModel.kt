@@ -7,9 +7,6 @@ import com.udeshcoffee.android.data.MediaRepository
 import com.udeshcoffee.android.ui.common.viewmodels.DetailSongViewModel
 import com.udeshcoffee.android.ui.common.viewmodels.SongContainingViewModel
 import com.udeshcoffee.android.utils.SortManager
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.Disposable
-import io.reactivex.schedulers.Schedulers
 
 /**
 * Created by Udathari on 9/29/2017.
@@ -20,34 +17,9 @@ class FavoritesViewModel(
         private val mediaRepository: MediaRepository
 ): DetailSongViewModel(application, dataRepository) {
 
-    var disposable: Disposable? = null
 
     override fun fetchSongs() {
-        disposeSongs()
-        disposable = mediaRepository.getFavorites()
-                .map { songs ->
-                    Log.d("Fav", "Songs map")
-                    SortManager.sortFavoritesSongs(songs)
-
-                    if (!songSortAscending) {
-                        java.util.Collections.reverse(songs)
-                    }
-
-                    return@map songs
-                }
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe{
-                    Log.d("Fav", "Set songs")
-                    songs.value = it
-                }
-    }
-
-    override fun disposeSongs() {
-        disposable?.let {
-            if (!it.isDisposed)
-                it.dispose()
-        }
+        collectSongs(mediaRepository.observeFavorites(), SortManager::sortFavoritesSongs) { songSortAscending }
     }
 
     override var songSortOrder: Int

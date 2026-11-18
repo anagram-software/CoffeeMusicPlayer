@@ -22,8 +22,6 @@ import androidx.preference.PreferenceManager
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
-import com.google.common.util.concurrent.ListeningExecutorService
-import com.google.common.util.concurrent.MoreExecutors
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.data.DataRepository
 import com.udeshcoffee.android.data.MediaRepository
@@ -32,8 +30,13 @@ import com.udeshcoffee.android.ui.MainActivity
 import com.udeshcoffee.android.utils.PreferenceUtil
 import com.udeshcoffee.android.widget.BigAppWidget
 import com.udeshcoffee.android.widget.MediumAppWidget
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.guava.future
+import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
-import java.util.concurrent.Executors
 
 /**
  * Background playback: an ExoPlayer exposed through a Media3 MediaLibrarySession.
@@ -54,7 +57,7 @@ class PlaybackService : MediaLibraryService() {
     private lateinit var queueStore: QueueStore
     private lateinit var browser: LibraryBrowser
     private var session: MediaLibrarySession? = null
-    private val background: ListeningExecutorService = MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor())
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     /** The item that was playing before the latest transition, for play counts. */
     private var lastItem: MediaItem? = null
@@ -78,11 +81,14 @@ class PlaybackService : MediaLibraryService() {
         player.repeatMode = RepeatModes.fromPreference(prefs.getInt(PreferenceUtil.REPEAT_MODE, RepeatModes.PREF_ALL))
         player.addListener(playerListener)
 
-        AudioEffects.helper = try {
-            AudioFXHelper(this, player.audioSessionId, dataRepository)
-        } catch (e: Exception) {
-            Log.w(TAG, "Audio effects unavailable", e)
-            null
+        val audioSessionId = player.audioSessionId
+        scope.launch {
+            AudioEffects.helper = try {
+                AudioFXHelper(this@PlaybackService, audioSessionId, dataRepository, dataRepository.getEQPresets())
+            } catch (e: Exception) {
+                Log.w(TAG, "Audio effects unavailable", e)
+                null
+            }
         }
 
         val sessionActivity = PendingIntent.getActivity(this, 0,
@@ -121,7 +127,7 @@ class PlaybackService : MediaLibraryService() {
         session = null
         AudioEffects.helper?.release()
         AudioEffects.helper = null
-        background.shutdown()
+        scope.cancel()
         super.onDestroy()
     }
 
@@ -166,7 +172,7 @@ class PlaybackService : MediaLibraryService() {
 
     private fun countPlay(item: MediaItem) {
         val song = item.toSong()
-        background.execute {
+        scope.launch {
             try {
                 dataRepository.increasePlayCount(song)
             } catch (e: Exception) {
@@ -194,19 +200,19 @@ class PlaybackService : MediaLibraryService() {
                                      mediaItems: MutableList<MediaItem>): ListenableFuture<MutableList<MediaItem>> {
             // Voice search ("play X" from Assistant / Android Auto) arrives as a single item with a query.
             mediaItems.singleOrNull()?.requestMetadata?.searchQuery?.let { query ->
-                return background.submit<MutableList<MediaItem>> { browser.search(query).toMutableList() }
+                return scope.future { browser.search(query).toMutableList() }
             }
             // Our own UI sends complete items; external browsers may send only a media ID.
             if (mediaItems.all { it.mediaMetadata.title != null })
                 return Futures.immediateFuture(mediaItems.map { it.withPlaybackUri() }.toMutableList())
-            return background.submit<MutableList<MediaItem>> {
+            return scope.future {
                 mediaItems.map { item -> browser.song(item.mediaId) ?: item.withPlaybackUri() }.toMutableList()
             }
         }
 
         override fun onPlaybackResumption(mediaSession: MediaSession, controller: MediaSession.ControllerInfo,
                                           isForPlayback: Boolean): ListenableFuture<MediaSession.MediaItemsWithStartPosition> =
-                background.submit<MediaSession.MediaItemsWithStartPosition> {
+                scope.future {
                     val saved = queueStore.load() ?: throw UnsupportedOperationException("No saved queue")
                     MediaSession.MediaItemsWithStartPosition(saved.songs.map { it.toMediaItem() }, saved.index, saved.positionMs)
                 }
@@ -217,16 +223,16 @@ class PlaybackService : MediaLibraryService() {
 
         override fun onGetChildren(session: MediaLibrarySession, browser: MediaSession.ControllerInfo, parentId: String,
                                    page: Int, pageSize: Int, params: LibraryParams?): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> =
-                background.submit<LibraryResult<ImmutableList<MediaItem>>> {
+                scope.future {
                     val all = this@PlaybackService.browser.children(parentId)
                     val from = (page * pageSize).coerceAtMost(all.size)
                     val to = (from + pageSize).coerceAtMost(all.size)
-                    LibraryResult.ofItemList(all.subList(from, to), params)
+                    LibraryResult.ofItemList(ImmutableList.copyOf(all.subList(from, to)), params)
                 }
 
         override fun onGetItem(session: MediaLibrarySession, browser: MediaSession.ControllerInfo,
                                mediaId: String): ListenableFuture<LibraryResult<MediaItem>> =
-                background.submit<LibraryResult<MediaItem>> {
+                scope.future {
                     this@PlaybackService.browser.song(mediaId)?.let { LibraryResult.ofItem(it, null) }
                             ?: LibraryResult.ofError(SessionError.ERROR_BAD_VALUE)
                 }

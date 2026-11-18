@@ -8,13 +8,12 @@ import com.udeshcoffee.android.R
 import com.udeshcoffee.android.data.remote.genius.Result
 import com.udeshcoffee.android.interfaces.OnItemClickListener
 import com.udeshcoffee.android.ui.common.viewholders.LyricViewHolder
-import io.reactivex.functions.Consumer
 
 /**
  * Created by Udesh on 2/18/2017.
  */
 
-class LyricAdapter : androidx.recyclerview.widget.RecyclerView.Adapter<LyricViewHolder>(), Consumer<List<Result>> {
+class LyricAdapter : androidx.recyclerview.widget.RecyclerView.Adapter<LyricViewHolder>() {
 
     val TAG = "LyricAdapter"
 
@@ -22,7 +21,7 @@ class LyricAdapter : androidx.recyclerview.widget.RecyclerView.Adapter<LyricView
     private var context: Context? = null
     var listener: OnItemClickListener? = null
 
-    override fun accept(items: List<Result>?) {
+    fun accept(items: List<Result>?) {
         this.mDataset = items
         notifyDataSetChanged()
     }

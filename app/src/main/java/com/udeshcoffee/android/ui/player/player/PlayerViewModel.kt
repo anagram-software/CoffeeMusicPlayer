@@ -1,5 +1,8 @@
 package com.udeshcoffee.android.ui.player.player
 
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import androidx.lifecycle.viewModelScope
 import com.udeshcoffee.android.playback.PlayerConnection
 import com.udeshcoffee.android.extensions.getPlayer
 import android.app.Application
@@ -12,9 +15,6 @@ import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.ui.common.viewmodels.BasePlayerViewModel
 import com.udeshcoffee.android.utils.PreferenceUtil
 import com.udeshcoffee.android.utils.SingleLiveEvent
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.Disposable
-import io.reactivex.schedulers.Schedulers
 import java.util.concurrent.TimeUnit
 
 /**
@@ -36,8 +36,8 @@ class PlayerViewModel(
 
     private var isSeeking: Boolean = false
 
-    private var currentDisposable: Disposable? = null
-    private var progressDisposable: Disposable? = null
+    private var currentJob: Job? = null
+    private var progressJob: Job? = null
     /** Song whose favourite state is loaded, so frequent metadata events don't re-query it. */
     private var favCheckedSongId: Long = -1
 
@@ -66,16 +66,13 @@ class PlayerViewModel(
         progress.value = service.currentPosition
     }
 
-    @Suppress("CheckResult") // Single-shot lookup.
     override fun onMetadataChange(service: PlayerConnection) {
         super.onMetadataChange(service)
         service.currentSong()?.let {
             if (it.id != favCheckedSongId) {
                 favCheckedSongId = it.id
-                dataRepository.isFavorite(it.id)
-                        .subscribe ({
-                            isFav.value = it
-                        }, {})
+                val songId = it.id
+                viewModelScope.launch { isFav.value = dataRepository.isFavorite(songId) }
             }
         }
         current.value = service.currentPosition
@@ -94,37 +91,27 @@ class PlayerViewModel(
     }
 
     /* Progress */
-    override fun setProgress(){
+    override fun setProgress() {
         disposeProgress()
-        progressDisposable = getPlayer()?.progressObservable()
-                ?.subscribe{
-                    if (!isSeeking)
-                        progress.value = it
-                }
+        val player = getPlayer() ?: return
+        progressJob = viewModelScope.launch {
+            player.progress().collect { if (!isSeeking) progress.value = it }
+        }
     }
 
-    override fun disposeProgress(){
-        progressDisposable?.let {
-            if (!it.isDisposed)
-                it.dispose()
-        }
+    override fun disposeProgress() {
+        progressJob?.cancel()
     }
 
     /* Current */
-    private fun setCurrent(){
+    private fun setCurrent() {
         disposeCurrent()
-        currentDisposable = getPlayer()?.progressObservable(1000)
-                ?.observeOn(AndroidSchedulers.mainThread())
-                ?.subscribe{
-                    current.value = it
-                }
+        val player = getPlayer() ?: return
+        currentJob = viewModelScope.launch { player.progress(1000).collect { current.value = it } }
     }
 
-    private fun disposeCurrent(){
-        currentDisposable?.let {
-            if (!it.isDisposed)
-                it.dispose()
-        }
+    private fun disposeCurrent() {
+        currentJob?.cancel()
     }
 
     fun startSeek() {
@@ -164,13 +151,8 @@ class PlayerViewModel(
     }
 
     fun favToggle() {
-        Log.d("toggleFavorite", "favToggle")
-        getPlayer()?.currentSong()?.let {
-            dataRepository.toggleFavorite(it.id){
-                isFav.value = it
-                Log.d("toggleFavorite", "subscribe $it")
-            }
-        }
+        val song = getPlayer()?.currentSong() ?: return
+        viewModelScope.launch { isFav.value = dataRepository.toggleFavorite(song.id) }
     }
 
     fun lyricsToggle() {

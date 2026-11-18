@@ -1,5 +1,8 @@
 package com.udeshcoffee.android.ui.player.queue
 
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import androidx.lifecycle.viewModelScope
 import com.udeshcoffee.android.playback.RepeatModes
 import com.udeshcoffee.android.playback.PlayerConnection
 import com.udeshcoffee.android.extensions.getPlayer
@@ -13,9 +16,6 @@ import com.udeshcoffee.android.ui.common.viewmodels.SongContainingViewModel
 import com.udeshcoffee.android.utils.PreferenceUtil
 import com.udeshcoffee.android.utils.SingleLiveEvent
 import com.udeshcoffee.android.utils.call
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.Disposable
-import io.reactivex.schedulers.Schedulers
 
 /**
  * Created by Udathari on 9/16/2017.
@@ -34,7 +34,7 @@ class QueueViewModel(
     val hideNowPlay = SingleLiveEvent<Unit>()
     val scrollTo = SingleLiveEvent<Int>()
 
-    private var queueDisposable: Disposable? = null
+    private var queueJob: Job? = null
     private var loadFirstTime = true
 
     override fun start() {
@@ -46,23 +46,19 @@ class QueueViewModel(
     }
 
     override fun fetchSongs() {
-        Log.d(TAG, "loadQueue")
         disposeSongs()
-        getPlayer()?.let {
-            queueDisposable = it.queueObservable()
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribeOn(Schedulers.io())
-                    .subscribe { it1 ->
-                        Log.d(TAG, "loadQueue: ${it1.size}")
-                        songs.value = it1
-                        if (loadFirstTime) {
-                            scrollTo.value = it.playPosition
-                            loadFirstTime = false
-                        }
-                    }
-            total = it.queue.size
-            playPosition.value = it.playPosition
+        val player = getPlayer() ?: return
+        queueJob = viewModelScope.launch {
+            player.queueChanges.collect { queue ->
+                songs.value = queue
+                if (loadFirstTime) {
+                    scrollTo.value = player.playPosition
+                    loadFirstTime = false
+                }
+            }
         }
+        total = player.queue.size
+        playPosition.value = player.playPosition
     }
 
     override fun onMetaDataChanged(service: PlayerConnection) {
@@ -72,10 +68,7 @@ class QueueViewModel(
     }
 
     override fun disposeSongs() {
-        queueDisposable?.let {
-            if (!it.isDisposed)
-                it.dispose()
-        }
+        queueJob?.cancel()
     }
 
     fun closeQueue() {
@@ -83,15 +76,7 @@ class QueueViewModel(
     }
 
     fun addToPlaylist() {
-        getPlayer()?.let {
-            it.queueObservable()
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribeOn(Schedulers.io())
-                    .firstOrError()
-                    .subscribe({ it1 ->
-                        showAddToPlaylist.value = it1
-                    }, {})
-        }
+        getPlayer()?.let { showAddToPlaylist.value = it.queue }
     }
 
     fun changeRepeatMode() {

@@ -1,103 +1,69 @@
 package com.udeshcoffee.android.data.local
 
-import android.util.Log
+import androidx.room.withTransaction
 import com.udeshcoffee.android.data.model.*
 import com.udeshcoffee.android.model.Song
-import io.reactivex.Flowable
-import io.reactivex.Observable
-import io.reactivex.Single
-import io.reactivex.schedulers.Schedulers
+import kotlinx.coroutines.flow.Flow
 
 /**
-* Created by Udathari on 12/19/2017.
+* App-owned data in the Room database.
 */
-class LocalDataSource(private val dataDao: DataDao, val playlistDao: PlaylistDao) {
+class LocalDataSource(
+        private val database: LocalDatabase,
+        private val dataDao: DataDao,
+        val playlistDao: PlaylistDao
+) {
 
-    fun getMostPlayedSongs(): Observable<List<SongStat>> =
-            Observable.fromCallable { dataDao.getSongMostPlayed() }
+    // Stats
+    fun observeMostPlayedSongs(): Flow<List<SongStat>> = dataDao.observeSongMostPlayed()
 
-    fun getRecentlyPlayedSongs(): Observable<List<SongStat>> =
-            Observable.fromCallable { dataDao.getSongRecentlyPlayed() }
+    fun observeRecentlyPlayedSongs(): Flow<List<SongStat>> = dataDao.observeSongRecentlyPlayed()
 
-    fun getTopSongs(): Observable<List<SongStat>> =
-            Observable.fromCallable { dataDao.getTopSongs(5) }
-
-    fun getTopAlbums(): Observable<List<AlbumStat>> =
-            Observable.fromCallable { dataDao.getTopAlbums(5) }
-
-    fun getTopArtists(): Observable<List<ArtistStat>> =
-            Observable.fromCallable { dataDao.getTopArtists(5) }
+    suspend fun increasePlayCount(song: Song) {
+        val now = System.currentTimeMillis() / 1000
+        database.withTransaction {
+            val songStat = dataDao.getSongStat(song.id)
+            dataDao.setStats(songStat?.apply { playCount++; playTime = now } ?: SongStat(song.id, 1, now))
+            val albumStat = dataDao.getAlbumStat(song.albumId)
+            dataDao.setStats(albumStat?.apply { playCount++; playTime = now } ?: AlbumStat(song.albumId, 1, now))
+            val artistStat = dataDao.getArtistStat(song.artistId)
+            dataDao.setStats(artistStat?.apply { playCount++; playTime = now } ?: ArtistStat(song.artistId, 1, now))
+        }
+    }
 
     // Lyric
-    fun getLyrics(songId: Long): String? = dataDao.getLyrics(songId)?.lyric
+    suspend fun getLyrics(songId: Long): String? = dataDao.getLyrics(songId)?.lyric
 
-    fun setLyrics(lyrics: Lyric) = dataDao.setLyrics(lyrics)
+    suspend fun setLyrics(lyrics: Lyric) = dataDao.setLyrics(lyrics)
 
     // Equalizer
-    fun getEQPresets(): List<EQPreset> = dataDao.getEQPresets()
+    suspend fun getEQPresets(): List<EQPreset> = dataDao.getEQPresets()
 
-    fun addEQPreset(eqPreset: EQPreset): Long = dataDao.addEQPreset(eqPreset)
+    suspend fun addEQPreset(eqPreset: EQPreset): Long = dataDao.addEQPreset(eqPreset)
 
-    fun deleteEQPreset(eqPreset: EQPreset) = dataDao.deleteEQPreset(eqPreset)
+    suspend fun deleteEQPreset(eqPreset: EQPreset) = dataDao.deleteEQPreset(eqPreset)
 
     // Favorites
-    fun isFavorite(songId: Long): Boolean{
-        val favorite = dataDao.getFavorite(songId)
-        return favorite != null
-    }
+    suspend fun isFavorite(songId: Long): Boolean = dataDao.getFavorite(songId) != null
 
-    fun addFavorite(favorite: Favorite) = dataDao.addFavorite(favorite)
+    fun observeIsFavorite(songId: Long): Flow<Boolean> = dataDao.observeIsFavorite(songId)
 
-    fun deleteFavorite(favorite: Favorite) = dataDao.deleteFavorite(favorite)
+    suspend fun addFavorite(favorite: Favorite) = dataDao.addFavorite(favorite)
 
-    fun getFavorites(): Flowable<List<Favorite>> = dataDao.getFavorites()
+    suspend fun addFavorites(songIds: List<Long>) = dataDao.addFavorites(songIds.map { Favorite(it) })
+
+    suspend fun deleteFavorite(favorite: Favorite) = dataDao.deleteFavorite(favorite)
+
+    fun observeFavorites(): Flow<List<Favorite>> = dataDao.observeFavorites()
 
     // Bio
-    fun getBio(artistId: Long): Single<Pair<String, Array<String>?>> =
-            dataDao.getBio(artistId).map {
-                Pair(it.bio!!, it.tags!!.split(",").toTypedArray())
+    suspend fun getBio(artistId: Long): Pair<String, Array<String>?>? =
+            dataDao.getBio(artistId)?.let { bio ->
+                val text = bio.bio ?: return null
+                text to bio.tags?.split(",")?.filter { it.isNotBlank() }?.toTypedArray()
             }
 
-    fun insertBio(artistId: Long, bio: String, tags: Array<String>?) {
-        var tagsString = ""
-        tags?.forEach {
-            tagsString += if (tagsString == "")
-                it
-            else
-                "," + it
-        }
-        dataDao.insertBio(Bio(artistId, bio, tagsString))
+    suspend fun insertBio(artistId: Long, bio: String, tags: Array<String>?) {
+        dataDao.insertBio(Bio(artistId, bio, tags?.joinToString(",") ?: ""))
     }
-
-    // PlayCount
-    fun increasePlayCount(song: Song) {
-        dataDao.getSongStat(song.id)
-                .subscribeOn(Schedulers.io())
-                .observeOn(Schedulers.io())
-                .subscribe ({
-                    Log.d("playCount", "increasePlayCount ${it.playCount}")
-                    it.playCount++
-                    Log.d("playCount", "increasePlayCount ++ ${it.playCount}")
-                    it.playTime = System.currentTimeMillis() / 1000
-                    Log.d("playCount", "increasePlayCount")
-                    dataDao.setStats(it)
-                }, { dataDao.setStats(SongStat(song.id, 1, System.currentTimeMillis() / 1000)) })
-        dataDao.getAlbumStat(song.albumId)
-                .subscribeOn(Schedulers.io())
-                .observeOn(Schedulers.io())
-                .subscribe ({
-                    it.playCount++
-                    it.playTime = System.currentTimeMillis() / 1000
-                    dataDao.setStats(it)
-                }, { dataDao.setStats(AlbumStat(song.albumId, 1, System.currentTimeMillis() / 1000)) })
-        dataDao.getArtistStat(song.artistId)
-                .subscribeOn(Schedulers.io())
-                .observeOn(Schedulers.io())
-                .subscribe ({
-                    it.playCount++
-                    it.playTime = System.currentTimeMillis() / 1000
-                    dataDao.setStats(it)
-                }, { dataDao.setStats(ArtistStat(song.artistId, 1, System.currentTimeMillis() / 1000)) })
-    }
-
 }

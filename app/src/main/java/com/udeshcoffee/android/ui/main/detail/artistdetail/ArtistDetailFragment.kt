@@ -14,7 +14,6 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.navigation.findNavController
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.extensions.*
 import com.udeshcoffee.android.interfaces.OnGridItemClickListener
@@ -83,7 +82,7 @@ class ArtistDetailFragment : androidx.fragment.app.Fragment(), com.google.androi
             collapsedTitle.fadeOut(0)
 
             detailImage = findViewById(R.id.detail_image)
-            loadArtistArtwork(context, Glide.with(context), arguments!!.getLong(ARGUMENT_ID),
+            loadArtistArtwork(context, arguments!!.getLong(ARGUMENT_ID),
                     arguments!!.getString(ARGUMENT_NAME, ""), detailImage, true)
 
             actionBar?.apply {
@@ -319,7 +318,7 @@ class ArtistDetailFragment : androidx.fragment.app.Fragment(), com.google.androi
             })
             artistArtChanged.observe(this@ArtistDetailFragment, Observer {
                 it?.let {
-                    loadArtistArtwork(context!!, Glide.with(context!!), it.first, it.second, detailImage,
+                    loadArtistArtwork(requireContext(), it.first, it.second, detailImage,
                             shouldCollect = false)
                 }
             })

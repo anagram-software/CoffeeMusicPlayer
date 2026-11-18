@@ -1,5 +1,7 @@
 package com.udeshcoffee.android.ui.common.dialogs
 
+import kotlinx.coroutines.launch
+import com.udeshcoffee.android.utils.ProcessLifecycleScope
 import android.app.Dialog
 import android.os.Bundle
 import android.widget.EditText
@@ -36,7 +38,7 @@ class RenamePlaylistDialog: androidx.fragment.app.DialogFragment() {
                 .setPositiveButton("Rename") { _, _ ->
                     val name = playlist.text.toString()
                     if (name != "") {
-                        mediaRepository.renamePlaylist(playlistId, name)
+                        ProcessLifecycleScope.launch { mediaRepository.renamePlaylist(playlistId, name) }
                     }
                 }
                 .setNegativeButton("Cancel") { _, _ -> this@RenamePlaylistDialog.dialog?.cancel() }

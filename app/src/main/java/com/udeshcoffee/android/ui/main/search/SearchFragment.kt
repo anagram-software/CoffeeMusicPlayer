@@ -11,13 +11,18 @@ import android.widget.TextView
 import androidx.appcompat.app.ActionBar
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
+import androidx.lifecycle.lifecycleScope
+import com.udeshcoffee.android.extensions.queryTextChanges
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.launch
 import androidx.appcompat.widget.Toolbar
 import androidx.lifecycle.Observer
 import androidx.navigation.findNavController
 import androidx.recyclerview.widget.RecyclerView
 import androidx.transition.Fade
-import com.bumptech.glide.Glide
-import com.jakewharton.rxbinding2.support.v7.widget.RxSearchView
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.extensions.openCollectionLongDialog
 import com.udeshcoffee.android.extensions.openSongLongDialog
@@ -31,8 +36,6 @@ import com.udeshcoffee.android.ui.common.adapters.ArtistAdapter
 import com.udeshcoffee.android.ui.common.adapters.SongAdapter
 import com.udeshcoffee.android.ui.main.detail.albumdetail.AlbumDetailFragment
 import com.udeshcoffee.android.ui.main.detail.artistdetail.ArtistDetailFragment
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.CompositeDisposable
 import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import java.util.concurrent.TimeUnit
@@ -40,6 +43,7 @@ import java.util.concurrent.TimeUnit
 /**
 * Created by Udathari on 9/12/2017.
 */
+@OptIn(FlowPreview::class)
 class SearchFragment : androidx.fragment.app.Fragment() {
 
     private val viewModel: SearchViewModel by viewModel()
@@ -54,7 +58,7 @@ class SearchFragment : androidx.fragment.app.Fragment() {
 
     private lateinit var imm: InputMethodManager
 
-    private var searchDisposable = CompositeDisposable()
+    private var searchJob: Job? = null
 
     private var actionBar: ActionBar? = null
 
@@ -96,11 +100,13 @@ class SearchFragment : androidx.fragment.app.Fragment() {
                 isIconified = false
                 requestFocus()
             }
-            searchDisposable.add(RxSearchView.queryTextChangeEvents(searchView)
-                    .skip(1)
-                    .debounce(200, TimeUnit.MILLISECONDS)
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe({ searchViewQueryTextEvent -> viewModel.search(searchViewQueryTextEvent.queryText().toString()) }))
+            searchJob?.cancel()
+            searchJob = lifecycleScope.launch {
+                searchView.queryTextChanges()
+                        .drop(1)
+                        .debounce(200)
+                        .collect { viewModel.search(it) }
+            }
 
             // Album View
             val albumView = findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.album_recycler_view)
@@ -131,7 +137,7 @@ class SearchFragment : androidx.fragment.app.Fragment() {
             artistView.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(context, androidx.recyclerview.widget.LinearLayoutManager.HORIZONTAL, false)
             artistView.addItemDecoration(MiniGridItemDecor(resources.getDimensionPixelSize(R.dimen.activity_horizontal_margin), resources.getDimensionPixelSize(R.dimen.mini_grid_spacing)))
             // specify an adapter (see also next example)
-            artistAdpt = ArtistAdapter(ArtistAdapter.ITEM_TYPE_MINI, Glide.with(context), false)
+            artistAdpt = ArtistAdapter(ArtistAdapter.ITEM_TYPE_MINI, false)
             artistAdpt.listener = object : OnGridItemClickListener {
                 override fun onItemClick(position: Int, shareElement: View) {
                     viewModel.artistItemClicked(position)
@@ -249,7 +255,7 @@ class SearchFragment : androidx.fragment.app.Fragment() {
 
     override fun onDestroy() {
         super.onDestroy()
-        searchDisposable.dispose()
+        searchJob?.cancel()
     }
 
     companion object {

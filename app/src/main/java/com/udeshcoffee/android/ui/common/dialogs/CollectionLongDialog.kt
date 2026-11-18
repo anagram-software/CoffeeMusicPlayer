@@ -1,5 +1,7 @@
 package com.udeshcoffee.android.ui.common.dialogs
 
+import kotlinx.coroutines.launch
+import com.udeshcoffee.android.utils.ProcessLifecycleScope
 import android.app.Dialog
 import android.os.Bundle
 import androidx.appcompat.app.AlertDialog
@@ -77,7 +79,7 @@ class CollectionLongDialog: androidx.fragment.app.DialogFragment() {
                             Toast.makeText(context, "No songs available", Toast.LENGTH_SHORT).show()
                         }
                         4 -> if (songs!!.size > 0) {
-                            dataRepository.addToFavorites(songs)
+                            ProcessLifecycleScope.launch { dataRepository.addToFavorites(songs) }
                             Toast.makeText(context, "Added to favorites", Toast.LENGTH_SHORT).show()
                         } else {
                             Toast.makeText(context, "No songs available", Toast.LENGTH_SHORT).show()

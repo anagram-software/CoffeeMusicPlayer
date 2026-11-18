@@ -3,19 +3,17 @@ package com.udeshcoffee.android.ui.common.adapters
 import android.content.Context
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import com.bumptech.glide.RequestManager
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.interfaces.OnGridItemClickListener
 import com.udeshcoffee.android.model.Artist
 import com.udeshcoffee.android.ui.common.viewholders.ArtistViewHolder
-import io.reactivex.functions.Consumer
 
 /**
  * Created by Udathari on 5/30/2017.
  */
 
-class ArtistAdapter(private val dataType: Int, val glide: RequestManager, private val shouldCollectArt: Boolean) :
-        androidx.recyclerview.widget.RecyclerView.Adapter<androidx.recyclerview.widget.RecyclerView.ViewHolder>(), Consumer<List<Artist>> {
+class ArtistAdapter(private val dataType: Int, private val shouldCollectArt: Boolean) :
+        androidx.recyclerview.widget.RecyclerView.Adapter<androidx.recyclerview.widget.RecyclerView.ViewHolder>() {
 
     private var mDataset: List<Artist>? = null
     private var context: Context? = null
@@ -26,7 +24,7 @@ class ArtistAdapter(private val dataType: Int, val glide: RequestManager, privat
         const val ITEM_TYPE_MINI = 1
     }
 
-    override fun accept(p0: List<Artist>) {
+    fun accept(p0: List<Artist>) {
         this.mDataset = p0
         notifyDataSetChanged()
     }
@@ -44,10 +42,10 @@ class ArtistAdapter(private val dataType: Int, val glide: RequestManager, privat
 
         return if (dataType == ITEM_TYPE_NORMAL) {
             val itemView = inflater.inflate(R.layout.griditem, parent, false)
-            ArtistViewHolder(context!!, itemView, glide, listener)
+            ArtistViewHolder(context!!, itemView, listener)
         } else {
             val itemView = inflater.inflate(R.layout.griditem_mini, parent, false)
-            ArtistViewHolder(context!!, itemView, glide, listener)
+            ArtistViewHolder(context!!, itemView, listener)
         }
     }
 

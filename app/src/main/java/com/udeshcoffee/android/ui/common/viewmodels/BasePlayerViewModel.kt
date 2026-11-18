@@ -9,7 +9,9 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import android.util.Log
 import com.udeshcoffee.android.model.Song
-import io.reactivex.disposables.Disposable
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 
 abstract class BasePlayerViewModel(application: Application): AndroidViewModel(application) {
 
@@ -17,7 +19,7 @@ abstract class BasePlayerViewModel(application: Application): AndroidViewModel(a
     val duration = MutableLiveData<Long>()
     var isPlaying = MutableLiveData<Boolean>()
 
-    private var broadcastDisposable: Disposable? = null
+    private var eventsJob: Job? = null
     private var isLoaded: Boolean = false
 
     init {
@@ -25,8 +27,9 @@ abstract class BasePlayerViewModel(application: Application): AndroidViewModel(a
     }
 
     open fun start() {
-        broadcastDisposable = playbackEvents()
-                .subscribe {
+        eventsJob?.cancel()
+        eventsJob = viewModelScope.launch {
+            playbackEvents().collect {
                     when (it) {
                         PlaybackEvents.METADATA_CHANGED -> {
                             getPlayer()?.let { onMetadataChange(it) }
@@ -41,7 +44,8 @@ abstract class BasePlayerViewModel(application: Application): AndroidViewModel(a
                             }
                         }
                     }
-                }
+            }
+        }
         val service = getPlayer()
         if (service != null) {
             onInitMetadata(service)
@@ -50,10 +54,7 @@ abstract class BasePlayerViewModel(application: Application): AndroidViewModel(a
     }
 
     open fun stop() {
-        broadcastDisposable?.let {
-            if (!it.isDisposed)
-                it.dispose()
-        }
+        eventsJob?.cancel()
     }
 
     fun playPauseToggle() {

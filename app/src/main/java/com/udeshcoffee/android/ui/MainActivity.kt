@@ -20,6 +20,11 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.launch
+import com.udeshcoffee.android.utils.ProcessLifecycleScope
 import androidx.core.content.edit
 import androidx.core.view.GravityCompat
 import androidx.core.view.ViewCompat
@@ -41,10 +46,6 @@ import com.udeshcoffee.android.utils.MediaAccess
 import com.udeshcoffee.android.utils.Permissions
 import com.udeshcoffee.android.utils.PreferenceUtil
 import com.udeshcoffee.android.views.FadableLayout
-import io.reactivex.Single
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.schedulers.Schedulers
-import io.reactivex.disposables.Disposable
 import org.koin.android.ext.android.inject
 
 /**
@@ -56,7 +57,7 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
     private lateinit var sharedPreferences: SharedPreferences
     private val playerConnection: PlayerConnection by inject()
     private var isPlayerConnected = false
-    private var connectionDisposable: Disposable? = null
+    private var connectionJob: Job? = null
 
     private val miniPlayerFragment: MiniPlayerFragment by inject()
     private val playerFragment: PlayerFragment by inject()
@@ -79,7 +80,7 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
     private var controlBackSongId: Long = -1
     private var isQueueVisible = false
 
-    private lateinit var broadcastDisposable: Disposable
+    private var eventsJob: Job? = null
 
     private val permissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
         if (Permissions.hasReadAudio(this)) {
@@ -202,23 +203,24 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
     override fun onResume() {
         super.onResume()
 
-        broadcastDisposable = playbackEvents()
-                .filter { it == PlaybackEvents.METADATA_CHANGED || it == PlaybackEvents.SERVICE_CONNECTED }
-                .subscribe { setControlBack() }
+        eventsJob = lifecycleScope.launch {
+            playbackEvents()
+                    .filter { it == PlaybackEvents.METADATA_CHANGED || it == PlaybackEvents.SERVICE_CONNECTED }
+                    .collect { setControlBack() }
+        }
 
         setControlBack()
     }
 
     override fun onPause() {
         super.onPause()
-        if (!broadcastDisposable.isDisposed)
-            broadcastDisposable.dispose()
+        eventsJob?.cancel()
     }
 
     override fun onDestroy() {
         super.onDestroy()
         navController.removeOnDestinationChangedListener(this)
-        connectionDisposable?.dispose()
+        connectionJob?.cancel()
         if (isPlayerConnected) playerConnection.disconnect()
     }
 
@@ -368,25 +370,27 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
     }
 
     /** Playlists moved from MediaStore to the app database in DB version 7; copy existing ones once. */
-    @Suppress("CheckResult") // One-shot; should finish even if the activity goes away.
     private fun importMediaStorePlaylistsOnce() {
         if (sharedPreferences.getBoolean(PreferenceUtil.PLAYLISTS_IMPORTED, false)) return
-        Single.fromCallable { mediaRepository.importMediaStorePlaylists() }
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe({ count ->
-                    sharedPreferences.edit { putBoolean(PreferenceUtil.PLAYLISTS_IMPORTED, true) }
-                    if (count > 0)
-                        Toast.makeText(this, resources.getQuantityString(R.plurals.playlists_imported, count, count), Toast.LENGTH_LONG).show()
-                }, { Log.w(TAG, "Playlist import failed", it) })
+        // Application-wide scope: the import should finish even if this activity goes away.
+        ProcessLifecycleScope.launch {
+            try {
+                val count = mediaRepository.importMediaStorePlaylists()
+                sharedPreferences.edit { putBoolean(PreferenceUtil.PLAYLISTS_IMPORTED, true) }
+                if (count > 0)
+                    Toast.makeText(applicationContext, resources.getQuantityString(R.plurals.playlists_imported, count, count), Toast.LENGTH_LONG).show()
+            } catch (e: Exception) {
+                Log.w(TAG, "Playlist import failed", e)
+            }
+        }
     }
 
 
     private fun connectPlayer() {
         if (isPlayerConnected) return
-        connectionDisposable = playbackEvents()
-                .filter { it == PlaybackEvents.SERVICE_CONNECTED }
-                .subscribe { onPlayerConnected() }
+        connectionJob = lifecycleScope.launch {
+            playbackEvents().filter { it == PlaybackEvents.SERVICE_CONNECTED }.collect { onPlayerConnected() }
+        }
         playerConnection.connect()
         isPlayerConnected = true
     }

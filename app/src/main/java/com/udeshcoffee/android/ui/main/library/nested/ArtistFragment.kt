@@ -1,11 +1,13 @@
 package com.udeshcoffee.android.ui.main.library.nested
 
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import androidx.lifecycle.lifecycleScope
 import android.os.Bundle
 import android.view.*
 import androidx.navigation.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.data.MediaRepository
 import com.udeshcoffee.android.extensions.openCollectionLongDialog
@@ -18,8 +20,6 @@ import com.udeshcoffee.android.recyclerview.GridItemDecor
 import com.udeshcoffee.android.ui.common.adapters.ArtistAdapter
 import com.udeshcoffee.android.ui.main.detail.artistdetail.ArtistDetailFragment
 import com.udeshcoffee.android.utils.SortManager
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.Disposable
 import org.koin.android.ext.android.inject
 
 /**
@@ -30,7 +30,7 @@ class ArtistFragment : androidx.fragment.app.Fragment() {
 
     private val mediaRepository: MediaRepository by inject()
 
-    private var disposable: Disposable? = null
+    private var dataJob: Job? = null
     private var artistAdpt: ArtistAdapter? = null
 
     private var sortOrder: Int
@@ -50,7 +50,7 @@ class ArtistFragment : androidx.fragment.app.Fragment() {
 
         val albumView = view.findViewById<EmptyRecyclerView>(R.id.linear_list)
         // specify an adapter (see also next example)
-        artistAdpt = ArtistAdapter(ArtistAdapter.ITEM_TYPE_NORMAL, Glide.with(context!!), true)
+        artistAdpt = ArtistAdapter(ArtistAdapter.ITEM_TYPE_NORMAL, true)
         albumView.layoutManager = GridLayoutManager(context, resources.getInteger(R.integer.grid_columns),
                 RecyclerView.VERTICAL, false)
         albumView.setEmptyView(view.findViewById(R.id.empty_view))
@@ -66,10 +66,8 @@ class ArtistFragment : androidx.fragment.app.Fragment() {
 
             override fun onItemLongClick(position: Int) {
                 artistAdpt?.getItem(position)?.let {
-                    mediaRepository.getArtistSongs(it.id)
-                            .observeOn(AndroidSchedulers.mainThread())
-                            .take(1)
-                            .subscribe { songs ->
+                    viewLifecycleOwner.lifecycleScope.launch {
+                                val songs = mediaRepository.loadArtistSongs(it.id)
                                 openCollectionLongDialog(it.name, songs)
                             }
                 }
@@ -78,12 +76,9 @@ class ArtistFragment : androidx.fragment.app.Fragment() {
             override fun onItemOptionClick(position: Int) {
                 artistAdpt?.getItem(position)?.let {
                     showPlayingToast(it)
-                    mediaRepository.getArtistSongs(it.id)
-                            .observeOn(AndroidSchedulers.mainThread())
-                            .firstOrError()
-                            .subscribe({ songs ->
-                                playSong(0, songs, true)
-                            }, {})
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        playSong(0, mediaRepository.loadArtistSongs(it.id), true)
+                    }
                 }
             }
         }
@@ -136,25 +131,18 @@ class ArtistFragment : androidx.fragment.app.Fragment() {
 
     private fun fetchData() {
         dispose()
-        disposable = mediaRepository.getArtists()
-                .observeOn(AndroidSchedulers.mainThread())
-                .map { artists ->
-                    SortManager.sortArtists(artists)
-
-                    if (!SortManager.artistsAscending) {
-                        return@map artists.reversed()
-                    }
-
-                    return@map artists
-                }
-                .subscribe { artistAdpt?.accept(it) }
+        dataJob = viewLifecycleOwner.lifecycleScope.launch {
+            mediaRepository.observeArtists().collect { artists ->
+                artistAdpt?.accept(artists.toMutableList().also {
+                    SortManager.sortArtists(it)
+                    if (!SortManager.artistsAscending) it.reverse()
+                })
+            }
+        }
     }
 
     fun dispose() {
-        disposable?.let {
-            if (!it.isDisposed)
-                it.dispose()
-        }
+        dataJob?.cancel()
     }
 
     fun showDetailUI(detail: Artist) {

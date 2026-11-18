@@ -1,5 +1,7 @@
 package com.udeshcoffee.android.ui.main.detail.artistdetail
 
+import kotlinx.coroutines.launch
+import androidx.lifecycle.viewModelScope
 import android.app.Activity.RESULT_OK
 import android.app.Application
 import androidx.lifecycle.MutableLiveData
@@ -12,11 +14,7 @@ import com.udeshcoffee.android.utils.SingleLiveEvent
 import com.udeshcoffee.android.utils.call
 import com.udeshcoffee.android.utils.SortManager
 import com.udeshcoffee.android.utils.deleteArtistArt
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.Disposable
-import io.reactivex.schedulers.Schedulers
 import java.util.*
-
 
 /**
  * Created by Udathari on 9/12/2017.
@@ -39,8 +37,6 @@ class ArtistDetailViewModel(
     val artistArtChanged = SingleLiveEvent<Pair<Long, String>>()
     val artistArtDeleted = SingleLiveEvent<Unit>()
 
-    private var songsDisposable: Disposable? = null
-    private var albumsDisposable: Disposable? = null
 
     override fun start() {
         super.start()
@@ -63,70 +59,21 @@ class ArtistDetailViewModel(
     }
 
     override fun fetchSongs() {
-        disposeSongs()
-        songsDisposable = mediaRepository.getArtistSongs(artistId)
-                .map({ songs ->
-                    SortManager.sortArtistSongs(songs)
-
-                    if (!songSortAscending) {
-                        Collections.reverse(songs)
-                    }
-
-                    return@map songs
-                })
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe {
-                    songs.value = it
-                }
+        collectSongs(mediaRepository.observeArtistSongs(artistId), SortManager::sortArtistSongs) { songSortAscending }
     }
 
     override fun fetchAlbums() {
-        disposeAlbums()
-        albumsDisposable = mediaRepository.getArtistAlbums(artistName)
-                .map({ albums ->
-                    SortManager.sortArtistAlbums(albums)
-
-                    if (!albumSortAscending) {
-                        Collections.reverse(albums)
-                    }
-
-                    return@map albums
-                })
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe {
-                    albums.value = it
-                }
-    }
-
-    override fun disposeSongs() {
-        songsDisposable?.let {
-            if (!it.isDisposed)
-                it.dispose()
-        }
-    }
-
-    override fun disposeAlbums() {
-        albumsDisposable?.let {
-            if (!it.isDisposed)
-                it.dispose()
-        }
+        collectAlbums(mediaRepository.observeArtistAlbums(artistName), SortManager::sortArtistAlbums) { albumSortAscending }
     }
 
     // Bio
     private fun fetchBio() {
-        Log.d(TAG, "fetchBio")
-        dataRepository.getBio(artistId, artistName)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe({
-                    Log.d(TAG, "emitBio $it")
-                    it?.let {
-                        bio.value = it.first
-                        tags.value = it.second
-                    }
-                }, {})
+        viewModelScope.launch {
+            dataRepository.getBio(artistId, artistName)?.let {
+                bio.value = it.first
+                tags.value = it.second
+            }
+        }
     }
 
     fun deleteImage() {

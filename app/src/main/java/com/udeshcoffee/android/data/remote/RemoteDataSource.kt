@@ -1,232 +1,204 @@
 package com.udeshcoffee.android.data.remote
 
-import com.udeshcoffee.android.BuildConfig
-
 import android.util.Log
-import com.annimon.stream.Collectors
-import com.annimon.stream.Stream
-import com.udeshcoffee.android.data.remote.genius.Response
-import com.udeshcoffee.android.data.remote.genius.SearchService
-import com.udeshcoffee.android.data.remote.itunes.ITunesService
-import com.udeshcoffee.android.data.remote.itunes.SearchResponse
-import com.udeshcoffee.android.data.remote.itunes.ItunesSong
+import com.udeshcoffee.android.BuildConfig
+import com.udeshcoffee.android.data.remote.genius.GeniusService
+import com.udeshcoffee.android.data.remote.genius.Hit
 import com.udeshcoffee.android.data.remote.lastfm.ImageArtist
-import com.udeshcoffee.android.data.remote.lastfm.LastFMService
-import io.reactivex.Observable
-import io.reactivex.Single
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.schedulers.Schedulers
+import com.udeshcoffee.android.data.remote.lastfm.LastFmService
+import com.udeshcoffee.android.data.remote.lastfm.TrackMetadata
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
-import org.jsoup.HttpStatusException
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
-import org.jsoup.safety.Whitelist
+import org.jsoup.nodes.Element
+import org.jsoup.safety.Safelist
 import retrofit2.Retrofit
-import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
-import retrofit2.converter.gson.GsonConverterFactory
-import java.io.IOException
+import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import java.text.Normalizer
-import java.util.regex.Pattern
+import java.util.concurrent.TimeUnit
 
 /**
- * Created by Udathari on 12/5/2017.
+ * Network sources: Genius (lyrics search + page scraping) and Last.fm (artist info and track
+ * metadata). All functions are main-safe and return null/empty on failure.
  */
 object RemoteDataSource {
 
-    private val geniusBaseUrl: String = "https://api.genius.com/"
-    private val itunesBaseUrl: String = "https://api.music.apple.com/v1/catalog/us/"
-    private val lastFMBaseUrl: String = "https://ws.audioscrobbler.com/"
+    private const val GENIUS_BASE_URL = "https://api.genius.com/"
+    private const val LASTFM_BASE_URL = "https://ws.audioscrobbler.com/"
+    private const val USER_AGENT = "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Mobile Safari/537.36"
+    /** Last.fm's placeholder image ("no artwork"). */
+    private const val LASTFM_PLACEHOLDER = "2a96cbd8b46e442fc41c2b86b821562f"
+    private const val TAG = "RemoteDataSource"
 
-    private val geniusParameters = arrayOf(
-            Pair("access_token", BuildConfig.GENIUS_ACCESS_TOKEN)
-    )
+    private val json = Json {
+        ignoreUnknownKeys = true
+        coerceInputValues = true
+        explicitNulls = false
+        isLenient = true
+    }
 
-    private val lastFMParameters = arrayOf(
-            Pair("api_key", BuildConfig.LASTFM_API_KEY),
-            Pair("format", "json")
-    )
-
-    private val USER_AGENT = "Mozilla/5.0 (Linux; U; Android 6.0.1; ko-kr; Build/IML74K) AppleWebkit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30"
-
-    private fun createOkHttpClient(parameters: Array<Pair<String, String>>?): OkHttpClient {
-        val httpClient = OkHttpClient.Builder()
-        httpClient.addInterceptor { chain ->
-            val original = chain.request()
-            val originalHttpUrl = original.url()
-            val urlBuilder = originalHttpUrl.newBuilder()
-            parameters?.let {
-                for (parameter in it) {
-                    urlBuilder.addQueryParameter(parameter.first, parameter.second)
-                }
+    private fun client(params: Map<String, String>): OkHttpClient = OkHttpClient.Builder()
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(20, TimeUnit.SECONDS)
+            .addInterceptor { chain ->
+                val original = chain.request()
+                val url = original.url.newBuilder().apply {
+                    params.forEach { (k, v) -> addQueryParameter(k, v) }
+                }.build()
+                chain.proceed(original.newBuilder().url(url).header("User-Agent", "CoffeeMusicPlayer").build())
             }
-            val url = urlBuilder.build()
-            // Request customization: add request headers
-            val requestBuilder = original.newBuilder().url(url)
-            val request = requestBuilder.build()
-            chain.proceed(request)
-        }
-        return httpClient.build()
+            .build()
+
+    private fun retrofit(baseUrl: String, params: Map<String, String>): Retrofit = Retrofit.Builder()
+            .baseUrl(baseUrl)
+            .client(client(params))
+            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+            .build()
+
+    private val genius: GeniusService by lazy {
+        retrofit(GENIUS_BASE_URL, mapOf("access_token" to BuildConfig.GENIUS_ACCESS_TOKEN)).create(GeniusService::class.java)
     }
 
-    private fun createRetrofit(baseUrl: String, parameters: Array<Pair<String, String>>?, isReactive: Boolean): Retrofit {
-        val builder = Retrofit.Builder()
-                .baseUrl(baseUrl)
-                .addConverterFactory(GsonConverterFactory.create())
-        if (isReactive) builder.addCallAdapterFactory(RxJava2CallAdapterFactory.create())
-        return builder.client(createOkHttpClient(parameters))
+    private val lastFm: LastFmService by lazy {
+        retrofit(LASTFM_BASE_URL, mapOf("api_key" to BuildConfig.LASTFM_API_KEY, "format" to "json")).create(LastFmService::class.java)
+    }
+
+    // ---- Genius ----
+
+    /** Genius hits by the given artist; only exact title matches when [exactTitle] and any exist. */
+    suspend fun searchGenius(title: String, artist: String, exactTitle: Boolean): List<Hit> {
+        val hits = try {
+            genius.search(title).response?.hits ?: emptyList()
+        } catch (e: Exception) {
+            Log.w(TAG, "Genius search failed", e)
+            return emptyList()
+        }
+        val byArtist = hits.filter { it.result.primaryArtist.name.contains(artist, ignoreCase = true) }
+        val exact = byArtist.filter { it.result.titleWithFeatured.equals(title, ignoreCase = true) }
+        return if (exactTitle && exact.isNotEmpty()) exact else byArtist
+    }
+
+    /**
+     * Scrapes lyrics from a Genius song page ([path] like "/Artist-song-lyrics").
+     * Returns HTML with `<br/>` line breaks and highlighted section headers, or null.
+     */
+    suspend fun loadGeniusLyrics(path: String): String? = withContext(Dispatchers.IO) {
+        try {
+            extractLyrics(fetchPage("https://genius.com$path") ?: return@withContext null)
+        } catch (e: Exception) {
+            Log.w(TAG, "Couldn't load lyrics page", e)
+            null
+        }
+    }
+
+    private val pageClient: OkHttpClient by lazy {
+        OkHttpClient.Builder().connectTimeout(15, TimeUnit.SECONDS).readTimeout(20, TimeUnit.SECONDS).build()
+    }
+
+    /** Fetches a web page with browser-like headers; null on any HTTP error. */
+    private fun fetchPage(url: String): String? {
+        val request = okhttp3.Request.Builder()
+                .url(url)
+                .header("User-Agent", USER_AGENT)
+                .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+                .header("Accept-Language", "en-US,en;q=0.9")
                 .build()
-    }
-
-    // Itunes
-    private fun getItunesService(): ITunesService {
-        val retrofit = createRetrofit(itunesBaseUrl, null, true)
-        return retrofit.create<ITunesService>(ITunesService::class.java)
-    }
-
-    fun searchItunes(song: String, artist: String): Observable<List<ItunesSong>> {
-        return getItunesService().search(song = song)
-                .map { filterItunesSearch(it, artist) }
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .take(1)
-    }
-
-    private fun filterItunesSearch(searchResponse: SearchResponse?, artist: String): List<ItunesSong> {
-        val results = searchResponse?.results?.songs?.data?.filter {
-            it.attributes?.artistName?.contains(artist, true) ?: false
+        pageClient.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) {
+                Log.w(TAG, "HTTP ${response.code} for $url")
+                return null
+            }
+            return response.body.string()
         }
-        return results ?: listOf()
     }
 
-    // Genius
-    private fun getGeniusSearchService(isReactive: Boolean): SearchService {
-        val retrofit = createRetrofit(geniusBaseUrl, geniusParameters, isReactive)
-        return retrofit.create<SearchService>(SearchService::class.java)
+    /** Lyrics HTML from a Genius song page, or null if the page has none. */
+    internal fun extractLyrics(pageHtml: String): String? {
+        val page = Jsoup.parse(pageHtml).apply { outputSettings().prettyPrint(false) }
+        // Current markup: one or more lyrics containers; older pages used a ".lyrics" div.
+        val containers = page.select("div[data-lyrics-container=true]").ifEmpty { page.select(".lyrics") }
+        if (containers.isEmpty()) return null
+        return formatLyrics(containers.flatMap { textLines(it) }).takeIf { it.isNotBlank() }
     }
 
-    fun searchGenius(song: String, artist: String, shouldCheckEqual: Boolean): Observable<com.udeshcoffee.android.data.remote.genius.SearchResponse> {
-        return getGeniusSearchService(true).search(song)
-                .map {
-                    return@map filterGeniusSearch(it, song, artist, shouldCheckEqual)
-                }
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .take(1)
+    private fun textLines(container: Element): List<String> {
+        val copy = container.clone()
+        // Genius puts the translations/contributors header inside the container, marked like this.
+        copy.select("[data-exclude-from-selection=true]").remove()
+        val html = copy.html().replace(Regex("(?i)<br\\s*/?>"), "\n")
+        val text = Jsoup.clean(html, "", Safelist.none(), Document.OutputSettings().prettyPrint(false))
+        return text.lines().map { org.jsoup.parser.Parser.unescapeEntities(it, false).trim() }
     }
 
-    fun searchGeniusSynchronous(song: String, artist: String): com.udeshcoffee.android.data.remote.genius.SearchResponse? {
-        val call = getGeniusSearchService(false).searchSynchronous(song)
-        return try {
-            filterGeniusSearch(call.execute().body(), song, artist, true)
+    private fun formatLyrics(lines: List<String>): String {
+        val header = Regex("^\\[.+]$")
+        val builder = StringBuilder()
+        for (line in lines.dropLastWhile { it.isEmpty() }) {
+            if (line.isEmpty() && builder.isEmpty()) continue
+            if (header.matches(line)) {
+                builder.append("<font color=#1976D2><b>").append(line.trim('[', ']')).append("</b></font>")
+            } else {
+                builder.append(line.replace("\\P{Print}".toRegex(), ""))
+            }
+            builder.append("<br/>")
+        }
+        return Normalizer.normalize(builder.toString().removeSuffix("<br/>"), Normalizer.Form.NFC)
+    }
+
+    // ---- Last.fm ----
+
+    /** Artist bio/tags plus an image scraped from the artist's Last.fm page (the API no longer serves images). */
+    suspend fun searchLastFMArtist(artist: String): ImageArtist? {
+        val info = try {
+            lastFm.getArtistInfo(artist).artist
+        } catch (e: Exception) {
+            Log.w(TAG, "Last.fm artist lookup failed", e)
+            null
+        } ?: return null
+        return ImageArtist(info, loadLastFmArtistImage(info.url) ?: "")
+    }
+
+    private suspend fun loadLastFmArtistImage(url: String): String? = withContext(Dispatchers.IO) {
+        if (url.isEmpty()) return@withContext null
+        try {
+            val page = Jsoup.parse(fetchPage(url) ?: return@withContext null, url)
+            page.selectFirst("meta[property=og:image]")?.attr("content")
+                    ?.takeIf { it.isNotEmpty() && !it.contains(LASTFM_PLACEHOLDER) }
+                    ?: page.selectFirst(".header-new-background-image")?.attr("content")?.takeIf { it.isNotEmpty() }
         } catch (e: Exception) {
             null
         }
     }
 
-    private fun filterGeniusSearch(searchResponse: com.udeshcoffee.android.data.remote.genius.SearchResponse?,
-                                   title: String, artist: String, shouldCheckEqual: Boolean): com.udeshcoffee.android.data.remote.genius.SearchResponse {
-        val hits = Stream.of(searchResponse?.response?.hits)
-                .filter { it.result.primary_artist.name.contains(artist, true) }
-                .collect(Collectors.toList())
-        val equalHits = hits.filter { it.result.title_with_featured.equals(title, true) }
-        val response = if (equalHits.isEmpty() || !shouldCheckEqual) {
-            Response(hits)
-        } else {
-            Response(equalHits)
-        }
-        return com.udeshcoffee.android.data.remote.genius.SearchResponse(response)
-    }
-
-    fun loadGenius(path: String): Observable<String?> {
-        return Observable.just(path)
-                .map {
-                    return@map loadGeniusSynchronous(path)
-                }
-                .take(1)
-    }
-
-    fun loadGeniusSynchronous(path: String): String {
-        val lyricsPage: Document
-        val text: String
-
+    /**
+     * Track metadata for the tag editor. Tries an exact track.getInfo lookup (with Last.fm's
+     * autocorrect) and falls back to track.search for the best match.
+     */
+    suspend fun searchTrackMetadata(title: String, artist: String): TrackMetadata? {
         try {
-            lyricsPage = Jsoup.connect("https://genius.com$path").userAgent(USER_AGENT).get()
-            val lyricsDiv = lyricsPage.select(".lyrics")
-            if (lyricsDiv.isEmpty()) {
-                return ""
-            } else {
-                text = Jsoup.clean(lyricsDiv.html(), Whitelist.none().addTags("br")).trim()
+            // "Not found" can come back as an error body or an HTTP error; either way, fall back to search.
+            var info = runCatching { lastFm.getTrackInfo(title, artist).track }.getOrNull()
+            if (info == null) {
+                val match = lastFm.searchTrack(title, artist.ifBlank { null }).results?.trackMatches?.track?.firstOrNull()
+                        ?: return null
+                info = lastFm.getTrackInfo(match.name, match.artist).track ?: return null
             }
-        } catch (e: HttpStatusException) {
-            return ""
-        } catch (e: IOException) {
-            return ""
-        } catch (e: StringIndexOutOfBoundsException) {
-            return ""
+            val artwork = info.album?.image
+                    ?.lastOrNull { it.url.isNotEmpty() && !it.url.contains(LASTFM_PLACEHOLDER) }?.url
+            return TrackMetadata(
+                    title = info.name,
+                    artist = info.artist?.name ?: artist,
+                    album = info.album?.title?.takeIf { it.isNotEmpty() },
+                    genre = info.topTags?.tag?.firstOrNull()?.name?.replaceFirstChar { it.titlecase() },
+                    artworkUrl = artwork
+            )
+        } catch (e: Exception) {
+            Log.w(TAG, "Last.fm track lookup failed", e)
+            return null
         }
-
-        val pattern = Pattern.compile("\\[.+]")
-        val builder = StringBuilder()
-        for (line in text.split("<br> ".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()) {
-            val strippedLine = line.replace("\\s".toRegex(), "")
-            if (!(strippedLine.isEmpty() && builder.isEmpty())) {
-                if (!pattern.matcher(strippedLine).matches()) {
-                    builder.append(line.replace("\\P{Print}".toRegex(), "")).append("<br/>")
-                } else {
-                    builder.append("<font color=#1976D2><b>").append(line.replace("[^a-zA-Z0-9\\s]".toRegex(), " ")).append("</b></font>").append("<br/>")
-                }
-            }
-        }
-        if (builder.length > 5)
-            builder.delete(builder.length - 5, builder.length)
-        return Normalizer.normalize(builder.toString(), Normalizer.Form.NFD)
     }
-
-
-    private fun loadLastFMImageSynchronous(url: String): String {
-        val lastFMPage: Document
-        val text: String
-
-        try {
-            Log.d("LastFM", "Image URL $url")
-            lastFMPage = Jsoup.connect(url).userAgent(USER_AGENT).get()
-            val lastFMImageDiv = lastFMPage.select(".header-new-background-image")
-            val lastFMImageDivHTML = lastFMImageDiv.outerHtml()
-            if (lastFMImageDivHTML.isEmpty()) {
-                Log.d("LastFM", "Image Div empty")
-                return ""
-            } else {
-                text = lastFMImageDivHTML.split("content=\"")[1].split("\"></div>")[0]
-            }
-        } catch (e: HttpStatusException) {
-            return ""
-        } catch (e: IOException) {
-            return ""
-        } catch (e: StringIndexOutOfBoundsException) {
-            return ""
-        }
-
-        Log.d("LastFM", "Image Div $text")
-        return Normalizer.normalize(text, Normalizer.Form.NFD)
-    }
-
-    // LastFM
-    private fun getLastFMService(): LastFMService {
-        val retrofit = createRetrofit(lastFMBaseUrl, lastFMParameters, true)
-        return retrofit.create<LastFMService>(LastFMService::class.java)
-    }
-
-    fun searchLastFMArtist(artist: String): Single<ImageArtist> {
-        return getLastFMService().getArtistInfo(artist)
-                .map {
-                    if (it.artist != null) {
-                        val image = loadLastFMImageSynchronous(it.artist.url)
-                        return@map ImageArtist(it.artist, image)
-                    } else throw Exception("Null artist")
-                }
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .firstOrError()
-    }
-
 }

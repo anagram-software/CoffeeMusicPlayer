@@ -12,12 +12,20 @@ import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
 import com.udeshcoffee.android.data.MediaRepository
 import com.udeshcoffee.android.model.Song
-import io.reactivex.Observable
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.schedulers.Schedulers
-import io.reactivex.subjects.BehaviorSubject
-import io.reactivex.subjects.PublishSubject
-import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.launch
 
 /**
  * The UI's handle on playback: a MediaController connected to [PlaybackService].
@@ -30,8 +38,9 @@ class PlayerConnection(
         private val queueStore: QueueStore
 ) {
 
-    private val eventSubject = PublishSubject.create<String>()
-    private val queueSubject = BehaviorSubject.createDefault<List<Song>>(emptyList())
+    private val eventFlow = MutableSharedFlow<String>(extraBufferCapacity = 64)
+    private val queueFlow = MutableStateFlow<List<Song>>(emptyList())
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var future: ListenableFuture<MediaController>? = null
     private var users = 0
 
@@ -41,8 +50,8 @@ class PlayerConnection(
     val isConnected: Boolean
         get() = controller != null
 
-    /** [PlaybackEvents] names: metadata, playback state, and connection changes. */
-    val events: Observable<String> = eventSubject
+    /** [PlaybackEvents] names: metadata, playback state, and connection changes. Emitted on the main thread. */
+    val events: SharedFlow<String> = eventFlow.asSharedFlow()
 
     // ---- Connection ----
 
@@ -60,9 +69,9 @@ class PlayerConnection(
                 controller = c
                 c.addListener(listener)
                 refreshQueue()
-                eventSubject.onNext(PlaybackEvents.SERVICE_CONNECTED)
-                eventSubject.onNext(PlaybackEvents.METADATA_CHANGED)
-                eventSubject.onNext(PlaybackEvents.PLAYBACK_STATE_CHANGED)
+                eventFlow.tryEmit(PlaybackEvents.SERVICE_CONNECTED)
+                eventFlow.tryEmit(PlaybackEvents.METADATA_CHANGED)
+                eventFlow.tryEmit(PlaybackEvents.PLAYBACK_STATE_CHANGED)
             } catch (e: Exception) {
                 Log.e(TAG, "Couldn't connect to playback service", e)
                 future = null
@@ -84,16 +93,16 @@ class PlayerConnection(
             if (events.contains(Player.EVENT_TIMELINE_CHANGED)) refreshQueue()
             if (events.containsAny(Player.EVENT_MEDIA_ITEM_TRANSITION, Player.EVENT_MEDIA_METADATA_CHANGED,
                             Player.EVENT_TIMELINE_CHANGED, Player.EVENT_PLAYBACK_STATE_CHANGED))
-                eventSubject.onNext(PlaybackEvents.METADATA_CHANGED)
+                eventFlow.tryEmit(PlaybackEvents.METADATA_CHANGED)
             if (events.containsAny(Player.EVENT_IS_PLAYING_CHANGED, Player.EVENT_PLAY_WHEN_READY_CHANGED,
                             Player.EVENT_PLAYBACK_STATE_CHANGED))
-                eventSubject.onNext(PlaybackEvents.PLAYBACK_STATE_CHANGED)
+                eventFlow.tryEmit(PlaybackEvents.PLAYBACK_STATE_CHANGED)
         }
     }
 
     private fun refreshQueue() {
         val c = controller ?: return
-        queueSubject.onNext((0 until c.mediaItemCount).map { c.getMediaItemAt(it).toSong() })
+        queueFlow.value = (0 until c.mediaItemCount).map { c.getMediaItemAt(it).toSong() }
     }
 
     // ---- State ----
@@ -115,14 +124,17 @@ class PlayerConnection(
         get() = controller?.duration?.takeIf { it != C.TIME_UNSET } ?: currentSong()?.duration ?: 0
 
     val queue: List<Song>
-        get() = queueSubject.value ?: emptyList()
+        get() = queueFlow.value
 
-    fun queueObservable(): Observable<List<Song>> = queueSubject
+    val queueChanges: StateFlow<List<Song>> = queueFlow.asStateFlow()
 
-    /** Emits the playback position every [intervalMs] while subscribed. */
-    fun progressObservable(intervalMs: Long = 100): Observable<Long> =
-            Observable.interval(intervalMs, TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread())
-                    .map { currentPosition }
+    /** Emits the playback position every [intervalMs] while collected (on the main thread). */
+    fun progress(intervalMs: Long = 100): Flow<Long> = flow {
+        while (true) {
+            emit(currentPosition)
+            delay(intervalMs)
+        }
+    }.flowOn(Dispatchers.Main.immediate)
 
     /** One of [RepeatModes] PREF_* values (the format the queue screen uses). */
     var repeatMode: Int
@@ -189,13 +201,15 @@ class PlayerConnection(
     }
 
     /** Plays a file opened from another app. */
-    @Suppress("CheckResult") // One-shot.
     fun playUri(uri: Uri) {
-        mediaRepository.getSong(uri)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe({ songs -> if (songs.isNotEmpty()) setQueue(songs, 0, true) },
-                        { Log.w(TAG, "Couldn't open $uri", it) })
+        scope.launch {
+            try {
+                val songs = mediaRepository.loadSong(uri)
+                if (songs.isNotEmpty()) setQueue(songs, 0, true)
+            } catch (e: Exception) {
+                Log.w(TAG, "Couldn't open $uri", e)
+            }
+        }
     }
 
     /** Plays songs matching a search query (Assistant's "play X on Coffee Player"); the session resolves it. */
@@ -209,18 +223,19 @@ class PlayerConnection(
     }
 
     /** Shows the last session's queue (paused) when the app opens with nothing queued. */
-    @Suppress("CheckResult") // One-shot.
     fun restoreQueueIfEmpty() {
         val c = controller ?: return
         if (c.mediaItemCount > 0) return
-        // Maybe.fromCallable treats a null result as empty.
-        io.reactivex.Maybe.fromCallable<QueueStore.SavedQueue> { queueStore.load() }
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe({ saved ->
-                    val now = controller ?: return@subscribe
-                    if (now.mediaItemCount == 0) setQueue(saved.songs, saved.index, false, saved.positionMs)
-                }, { Log.w(TAG, "Couldn't restore queue", it) })
+        scope.launch {
+            val saved = try {
+                queueStore.load()
+            } catch (e: Exception) {
+                Log.w(TAG, "Couldn't restore queue", e)
+                null
+            } ?: return@launch
+            val now = controller ?: return@launch
+            if (now.mediaItemCount == 0) setQueue(saved.songs, saved.index, false, saved.positionMs)
+        }
     }
 
     companion object {

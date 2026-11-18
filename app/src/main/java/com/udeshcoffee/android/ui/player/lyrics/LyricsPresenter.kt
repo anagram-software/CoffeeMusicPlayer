@@ -1,5 +1,11 @@
 package com.udeshcoffee.android.ui.player.lyrics
 
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.CoroutineScope
 import com.udeshcoffee.android.playback.PlaybackEvents
 import com.udeshcoffee.android.extensions.getPlayer
 import com.udeshcoffee.android.extensions.playbackEvents
@@ -12,7 +18,6 @@ import com.udeshcoffee.android.data.model.Lyric
 import com.udeshcoffee.android.extensions.toLastFMArtistQuery
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.utils.PreferenceUtil
-import io.reactivex.disposables.Disposable
 import org.koin.core.component.KoinComponent
 import java.util.*
 
@@ -33,37 +38,45 @@ class LyricsPresenter(private val dataRepository: DataRepository,
 
     override lateinit var view: LyricsContract.View
 
-    var broadcastDisposable: Disposable? = null
+    /** Lives from start() to stop(). */
+    private var scope: CoroutineScope? = null
     var currentSong: Song? = null
-    var lyricDisposable: Disposable? = null
+    private var lyricJob: Job? = null
 
     override fun start() {
-        broadcastDisposable = playbackEvents()
-                .filter { it == PlaybackEvents.METADATA_CHANGED || it == PlaybackEvents.SERVICE_CONNECTED }
-                // Metadata events also fire for playback state changes; reload only for a new song.
-                .filter { getPlayer()?.currentSong()?.id != currentSong?.id }
-                .subscribe { fetchLyrics() }
+        val scope = MainScope().also { this.scope = it }
+        scope.launch {
+            playbackEvents()
+                    .filter { it == PlaybackEvents.METADATA_CHANGED || it == PlaybackEvents.SERVICE_CONNECTED }
+                    // Metadata events also fire for playback state changes; reload only for a new song.
+                    .filter { getPlayer()?.currentSong()?.id != currentSong?.id }
+                    .collect { fetchLyrics() }
+        }
         fetchLyrics()
         view.setLyricsSize(lyricsSize)
     }
 
     override fun stop() {
-        broadcastDisposable?.let {
-            if (!it.isDisposed)
-                it.dispose()
-        }
-        disposeLyrics()
+        scope?.cancel()
+        scope = null
+        lyricJob = null
     }
 
     override fun fetchLyrics() {
-        currentSong = getPlayer()?.currentSong()
-        currentSong?.let {
-            dataRepository.getLyrics(it).subscribe({ it1 ->
-                it1?.let { it2 -> view.setLyrics(it2) }
-            }, { _ ->
-                searchLyrics(it.id, it.title, it.artistName, true)
-            })
+        val song = getPlayer()?.currentSong()
+        currentSong = song
+        song ?: return
+        launchLyricJob {
+            val lyrics = dataRepository.getLyrics(song)
+            if (lyrics != null) view.setLyrics(lyrics)
+            else searchLyrics(song.id, song.title, song.artistName, true)
         }
+    }
+
+    /** Runs [block] as the only lyrics operation (a new one cancels the previous). */
+    private fun launchLyricJob(block: suspend () -> Unit) {
+        lyricJob?.cancel()
+        lyricJob = scope?.launch { block() }
     }
 
     override fun changeLyricsSize() {
@@ -83,65 +96,34 @@ class LyricsPresenter(private val dataRepository: DataRepository,
         }
     }
 
-    private fun disposeLyrics() {
-        lyricDisposable?.let {
-            if (!it.isDisposed)
-                it.dispose()
-        }
-        lyricDisposable = null
-    }
-
-    private fun searchLyrics(id: Long, title: String, artist: String, shouldCheckEqual: Boolean) {
+    private suspend fun searchLyrics(id: Long, title: String, artist: String, shouldCheckEqual: Boolean) {
         Log.d(TAG, "Searching Lyrics id:$id title:$title artist:$artist")
         view.showSearching()
-        disposeLyrics()
-        lyricDisposable = dataRepository.searchLyrics(title, artist.toLastFMArtistQuery(), shouldCheckEqual)
-                .subscribe( { t->
-                currentSong?.id?.let {
-                    if (id == it) {
-                        t.response?.hits?.let { it1 ->
-                            if (it1.isNotEmpty()) {
-                                if (it1.size == 1) {
-                                    loadLyrics(it, it1[0].result.path)
-                                } else {
-                                    val tempList = ArrayList<Result>()
-                                    it1.mapTo(tempList) { it.result }
-                                    view.setMultipleFound(tempList)
-                                }
-                            } else {
-                                view.setNotFound()
-                            }
-                        }
-                    }
-                }}, {})
+        val hits = dataRepository.searchLyrics(title, artist.toLastFMArtistQuery(), shouldCheckEqual)
+        if (currentSong?.id != id) return
+        when {
+            hits.isEmpty() -> view.setNotFound()
+            hits.size == 1 -> loadLyrics(id, hits[0].result.path)
+            else -> view.setMultipleFound(hits.map { it.result })
+        }
     }
 
-    private fun loadLyrics(id: Long, path: String) {
+    private suspend fun loadLyrics(id: Long, path: String) {
         view.showLoading()
-        if (path != "")
-            dataRepository.loadLyrics(id, path)
-                    .subscribe ({
-                        it?.let {
-                            currentSong?.id?.let { it1 ->
-                                if (id == it1) {
-                                    view.setLyrics(it)
-                                }
-                            }
-                        }
-                    }, {})
+        if (path.isEmpty()) return
+        val lyrics = dataRepository.loadLyrics(id, path)
+        if (currentSong?.id != id) return
+        if (lyrics != null) view.setLyrics(lyrics) else view.setNotFound()
     }
 
     override fun search(id: Long, title: String, artist:String) {
-        currentSong?.id?.let { if (it == id) searchLyrics(it, title, artist, false) }
+        if (currentSong?.id == id) launchLyricJob { searchLyrics(id, title, artist, false) }
     }
 
     override fun addCustomLyrics(id: Long, lyrics: String) {
-        currentSong?.id?.let { it1 ->
-            if (id == it1) {
-                view.setLyrics(lyrics)
-                dataRepository.setLyrics(Lyric(id, lyrics))
-            }
-        }
+        if (currentSong?.id != id) return
+        view.setLyrics(lyrics)
+        scope?.launch { dataRepository.setLyrics(Lyric(id, lyrics)) }
     }
 
     override fun retry() {
@@ -153,7 +135,8 @@ class LyricsPresenter(private val dataRepository: DataRepository,
     }
 
     override fun selectFromMultiple(result: Result) {
-        currentSong?.id?.let { loadLyrics(it, result.path) }
+        val id = currentSong?.id ?: return
+        launchLyricJob { loadLyrics(id, result.path) }
     }
 
     override fun openSearch() {

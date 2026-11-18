@@ -23,20 +23,15 @@ material = "1.14.0"
 media3 = "1.11.1"
 room = "2.8.5"
 
-# Third party (replaced in later phases)
+# Third party
 koin = "4.2.2"
-glide = "4.6.1"
-rxandroid = "2.1.1"
-rxjava = "2.2.8"
-rxkotlin = "2.2.0"
-sqlbrite = "2.0.0"
-annimon-stream = "1.1.7"
-rxbinding = "2.0.0"
-retrofit = "2.3.0"
-okhttp = "3.10.0"
-gson = "2.8.5"
-jsoup = "1.10.2"
-
+coroutines = "1.11.0"
+serialization = "1.13.0"
+retrofit = "3.0.0"
+okhttp = "5.5.1"
+coil = "3.6.3"
+jsoup = "1.24.1"
+jaudiotagger = "3.0.1"
 slidinguppanel = "3.3.1"
 
 junit = "4.13.2"
@@ -50,6 +45,7 @@ androidx-drawerlayout = { module = "androidx.drawerlayout:drawerlayout", version
 androidx-fragment-ktx = { module = "androidx.fragment:fragment-ktx", version.ref = "fragment" }
 androidx-gridlayout = { module = "androidx.gridlayout:gridlayout", version.ref = "gridlayout" }
 androidx-lifecycle-livedata-ktx = { module = "androidx.lifecycle:lifecycle-livedata-ktx", version.ref = "lifecycle" }
+androidx-lifecycle-runtime-ktx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "lifecycle" }
 androidx-lifecycle-viewmodel-ktx = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "lifecycle" }
 androidx-navigation-fragment-ktx = { module = "androidx.navigation:navigation-fragment-ktx", version.ref = "navigation" }
 androidx-navigation-ui-ktx = { module = "androidx.navigation:navigation-ui-ktx", version.ref = "navigation" }
@@ -58,7 +54,7 @@ androidx-preference-ktx = { module = "androidx.preference:preference-ktx", versi
 androidx-recyclerview = { module = "androidx.recyclerview:recyclerview", version.ref = "recyclerview" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
-androidx-room-rxjava2 = { module = "androidx.room:room-rxjava2", version.ref = "room" }
+androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 androidx-transition = { module = "androidx.transition:transition", version.ref = "transition" }
 androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "work" }
 androidx-viewpager = { module = "androidx.viewpager:viewpager", version.ref = "viewpager" }
@@ -68,19 +64,16 @@ material = { module = "com.google.android.material:material", version.ref = "mat
 
 koin-android = { module = "io.insert-koin:koin-android", version.ref = "koin" }
 
-glide = { module = "com.github.bumptech.glide:glide", version.ref = "glide" }
-rxandroid = { module = "io.reactivex.rxjava2:rxandroid", version.ref = "rxandroid" }
-rxjava = { module = "io.reactivex.rxjava2:rxjava", version.ref = "rxjava" }
-rxkotlin = { module = "io.reactivex.rxjava2:rxkotlin", version.ref = "rxkotlin" }
-sqlbrite = { module = "com.squareup.sqlbrite2:sqlbrite", version.ref = "sqlbrite" }
-annimon-stream = { module = "com.annimon:stream", version.ref = "annimon-stream" }
-rxbinding-appcompat = { module = "com.jakewharton.rxbinding2:rxbinding-appcompat-v7-kotlin", version.ref = "rxbinding" }
+kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
+kotlinx-coroutines-guava = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-guava", version.ref = "coroutines" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
-retrofit-adapter-rxjava2 = { module = "com.squareup.retrofit2:adapter-rxjava2", version.ref = "retrofit" }
-retrofit-converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "retrofit" }
+retrofit-converter-kotlinx-serialization = { module = "com.squareup.retrofit2:converter-kotlinx-serialization", version.ref = "retrofit" }
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
-gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
+coil = { module = "io.coil-kt.coil3:coil", version.ref = "coil" }
+coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil" }
 jsoup = { module = "org.jsoup:jsoup", version.ref = "jsoup" }
+jaudiotagger = { module = "net.jthink:jaudiotagger", version.ref = "jaudiotagger" }
 slidinguppanel = { module = "com.sothree.slidinguppanel:library", version.ref = "slidinguppanel" }
 
 junit = { module = "junit:junit", version.ref = "junit" }
@@ -88,4 +81,5 @@ junit = { module = "junit:junit", version.ref = "junit" }
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }

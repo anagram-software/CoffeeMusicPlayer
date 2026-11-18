@@ -1,5 +1,8 @@
 package com.udeshcoffee.android.ui.main.playlist
 
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import androidx.lifecycle.lifecycleScope
 import android.os.Bundle
 import android.view.*
 import android.widget.TextView
@@ -20,9 +23,6 @@ import com.udeshcoffee.android.ui.common.adapters.PlaylistAdapter
 import com.udeshcoffee.android.ui.common.dialogs.CollectionLongDialog
 import com.udeshcoffee.android.ui.common.dialogs.NewPlaylistDialog
 import com.udeshcoffee.android.ui.main.detail.playlistdetail.PlaylistDetailFragment
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.Disposable
-import io.reactivex.schedulers.Schedulers
 import org.koin.android.ext.android.inject
 
 /**
@@ -34,7 +34,7 @@ class PlaylistFragment: androidx.fragment.app.Fragment() {
 
     // Lists
     lateinit var playlistAdapter: PlaylistAdapter
-    private var disposable: Disposable? = null
+    private var dataJob: Job? = null
     private var actionBar: ActionBar? = null
 
     init {
@@ -74,20 +74,18 @@ class PlaylistFragment: androidx.fragment.app.Fragment() {
 
                 override fun onItemLongClick(position: Int) {
                     playlistAdapter.getItem(position).let {
-                        mediaRepository.getPlaylistSongs(it.id, it.type)
-                                ?.observeOn(AndroidSchedulers.mainThread())
-                                ?.take(1)
-                                ?.subscribe { songs ->
-                                    val mDialog = CollectionLongDialog()
-                                    val bundle = Bundle()
-                                    bundle.putString(CollectionLongDialog.ARGUMENT_TITLE, it.title)
-                                    bundle.putParcelableArrayList(CollectionLongDialog.ARGUMENT_SONGS, songs as ArrayList<Song>)
-                                    if (it.type == Playlist.USER) {
-                                        bundle.putParcelable(CollectionLongDialog.ARGUMENT_PLAYLIST, it)
-                                    }
-                                    mDialog.arguments = bundle
-                                    fragmentManager?.let { it1 -> mDialog.show(it1, "CollectionLongDialog") }
-                                }
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            val songs = mediaRepository.loadPlaylistSongs(it.id, it.type)
+                            val mDialog = CollectionLongDialog()
+                            val bundle = Bundle()
+                            bundle.putString(CollectionLongDialog.ARGUMENT_TITLE, it.title)
+                            bundle.putParcelableArrayList(CollectionLongDialog.ARGUMENT_SONGS, ArrayList(songs))
+                            if (it.type == Playlist.USER) {
+                                bundle.putParcelable(CollectionLongDialog.ARGUMENT_PLAYLIST, it)
+                            }
+                            mDialog.arguments = bundle
+                            parentFragmentManager.let { it1 -> mDialog.show(it1, "CollectionLongDialog") }
+                        }
                     }
                 }
             }
@@ -115,19 +113,15 @@ class PlaylistFragment: androidx.fragment.app.Fragment() {
     }
 
     fun dispose() {
-        disposable?.let {
-            if (it.isDisposed)
-                it.dispose()
-        }
+        dataJob?.cancel()
     }
 
     override fun onResume() {
         super.onResume()
         dispose()
-        disposable = mediaRepository.getPlaylists()
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(playlistAdapter)
+        dataJob = viewLifecycleOwner.lifecycleScope.launch {
+            mediaRepository.observePlaylists().collect { playlistAdapter.accept(it) }
+        }
     }
 
     fun showDetailUI(detail: Playlist) {

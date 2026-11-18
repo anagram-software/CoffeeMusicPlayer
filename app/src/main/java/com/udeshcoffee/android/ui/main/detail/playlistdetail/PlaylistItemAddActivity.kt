@@ -6,15 +6,15 @@ import android.view.MenuItem
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import androidx.appcompat.widget.Toolbar
 import androidx.recyclerview.widget.RecyclerView
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.data.MediaRepository
 import com.udeshcoffee.android.interfaces.OnItemSelectListener
 import com.udeshcoffee.android.ui.common.adapters.PlaylistAddAdapter
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.Disposable
-import io.reactivex.schedulers.Schedulers
 import org.koin.android.ext.android.inject
 
 /**
@@ -26,7 +26,7 @@ class PlaylistItemAddActivity : AppCompatActivity() {
     private val mediaRepository: MediaRepository by inject()
     private var addAdapter: PlaylistAddAdapter? = null
     private var playlistId: Long? = null
-    private var disposable: Disposable? = null
+    private var songsJob: Job? = null
 
     private var addDeleteToast: Toast? = null
 
@@ -68,16 +68,14 @@ class PlaylistItemAddActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        disposable = mediaRepository.getSongs()
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(addAdapter!!)
+        songsJob = lifecycleScope.launch {
+            mediaRepository.observeSongs().collect { addAdapter?.accept(it) }
+        }
     }
 
     override fun onPause() {
         super.onPause()
-        if (disposable != null && !disposable!!.isDisposed)
-            disposable!!.dispose()
+        songsJob?.cancel()
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -87,12 +85,14 @@ class PlaylistItemAddActivity : AppCompatActivity() {
     }
 
     fun addToPlaylist(audioId: Long) {
-        mediaRepository.addSongToPlaylist(playlistId!!, audioId)
+        val id = playlistId ?: return
+        lifecycleScope.launch { mediaRepository.addSongToPlaylist(id, audioId) }
         showToast("Added to playlist")
     }
 
     fun deletePlaylistTracks(audioId: Long) {
-        mediaRepository.removeSongFromPlaylist(playlistId!!, audioId)
+        val id = playlistId ?: return
+        lifecycleScope.launch { mediaRepository.removeSongFromPlaylist(id, audioId) }
         showToast("Removed from playlist")
     }
 

@@ -1,5 +1,9 @@
 package com.udeshcoffee.android.ui.common.dialogs
 
+import androidx.lifecycle.lifecycleScope
+import android.widget.ArrayAdapter
+import kotlinx.coroutines.launch
+import com.udeshcoffee.android.utils.ProcessLifecycleScope
 import android.app.Dialog
 import android.os.Bundle
 import androidx.fragment.app.DialogFragment
@@ -28,17 +32,20 @@ class AddToPlaylistDialog: androidx.fragment.app.DialogFragment() {
 
         val thisPlaylistId = this.arguments!!.getLong(ARGUMENT_THIS_PLAYLIST_ID, -2155)
 
-        val playlists = loadPlaylists(thisPlaylistId)
-        val size = playlists.size
-        val titles = arrayOfNulls<String>(size + 1)
-        (0 until size).forEach { titles[it] = playlists[it].title }
-        titles[size] = "Add New"
+        // Playlists load asynchronously; "Add New" is always the last row.
+        var playlists: List<Playlist> = emptyList()
+        val adapter = ArrayAdapter<String>(requireContext(), android.R.layout.select_dialog_item, mutableListOf("Add New"))
+        lifecycleScope.launch {
+            playlists = mediaRepository.loadPlaylistsExcept(thisPlaylistId)
+            adapter.clear()
+            adapter.addAll(playlists.map { it.title } + "Add New")
+        }
 
-        val builder = AlertDialog.Builder(context!!)
+        val builder = AlertDialog.Builder(requireContext())
         builder.setTitle("Add to playlist")
-                .setItems(titles) { _, i ->
-                    if (i == size) {
-                        fragmentManager?.let { NewPlaylistDialog.create().show(it, "NewPlaylistDialog") }
+                .setAdapter(adapter) { _, i ->
+                    if (i >= playlists.size) {
+                        NewPlaylistDialog.create().show(parentFragmentManager, "NewPlaylistDialog")
                         dismiss()
                     } else {
                         songs?.let { addToPlaylist(playlists[i].id, it) }
@@ -48,11 +55,8 @@ class AddToPlaylistDialog: androidx.fragment.app.DialogFragment() {
         return builder.create()
     }
 
-    private fun loadPlaylists(playlistid: Long): List<Playlist> =
-            mediaRepository.getPlaylistsExcept(playlistid)
-
     private fun addToPlaylist(playlistId: Long, songs: ArrayList<Song>) {
-        mediaRepository.addToPlaylist(playlistId, songs)
+        ProcessLifecycleScope.launch { mediaRepository.addToPlaylist(playlistId, songs) }
         Toast.makeText(context, "Added " + songs.size + " to playlist", Toast.LENGTH_SHORT).show()
     }
 

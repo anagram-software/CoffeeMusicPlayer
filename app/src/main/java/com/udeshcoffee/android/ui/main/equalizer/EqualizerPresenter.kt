@@ -3,6 +3,8 @@ package com.udeshcoffee.android.ui.main.equalizer
 import com.udeshcoffee.android.playback.AudioEffects
 import android.util.Log
 import com.udeshcoffee.android.service.AudioFXHelper
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import java.util.*
 
@@ -10,6 +12,9 @@ import java.util.*
 * Created by Udathari on 9/28/2017.
 */
 class EqualizerPresenter: EqualizerContract.Presenter, KoinComponent {
+
+    private val scope = MainScope()
+
 
     val TAG = "EqualizerPresenter"
 
@@ -82,10 +87,11 @@ class EqualizerPresenter: EqualizerContract.Presenter, KoinComponent {
     }
 
     override fun deletePreset(preset: Int) {
-        helper?.apply {
-            deleteUserPreset(preset - presetCount)
-            userCount = getUserPresetCount()
-            this.preset = -1
+        val helper = helper ?: return
+        scope.launch {
+            helper.deleteUserPreset(preset - presetCount)
+            userCount = helper.getUserPresetCount()
+            helper.preset = -1
             loadPresets(helper)
         }
     }
@@ -127,11 +133,12 @@ class EqualizerPresenter: EqualizerContract.Presenter, KoinComponent {
     }
 
     override fun saveUserPreset(name: String) {
-        helper?.saveUserPreset(name)
-        helper?.let {
-            it.preset = presetCount + userCount
-            userCount = it.getUserPresetCount()
-            loadPresets(it)
+        val helper = helper ?: return
+        scope.launch {
+            helper.saveUserPreset(name)
+            helper.preset = presetCount + userCount
+            userCount = helper.getUserPresetCount()
+            loadPresets(helper)
         }
     }
 

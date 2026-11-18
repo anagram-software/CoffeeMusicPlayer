@@ -8,19 +8,18 @@ import com.udeshcoffee.android.R
 import com.udeshcoffee.android.interfaces.OnItemClickListener
 import com.udeshcoffee.android.model.Playlist
 import com.udeshcoffee.android.ui.common.viewholders.PlaylistViewHolder
-import io.reactivex.functions.Consumer
 
 /**
  * Created by Udathari on 5/30/2017.
  */
 
-class PlaylistAdapter() : androidx.recyclerview.widget.RecyclerView.Adapter<androidx.recyclerview.widget.RecyclerView.ViewHolder>(), Consumer<List<Playlist>> {
+class PlaylistAdapter() : androidx.recyclerview.widget.RecyclerView.Adapter<androidx.recyclerview.widget.RecyclerView.ViewHolder>() {
 
     private var dataSet: List<Playlist>? = null
     private var context: Context? = null
     var listener: OnItemClickListener? = null
 
-    override fun accept(p0: List<Playlist>) {
+    fun accept(p0: List<Playlist>) {
         this.dataSet = p0
         notifyDataSetChanged()
     }

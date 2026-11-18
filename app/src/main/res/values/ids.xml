@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- View tag: artist whose image is being downloaded into an ImageView (see ArtUtils). -->
+    <item name="artist_art_request" type="id" />
+</resources>

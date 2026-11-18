@@ -15,14 +15,13 @@ import com.udeshcoffee.android.interfaces.OnDragableItemListener
 import com.udeshcoffee.android.extensions.loadArtwork
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.ui.common.viewholders.SongViewHolder
-import io.reactivex.functions.Consumer
 import java.util.*
 
 /**
 * Created by Udathari on 9/17/2017.
 */
 class DragableAdapter(var dragable: Boolean):
-        RecyclerView.Adapter<RecyclerView.ViewHolder>(), Consumer<List<Song>>, ItemTouchHelperAdapter {
+        RecyclerView.Adapter<RecyclerView.ViewHolder>(), ItemTouchHelperAdapter {
 
     var dataset = ArrayList<Song>()
     var context: Context? = null
@@ -35,7 +34,7 @@ class DragableAdapter(var dragable: Boolean):
 
     var listener: OnDragableItemListener? = null
 
-    override fun accept(p0: List<Song>) {
+    fun accept(p0: List<Song>) {
         this.dataset.clear()
         this.dataset.addAll(p0)
         checkCurrentSong()

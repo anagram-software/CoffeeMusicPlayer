@@ -11,13 +11,12 @@ import com.udeshcoffee.android.interfaces.OnSongItemClickListener
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.ui.common.viewholders.AlbumSongViewHolder
 import com.udeshcoffee.android.ui.common.viewholders.SongViewHolder
-import io.reactivex.functions.Consumer
 /**
  * Created by Udesh on 2/18/2017.
  */
 
 class SongAdapter(private val dataType: Int, private val hasShuffle: Boolean):
-        RecyclerView.Adapter<RecyclerView.ViewHolder>(), Consumer<List<Song>>{
+        RecyclerView.Adapter<RecyclerView.ViewHolder>(){
 
     private var mDataset: List<Song> = ArrayList()
     private var context: Context? = null
@@ -38,7 +37,7 @@ class SongAdapter(private val dataType: Int, private val hasShuffle: Boolean):
         const val ITEM_TYPE_SHUFFLE = 2
     }
 
-    override fun accept(songs: List<Song>) {
+    fun accept(songs: List<Song>) {
         this.mDataset = songs
         notifyDataSetChanged()
         checkCurrentSong()

@@ -7,14 +7,12 @@ import com.udeshcoffee.android.R
 import com.udeshcoffee.android.interfaces.OnGridItemClickListener
 import com.udeshcoffee.android.model.Album
 import com.udeshcoffee.android.ui.common.viewholders.AlbumViewHolder
-import io.reactivex.functions.Consumer
 
 /**
 * Created by Udathari on 5/30/2017.
 */
 
-class AlbumAdapter(private val dataType: Int) : androidx.recyclerview.widget.RecyclerView.Adapter<androidx.recyclerview.widget.RecyclerView.ViewHolder>(),
-        Consumer<List<Album>> {
+class AlbumAdapter(private val dataType: Int) : androidx.recyclerview.widget.RecyclerView.Adapter<androidx.recyclerview.widget.RecyclerView.ViewHolder>() {
 
     private var mDataset: List<Album>? = null
     private var context: Context? = null
@@ -25,7 +23,7 @@ class AlbumAdapter(private val dataType: Int) : androidx.recyclerview.widget.Rec
         const val ITEM_TYPE_MINI = 1
     }
 
-    override fun accept(p0: List<Album>) {
+    fun accept(p0: List<Album>) {
         this.mDataset = p0
         notifyDataSetChanged()
     }

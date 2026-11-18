@@ -1,5 +1,7 @@
 package com.udeshcoffee.android.ui.common.dialogs
 
+import kotlinx.coroutines.launch
+import com.udeshcoffee.android.utils.ProcessLifecycleScope
 import android.app.Dialog
 import android.os.Bundle
 import androidx.appcompat.app.AlertDialog
@@ -33,7 +35,7 @@ class NewPlaylistDialog : androidx.fragment.app.DialogFragment() {
                     val playlist = dialogView.findViewById<View>(R.id.new_name) as EditText
                     val name = playlist.text.toString()
                     if (name != "") {
-                        mediaRepository.addPlaylist(name)
+                        ProcessLifecycleScope.launch { mediaRepository.addPlaylist(name) }
                     }
                 }
                 .setNegativeButton("Cancel") { _, _ -> this@NewPlaylistDialog.dialog?.cancel() }

@@ -1,11 +1,13 @@
 package com.udeshcoffee.android.ui.miniplayer
 
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import androidx.lifecycle.viewModelScope
 import com.udeshcoffee.android.playback.PlayerConnection
 import com.udeshcoffee.android.extensions.getPlayer
 import android.app.Application
 import androidx.lifecycle.MutableLiveData
 import com.udeshcoffee.android.ui.common.viewmodels.BasePlayerViewModel
-import io.reactivex.disposables.Disposable
 
 /**
  * Created by Udathari on 8/25/2017.
@@ -14,7 +16,7 @@ class MiniPlayerViewModel(application: Application): BasePlayerViewModel(applica
 
     val progress = MutableLiveData<Long>()
 
-    private var progressDisposable: Disposable? = null
+    private var progressJob: Job? = null
 
     override fun start() {
         super.start()
@@ -51,17 +53,12 @@ class MiniPlayerViewModel(application: Application): BasePlayerViewModel(applica
 
     override fun setProgress() {
         disposeProgress()
-        progressDisposable = getPlayer()?.progressObservable()
-                ?.subscribe {
-                    progress.value = it
-                }
+        val player = getPlayer() ?: return
+        progressJob = viewModelScope.launch { player.progress().collect { progress.value = it } }
     }
 
     override fun disposeProgress() {
-        progressDisposable?.let {
-            if (!it.isDisposed)
-                it.dispose()
-        }
+        progressJob?.cancel()
     }
 
 }

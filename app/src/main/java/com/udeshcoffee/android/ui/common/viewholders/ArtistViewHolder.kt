@@ -6,7 +6,6 @@ import android.view.View
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
-import com.bumptech.glide.RequestManager
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.interfaces.OnGridItemClickListener
 import com.udeshcoffee.android.extensions.loadArtwork
@@ -18,7 +17,7 @@ import com.udeshcoffee.android.utils.DopeUtil
 /**
  * Created by Udathari on 10/12/2017.
  */
-class ArtistViewHolder(val context: Context, itemView: View, val glide: RequestManager, val listener: OnGridItemClickListener?) :
+class ArtistViewHolder(val context: Context, itemView: View, val listener: OnGridItemClickListener?) :
         androidx.recyclerview.widget.RecyclerView.ViewHolder(itemView), View.OnClickListener, View.OnLongClickListener {
     // each data item is just a string in this case
     private var artView: ImageView = itemView.findViewById(R.id.grid_art)
@@ -38,7 +37,7 @@ class ArtistViewHolder(val context: Context, itemView: View, val glide: RequestM
     }
 
     fun bindData(currentItem: Artist, shouldCollectArt: Boolean) {
-        context.let { currentItem.loadArtwork(it, glide, artView, shouldCollectArt) }
+        context.let { currentItem.loadArtwork(it, artView, shouldCollectArt) }
         titleView.text = currentItem.name
         subtitleView.text = DopeUtil.countToSongCount(currentItem.songCount)
     }

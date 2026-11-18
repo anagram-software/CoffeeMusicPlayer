@@ -1,5 +1,8 @@
 package com.udeshcoffee.android.ui.main.library.nested
 
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import androidx.lifecycle.lifecycleScope
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -13,8 +16,6 @@ import com.udeshcoffee.android.model.Genre
 import com.udeshcoffee.android.recyclerview.EmptyRecyclerView
 import com.udeshcoffee.android.ui.common.adapters.GenreAdapter
 import com.udeshcoffee.android.ui.main.detail.genredetail.GenreDetailFragment
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.Disposable
 import org.koin.android.ext.android.inject
 
 /**
@@ -27,7 +28,7 @@ class GenreFragment : androidx.fragment.app.Fragment() {
 
     private val mediaRepository: MediaRepository by inject()
 
-    private var disposable: Disposable? = null
+    private var dataJob: Job? = null
     private var genreAdpt: GenreAdapter? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
@@ -50,12 +51,10 @@ class GenreFragment : androidx.fragment.app.Fragment() {
 
             override fun onItemLongClick(position: Int) {
                 genreAdpt?.getItem(position)?.let {
-                    mediaRepository.getGenreSongs(it.id)
-                            .observeOn(AndroidSchedulers.mainThread())
-                            .take(1)
-                            .subscribe({ songs ->
+                    viewLifecycleOwner.lifecycleScope.launch {
+                                val songs = mediaRepository.loadGenreSongs(it.id)
                                 openCollectionLongDialog(it.name, songs)
-                            })
+                            }
                 }
             }
         })
@@ -74,16 +73,13 @@ class GenreFragment : androidx.fragment.app.Fragment() {
 
     private fun fetchData() {
         dispose()
-        disposable = mediaRepository.getGenres()
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe{genreAdpt?.accept(it)}
+        dataJob = viewLifecycleOwner.lifecycleScope.launch {
+            mediaRepository.observeGenres().collect { genreAdpt?.accept(it) }
+        }
     }
 
     fun dispose(){
-        disposable?.let {
-            if (!it.isDisposed)
-                it.dispose()
-        }
+        dataJob?.cancel()
     }
 
     fun showDetailUI(detail: Genre) {

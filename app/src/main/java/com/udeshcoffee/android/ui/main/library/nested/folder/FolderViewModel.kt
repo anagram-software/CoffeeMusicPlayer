@@ -1,5 +1,7 @@
 package com.udeshcoffee.android.ui.main.library.nested.folder
 
+import kotlinx.coroutines.launch
+import androidx.lifecycle.viewModelScope
 import android.app.Application
 import androidx.lifecycle.MutableLiveData
 import android.os.Build
@@ -15,9 +17,6 @@ import com.udeshcoffee.android.utils.SortManager
 import com.udeshcoffee.android.utils.ToastMessage
 import com.udeshcoffee.android.App
 import com.udeshcoffee.android.utils.getStorageRoots
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.Disposable
-import io.reactivex.schedulers.Schedulers
 import java.io.File
 import java.util.*
 import kotlin.collections.ArrayList
@@ -38,7 +37,6 @@ class FolderViewModel(
     val showCollectionLongDialog = SingleLiveEvent<Pair<String, List<Song>>>()
     val showToast = ToastMessage()
 
-    private var disposable: Disposable? = null
 
     private val history: ArrayList<HistoryEntry> = ArrayList()
     private var currentDir: File? = null
@@ -54,58 +52,32 @@ class FolderViewModel(
     }
 
     private fun fetchFolders() {
-        currentDir?.let { dir ->
+        val dir = currentDir ?: return
+        viewModelScope.launch {
             val folderItems = mediaRepository.getChildFolders(dir.path)
                     .map { (path, count) -> File(path).let { Folder(it.name, count, it) } }
                     .filterNot { it.title.startsWith(".") }
-            SortManager.sortFolders(folderItems)
-            folders.value = if (!folderSortAscending) folderItems.reversed() else folderItems
+            if (currentDir != dir) return@launch
+            folders.value = folderItems.sortedWith(SortManager::sortFolders, folderSortAscending)
         }
     }
 
     private fun fetchRoot() {
-        roots = getStorageRoots(App.instance)
-        val folderItems = roots.map { (name, dir) ->
-            Folder(name, mediaRepository.getFolderSongCount(dir.path + "/"), dir)
-        }
-
-        //Sorting
-        val items = folderItems as List<Folder>
-        SortManager.sortFolders(items)
-
-        if (!folderSortAscending) {
-            folders.value = items.reversed()
-        }else {
-            folders.value = items
-        }
         disposeSongs()
         currentDir = null
+        viewModelScope.launch {
+            roots = getStorageRoots(App.instance)
+            val folderItems = roots.map { (name, dir) ->
+                Folder(name, mediaRepository.getFolderSongCount(dir.path + "/"), dir)
+            }
+            if (currentDir != null) return@launch
+            folders.value = folderItems.sortedWith(SortManager::sortFolders, folderSortAscending)
+        }
     }
 
     override fun fetchSongs() {
-        currentDir?.let {file ->
-            disposeSongs()
-            disposable = mediaRepository.getFolderSongs(file.path + "/")
-                    .map {songs ->
-                        SortManager.sortFolderSongs(songs)
-
-                        if (!songSortAscending) {
-                            return@map songs.reversed()
-                        }
-
-                        return@map songs
-                    }
-                    .subscribe {
-                        songs.value = it
-                    }
-        }
-    }
-
-    override fun disposeSongs() {
-        disposable?.let {
-            if (!it.isDisposed)
-                it.dispose()
-        }
+        val dir = currentDir ?: return
+        collectSongs(mediaRepository.observeFolderSongs(dir.path + "/"), SortManager::sortFolderSongs) { songSortAscending }
     }
 
     fun checkSortAndFetchFolders() {
@@ -143,23 +115,11 @@ class FolderViewModel(
     }
 
     fun folderItemLongClicked(position: Int) {
-        folders.value?.get(position)?.let { folder ->
-            mediaRepository.getFolderSongs(folder.file.path + "/")
-                    .map { songs ->
-                        SortManager.sortFolderSongs(songs)
-
-                        if (!SortManager.folderSongsAscending) {
-                            return@map songs.reversed()
-                        }
-
-                        return@map songs
-                    }
-                    .subscribeOn(Schedulers.io())
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .firstOrError()
-                    .subscribe({
-                        showCollectionLongDialog.value = folder.title to it
-                    }, {})
+        val folder = folders.value?.getOrNull(position) ?: return
+        viewModelScope.launch {
+            val songs = mediaRepository.loadFolderSongs(folder.file.path + "/")
+                    .sortedWith(SortManager::sortFolderSongs, SortManager.folderSongsAscending)
+            showCollectionLongDialog.value = folder.title to songs
         }
     }
 

@@ -26,12 +26,12 @@ class QueueStore(private val context: Context, private val mediaRepository: Medi
         }
     }
 
-    /** Loads the saved queue, resolving IDs against MediaStore. Blocking; call off the main thread. */
-    fun load(): SavedQueue? {
+    /** Loads the saved queue, resolving IDs against MediaStore. */
+    suspend fun load(): SavedQueue? {
         if (!Permissions.hasReadAudio(context)) return null
         val ids = decode(prefs.getString(PreferenceUtil.LAST_QUEUE, "") ?: "")
         if (ids.isEmpty()) return null
-        val byId = mediaRepository.getSongs().blockingFirst().associateBy { it.id }
+        val byId = mediaRepository.loadSongs().associateBy { it.id }
         val songs = ids.mapNotNull { byId[it] }
         if (songs.isEmpty()) return null
         val index = prefs.getInt(PreferenceUtil.LAST_PLAYED_POS, 0).coerceIn(0, songs.size - 1)

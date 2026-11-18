@@ -15,11 +15,10 @@ import org.koin.dsl.module
 */
 val repositoryModule = module {
 
-    // One database instance for the whole app (previously a new Room instance was built per injection).
+    // One database instance for the whole app. All queries run off the main thread (suspend/Flow DAOs).
     single {
         Room.databaseBuilder(get(), LocalDatabase::class.java, "CoffeePlayer.db")
             .addMigrations(LocalDatabase.Migration_5_6, LocalDatabase.Migration_6_7)
-            .allowMainThreadQueries()
             .build()
     }
 
@@ -29,7 +28,7 @@ val repositoryModule = module {
 
     factory { RemoteDataSource }
 
-    single { LocalDataSource(get(), get()) }
+    single { LocalDataSource(get(), get(), get()) }
 
     single { DataRepository(get(), get()) }
 

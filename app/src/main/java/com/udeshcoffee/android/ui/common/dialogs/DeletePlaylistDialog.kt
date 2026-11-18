@@ -1,5 +1,7 @@
 package com.udeshcoffee.android.ui.common.dialogs
 
+import kotlinx.coroutines.launch
+import com.udeshcoffee.android.utils.ProcessLifecycleScope
 import android.app.Dialog
 import android.os.Bundle
 import androidx.fragment.app.DialogFragment
@@ -25,7 +27,7 @@ class DeletePlaylistDialog: androidx.fragment.app.DialogFragment() {
                 .setMessage("Delete $playlistTitle ?")
                 // Add action buttons
                 .setPositiveButton("Delete") { _, _ ->
-                    mediaRepository.deletePlaylist(playlistId)
+                    ProcessLifecycleScope.launch { mediaRepository.deletePlaylist(playlistId) }
                     Toast.makeText(context, " Deleted", Toast.LENGTH_SHORT).show()
                     if (goBack)
                         requireActivity().onBackPressedDispatcher.onBackPressed()

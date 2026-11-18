@@ -86,7 +86,7 @@ class EditorFragment : androidx.fragment.app.Fragment() {
         @Suppress("DEPRECATION")
         dialog = ProgressDialog(context)
         dialog.setOnDismissListener{
-            viewModel.disposeCollectionDisposable()
+            viewModel.cancelSearch()
         }
         view.apply {
             val toolbar = findViewById<Toolbar>(R.id.toolbar)

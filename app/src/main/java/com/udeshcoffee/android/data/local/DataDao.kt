@@ -1,88 +1,81 @@
 package com.udeshcoffee.android.data.local
 
-import androidx.room.*
+import androidx.room.Dao
+import androidx.room.Delete
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
 import com.udeshcoffee.android.data.model.*
-import io.reactivex.Flowable
-import io.reactivex.Single
+import kotlinx.coroutines.flow.Flow
 
-/**
-* Created by Udathari on 12/19/2017.
-*/
 @Dao
 interface DataDao {
 
-    // Song Stats
+    // Stats
     @Query("SELECT * FROM song_stats WHERE songid = :songId")
-    fun getSongStat(songId: Long): Single<SongStat>
+    suspend fun getSongStat(songId: Long): SongStat?
 
     @Query("SELECT * FROM song_stats ORDER BY playcount DESC")
-    fun getSongMostPlayed(): List<SongStat>
+    fun observeSongMostPlayed(): Flow<List<SongStat>>
 
-    @Query("SELECT * FROM song_stats ORDER BY playtime ASC")
-    fun getSongRecentlyPlayed(): List<SongStat>
+    @Query("SELECT * FROM song_stats ORDER BY playtime DESC")
+    fun observeSongRecentlyPlayed(): Flow<List<SongStat>>
 
-    @Query("SELECT * FROM song_stats ORDER BY playcount DESC LIMIT :limit")
-    fun getTopSongs(limit: Int): List<SongStat>
-
-    // Album Stats
     @Query("SELECT * FROM album_stats WHERE albumid = :albumId")
-    fun getAlbumStat(albumId: Long): Single<AlbumStat>
+    suspend fun getAlbumStat(albumId: Long): AlbumStat?
 
-    @Query("SELECT * FROM album_stats ORDER BY playcount DESC LIMIT :limit")
-    fun getTopAlbums(limit: Int): List<AlbumStat>
-
-    // Artists Stats
     @Query("SELECT * FROM artist_stats WHERE artistid = :artistId")
-    fun getArtistStat(artistId: Long): Single<ArtistStat>
-
-    @Query("SELECT * FROM artist_stats ORDER BY playcount DESC LIMIT :limit")
-    fun getTopArtists(limit: Int): List<ArtistStat>
-
-    // Stats
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun setStats(songStat: SongStat)
+    suspend fun getArtistStat(artistId: Long): ArtistStat?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun setStats(albumStats: AlbumStat)
+    suspend fun setStats(songStat: SongStat)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun setStats(artistStats: ArtistStat)
+    suspend fun setStats(albumStats: AlbumStat)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun setStats(artistStats: ArtistStat)
 
     // Lyrics
     @Query("SELECT * FROM lyrics WHERE songid = :songId")
-    fun getLyrics(songId: Long): Lyric?
+    suspend fun getLyrics(songId: Long): Lyric?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun setLyrics(lyrics: Lyric)
+    suspend fun setLyrics(lyrics: Lyric)
 
     // Equalizer
     @Insert
-    fun addEQPreset(eqPreset: EQPreset): Long
+    suspend fun addEQPreset(eqPreset: EQPreset): Long
 
     @Delete
-    fun deleteEQPreset(eqPreset: EQPreset)
+    suspend fun deleteEQPreset(eqPreset: EQPreset)
 
     @Query("SELECT * FROM equalizer")
-    fun getEQPresets(): List<EQPreset>
+    suspend fun getEQPresets(): List<EQPreset>
 
     // Favorites
     @Query("SELECT * FROM favorites WHERE fav = :songId")
-    fun getFavorite(songId: Long): Favorite?
+    suspend fun getFavorite(songId: Long): Favorite?
+
+    @Query("SELECT EXISTS(SELECT 1 FROM favorites WHERE fav = :songId)")
+    fun observeIsFavorite(songId: Long): Flow<Boolean>
 
     @Query("SELECT * FROM favorites")
-    fun getFavorites(): Flowable<List<Favorite>>
+    fun observeFavorites(): Flow<List<Favorite>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun addFavorite(favorite: Favorite)
+    suspend fun addFavorite(favorite: Favorite)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun addFavorites(favorites: List<Favorite>)
 
     @Delete
-    fun deleteFavorite(favorite: Favorite)
+    suspend fun deleteFavorite(favorite: Favorite)
 
     // Bio
     @Query("SELECT * FROM bio WHERE artistid = :artistId")
-    fun getBio(artistId: Long): Single<Bio>
+    suspend fun getBio(artistId: Long): Bio?
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    fun insertBio(bio: Bio)
-
+    suspend fun insertBio(bio: Bio)
 }
