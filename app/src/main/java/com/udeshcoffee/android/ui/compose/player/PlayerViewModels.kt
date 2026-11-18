@@ -23,16 +23,28 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.onStart
+import androidx.core.text.htmlEncode
+import com.udeshcoffee.android.data.subsonic.SubsonicRepository
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class NowPlayingViewModel(
         private val player: PlayerConnection,
         private val dataRepository: DataRepository,
+        private val subsonic: SubsonicRepository,
         private val prefs: SharedPreferences
 ) : ViewModel() {
 
-    val isFavorite: StateFlow<Boolean> = player.state.map { it.song?.id }.distinctUntilChanged()
-            .flatMapLatest { id -> if (id == null) flowOf(false) else dataRepository.observeIsFavorite(id) }
+    /** Device songs: the app's favorites. Server songs: starred on the server. */
+    val isFavorite: StateFlow<Boolean> = player.state.map { it.song }.distinctUntilChanged { a, b -> a?.id == b?.id }
+            .flatMapLatest { song ->
+                val remote = song?.remoteId
+                when {
+                    song == null -> flowOf(false)
+                    remote != null -> subsonic.starredIds.onStart { subsonic.ensureStarredLoaded() }.map { remote in it }
+                    else -> dataRepository.observeIsFavorite(song.id)
+                }
+            }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
     private val _showLyrics = MutableStateFlow(prefs.getBoolean(PreferenceUtil.LYRICS, PreferenceUtil.DEFAULT_LYRICS))
@@ -46,7 +58,11 @@ class NowPlayingViewModel(
 
     fun toggleFavorite() {
         val song = player.state.value.song ?: return
-        viewModelScope.launch { dataRepository.toggleFavorite(song.id) }
+        viewModelScope.launch {
+            val remote = song.remoteId
+            if (remote != null) runCatching { subsonic.setStarred(listOf(remote), remote !in subsonic.starredIds.value) }
+            else dataRepository.toggleFavorite(song.id)
+        }
     }
 }
 
@@ -59,10 +75,14 @@ sealed interface LyricsState {
     data class Choose(val results: List<Result>) : LyricsState
 }
 
-/** Lyrics for the playing song: stored ones, else a Genius search (ported from LyricsPresenter). */
+/**
+ * Lyrics for the playing song: ones saved in the app, then (for server songs) the server's own,
+ * else a Genius search.
+ */
 class LyricsViewModel(
         private val player: PlayerConnection,
         private val dataRepository: DataRepository,
+        private val subsonic: SubsonicRepository,
         private val prefs: SharedPreferences
 ) : ViewModel() {
 
@@ -99,8 +119,12 @@ class LyricsViewModel(
         launch {
             _state.value = LyricsState.Loading
             val stored = dataRepository.getLyrics(s)
-            if (stored != null) _state.value = LyricsState.Found(stored)
-            else search(s, s.title, s.artistName, exact = true)
+            val server = if (stored == null && s.isRemote) runCatching { subsonic.lyrics(s) }.getOrNull() else null
+            when {
+                stored != null -> _state.value = LyricsState.Found(stored)
+                server != null -> _state.value = LyricsState.Found(server.joinToString("<br/>") { it.htmlEncode() })
+                else -> search(s, s.title, s.artistName, exact = true)
+            }
         }
     }
 

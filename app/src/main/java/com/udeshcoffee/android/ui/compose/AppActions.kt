@@ -10,6 +10,8 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.navigation.NavController
 import com.udeshcoffee.android.data.DataRepository
 import com.udeshcoffee.android.data.MediaRepository
+import com.udeshcoffee.android.data.subsonic.SubsonicException
+import com.udeshcoffee.android.data.subsonic.SubsonicRepository
 import com.udeshcoffee.android.extensions.connectedPlayer
 import com.udeshcoffee.android.model.Album
 import com.udeshcoffee.android.model.Artist
@@ -36,7 +38,8 @@ sealed interface OptionsSheet {
 /** A dialog shown by the app scaffold. */
 sealed interface AppDialog {
     data class AddToPlaylist(val songs: List<Song>, val excludePlaylistId: Long? = null) : AppDialog
-    data class NewPlaylist(val songs: List<Song> = emptyList()) : AppDialog
+    /** [onServer]: create it on the music server (the songs must be server songs). */
+    data class NewPlaylist(val songs: List<Song> = emptyList(), val onServer: Boolean = songs.isNotEmpty() && songs.all { it.isRemote }) : AppDialog
     data class RenamePlaylist(val playlist: Playlist) : AppDialog
     data class DeletePlaylist(val playlist: Playlist, val goBack: Boolean) : AppDialog
 }
@@ -51,6 +54,7 @@ class AppActions(
         private val scope: CoroutineScope,
         private val dataRepository: DataRepository,
         private val mediaRepository: MediaRepository,
+        private val subsonic: SubsonicRepository,
         val snackbar: SnackbarHostState,
         /** Deletes songs from the device (asks for consent; implemented by the activity). */
         private val onDeleteSongs: (List<Song>) -> Unit,
@@ -73,14 +77,31 @@ class AppActions(
         message(if (next) "Playing next" else "Added to queue")
     }
 
-    fun playAlbum(album: Album) = scope.launch { play(mediaRepository.loadAlbumSongs(album.id).sortedBy { it.track }) }
-    fun playArtist(artist: Artist) = scope.launch { play(mediaRepository.loadArtistSongs(artist.id)) }
-    fun albumOptions(album: Album) = scope.launch { sheet = OptionsSheet.ForCollection(album.title, mediaRepository.loadAlbumSongs(album.id)) }
-    fun artistOptions(artist: Artist) = scope.launch { sheet = OptionsSheet.ForCollection(artist.name, mediaRepository.loadArtistSongs(artist.id)) }
-    fun genreOptions(genre: Genre) = scope.launch { sheet = OptionsSheet.ForCollection(genre.name, mediaRepository.loadGenreSongs(genre.id)) }
-    fun playlistOptions(playlist: Playlist) = scope.launch {
-        sheet = OptionsSheet.ForCollection(playlist.title, mediaRepository.loadPlaylistSongs(playlist.id, playlist.type),
-                playlist.takeIf { it.type == Playlist.USER })
+    fun playAlbum(album: Album) = launch { play(albumSongs(album)) }
+    fun playArtist(artist: Artist) = launch { play(artistSongs(artist)) }
+    fun albumOptions(album: Album) = launch { sheet = OptionsSheet.ForCollection(album.title, albumSongs(album)) }
+    fun artistOptions(artist: Artist) = launch { sheet = OptionsSheet.ForCollection(artist.name, artistSongs(artist)) }
+    fun genreOptions(genre: Genre) = launch {
+        sheet = OptionsSheet.ForCollection(genre.name, if (genre.remote) subsonic.genreSongs(genre.name) else mediaRepository.loadGenreSongs(genre.id))
+    }
+    fun playlistOptions(playlist: Playlist) = launch {
+        val songs = playlist.remoteId?.let { subsonic.playlistSongs(it) } ?: mediaRepository.loadPlaylistSongs(playlist.id, playlist.type)
+        sheet = OptionsSheet.ForCollection(playlist.title, songs, playlist.takeIf { it.type == Playlist.USER })
+    }
+
+    private suspend fun albumSongs(album: Album): List<Song> =
+            album.remoteId?.let { subsonic.albumSongs(it) } ?: mediaRepository.loadAlbumSongs(album.id).sortedBy { it.track }
+
+    private suspend fun artistSongs(artist: Artist): List<Song> =
+            artist.remoteId?.let { subsonic.artistSongs(it) } ?: mediaRepository.loadArtistSongs(artist.id)
+
+    /** Runs [block], reporting music server failures as a message instead of crashing. */
+    private fun launch(block: suspend () -> Unit) = scope.launch {
+        try {
+            block()
+        } catch (e: SubsonicException) {
+            message(e.message ?: "Couldn't reach the music server")
+        }
     }
 
     // Sheets and dialogs
@@ -88,6 +109,7 @@ class AppActions(
     fun collectionOptions(title: String, songs: List<Song>) { sheet = OptionsSheet.ForCollection(title, songs) }
     fun addToPlaylist(songs: List<Song>, excludePlaylistId: Long? = null) { if (songs.isNotEmpty()) dialog = AppDialog.AddToPlaylist(songs, excludePlaylistId) }
     fun newPlaylist(songs: List<Song> = emptyList()) { dialog = AppDialog.NewPlaylist(songs) }
+    fun newServerPlaylist() { dialog = AppDialog.NewPlaylist(onServer = true) }
     fun renamePlaylist(playlist: Playlist) { dialog = AppDialog.RenamePlaylist(playlist) }
     fun deletePlaylist(playlist: Playlist, goBack: Boolean = false) { dialog = AppDialog.DeletePlaylist(playlist, goBack) }
 
@@ -97,12 +119,18 @@ class AppActions(
         navController.navigate(route) { launchSingleTop = true }
     }
 
-    fun openAlbum(album: Album) = open(AlbumRoute(album.id, album.title))
-    fun openAlbum(song: Song) = open(AlbumRoute(song.albumId, song.albumName))
-    fun openArtist(artist: Artist) = open(ArtistRoute(artist.id, artist.name))
-    fun openArtist(song: Song) = open(ArtistRoute(song.artistId, song.artistName))
-    fun openGenre(genre: Genre) = open(GenreRoute(genre.id, genre.name))
-    fun openPlaylist(playlist: Playlist) = open(PlaylistRoute(playlist.id, playlist.type, playlist.title))
+    fun openAlbum(album: Album) = open(AlbumRoute(album.id, album.title, album.remoteId))
+    fun openAlbum(song: Song) {
+        if (song.isRemote && song.albumRemoteId == null) return
+        open(AlbumRoute(song.albumId, song.albumName, song.albumRemoteId))
+    }
+    fun openArtist(artist: Artist) = open(ArtistRoute(artist.id, artist.name, artist.remoteId))
+    fun openArtist(song: Song) {
+        if (song.isRemote && song.artistRemoteId == null) return
+        open(ArtistRoute(song.artistId, song.artistName, song.artistRemoteId))
+    }
+    fun openGenre(genre: Genre) = open(GenreRoute(genre.id, genre.name, genre.remote))
+    fun openPlaylist(playlist: Playlist) = open(PlaylistRoute(playlist.id, playlist.type, playlist.title, playlist.remoteId, playlist.readonly))
     fun openPlaylistAddSongs(playlist: Playlist) = open(PlaylistAddSongsRoute(playlist.id, playlist.title))
     fun openSearch() = open(SearchRoute)
     fun openEditor(song: Song) = open(EditorRoute(song.id))
@@ -111,12 +139,21 @@ class AppActions(
     // Song actions
     fun deleteSongs(songs: List<Song>) = onDeleteSongs(songs)
 
-    fun toggleFavorite(song: Song) = scope.launch {
-        message(if (dataRepository.toggleFavorite(song.id)) "Added to favorites" else "Removed from favorites")
+    /** Device songs are favorited in the app's database; server songs are starred on the server. */
+    fun toggleFavorite(song: Song) = launch {
+        val remote = song.remoteId
+        val added = if (remote != null) {
+            val star = remote !in subsonic.starredIds.value
+            subsonic.setStarred(listOf(remote), star)
+            star
+        } else dataRepository.toggleFavorite(song.id)
+        message(if (added) "Added to favorites" else "Removed from favorites")
     }
 
-    fun addToFavorites(songs: List<Song>) = scope.launch {
-        dataRepository.addToFavorites(songs)
+    fun addToFavorites(songs: List<Song>) = launch {
+        val (remote, local) = songs.partition { it.isRemote }
+        if (local.isNotEmpty()) dataRepository.addToFavorites(local)
+        subsonic.setStarred(remote.mapNotNull { it.remoteId }, true)
         message("Added to favorites")
     }
 
@@ -128,27 +165,44 @@ class AppActions(
         context.startActivity(Intent.createChooser(intent, "Share song").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }
 
-    // Playlist edits
-    fun createPlaylist(name: String, songs: List<Song>) = scope.launch {
-        val id = mediaRepository.addPlaylist(name)
-        if (songs.isNotEmpty()) mediaRepository.addToPlaylist(id, songs)
-        message(if (songs.isEmpty()) "Created $name" else "Added to $name")
+    // Playlist edits. Device playlists hold device songs, server playlists hold server songs.
+    fun createPlaylist(name: String, songs: List<Song>, onServer: Boolean = false) = launch {
+        val usable = songs.filter { it.isRemote == onServer }
+        if (onServer) subsonic.createPlaylist(name, usable.mapNotNull { it.remoteId })
+        else {
+            val id = mediaRepository.addPlaylist(name)
+            if (usable.isNotEmpty()) mediaRepository.addToPlaylist(id, usable)
+        }
+        message(skippedNote(if (songs.isEmpty()) "Created $name" else "Added to $name", songs.size - usable.size))
     }
 
-    fun addSongsToPlaylist(playlist: Playlist, songs: List<Song>) = scope.launch {
-        mediaRepository.addToPlaylist(playlist.id, songs)
-        message("Added to ${playlist.title}")
+    fun addSongsToPlaylist(playlist: Playlist, songs: List<Song>) = launch {
+        val remote = playlist.remoteId
+        val usable = songs.filter { it.isRemote == (remote != null) }
+        if (remote != null) subsonic.addToPlaylist(remote, usable.mapNotNull { it.remoteId })
+        else mediaRepository.addToPlaylist(playlist.id, usable)
+        message(skippedNote("Added to ${playlist.title}", songs.size - usable.size))
     }
 
-    /** Removes one entry ([Song.playlistSongId]) from a user playlist. */
-    fun removeFromPlaylist(playlist: Playlist, song: Song) = scope.launch {
-        mediaRepository.removePlaylistItem(playlist.id, song.playlistSongId)
+    private fun skippedNote(text: String, skipped: Int) = when (skipped) {
+        0 -> text
+        1 -> "$text (1 song from the other library skipped)"
+        else -> "$text ($skipped songs from the other library skipped)"
     }
 
-    fun applyRename(playlist: Playlist, name: String) = scope.launch { mediaRepository.renamePlaylist(playlist.id, name) }
+    /** Removes one entry from a user playlist ([Song.playlistSongId]: the entry ID, or the position for server playlists). */
+    fun removeFromPlaylist(playlist: Playlist, song: Song) = launch {
+        val remote = playlist.remoteId
+        if (remote != null) subsonic.removeFromPlaylist(remote, song.playlistSongId.toInt())
+        else mediaRepository.removePlaylistItem(playlist.id, song.playlistSongId)
+    }
 
-    fun applyDelete(playlist: Playlist, goBack: Boolean) = scope.launch {
-        mediaRepository.deletePlaylist(playlist.id)
+    fun applyRename(playlist: Playlist, name: String) = launch {
+        playlist.remoteId?.let { subsonic.renamePlaylist(it, name) } ?: mediaRepository.renamePlaylist(playlist.id, name)
+    }
+
+    fun applyDelete(playlist: Playlist, goBack: Boolean) = launch {
+        playlist.remoteId?.let { subsonic.deletePlaylist(it) } ?: mediaRepository.deletePlaylist(playlist.id)
         message("Deleted ${playlist.title}")
         if (goBack) back()
     }

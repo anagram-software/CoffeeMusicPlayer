@@ -41,10 +41,8 @@ object RemoteDataSource {
         isLenient = true
     }
 
-    /** One client (connection pool, TLS setup) shared by every service; built off the main thread. */
-    private val baseClient: OkHttpClient by lazy {
-        OkHttpClient.Builder().connectTimeout(15, TimeUnit.SECONDS).readTimeout(20, TimeUnit.SECONDS).build()
-    }
+    /** The app-wide client (see [Http]); built off the main thread. */
+    private val baseClient: OkHttpClient get() = Http.client
 
     private fun client(params: Map<String, String>): OkHttpClient = baseClient.newBuilder()
             .addInterceptor { chain ->

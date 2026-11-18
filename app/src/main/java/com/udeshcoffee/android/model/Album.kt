@@ -10,7 +10,12 @@ import kotlinx.parcelize.Parcelize
 */
 @Parcelize
 data class Album(val id:Long, val title:String,
-            val artist:String, val year:Int, val dateModified: Long): Parcelable {
+            val artist:String, val year:Int, val dateModified: Long,
+            /** Subsonic album ID for server albums; null for device albums. */
+            val remoteId: String? = null,
+            val coverArt: String? = null): Parcelable {
+
+    val isRemote: Boolean get() = remoteId != null
 
     @IgnoredOnParcel
     @Transient var songCount: Int = 0

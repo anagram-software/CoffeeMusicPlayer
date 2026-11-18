@@ -18,7 +18,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.palette.graphics.Palette
 import com.materialkolor.DynamicMaterialTheme
 import com.udeshcoffee.android.model.Song
-import com.udeshcoffee.android.utils.AlbumArt
+import com.udeshcoffee.android.utils.artworkData
 import com.udeshcoffee.android.utils.loadBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -53,12 +53,12 @@ fun CoffeeTheme(seedColor: Color? = null, darkTheme: Boolean = isSystemInDarkThe
 fun rememberArtworkSeed(song: Song?): Color? {
     val context = LocalContext.current
     var seed by remember { mutableStateOf<Color?>(null) }
-    LaunchedEffect(song?.albumId, song?.dateModified) {
+    LaunchedEffect(song?.albumId, song?.dateModified, song?.coverArt) {
         if (song == null) {
             seed = null
             return@LaunchedEffect
         }
-        val bitmap = loadBitmap(context, AlbumArt(song.albumId, song.dateModified), size = 128)
+        val bitmap = loadBitmap(context, song.artworkData(), size = 128)
         seed = bitmap?.let {
             withContext(Dispatchers.Default) {
                 val palette = Palette.from(it).generate()

@@ -25,6 +25,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.udeshcoffee.android.data.MediaRepository
+import com.udeshcoffee.android.data.subsonic.SubsonicRepository
+import androidx.compose.material.icons.filled.Cloud
 import com.udeshcoffee.android.model.Playlist
 import com.udeshcoffee.android.ui.compose.AppActions
 import com.udeshcoffee.android.ui.compose.AppDialog
@@ -61,8 +63,9 @@ fun AppDialogHost(actions: AppActions) {
     val dismiss = { actions.dialog = null }
     when (dialog) {
         is AppDialog.AddToPlaylist -> AddToPlaylistDialog(dialog, actions, dismiss)
-        is AppDialog.NewPlaylist -> TextInputDialog("New playlist", "Name", confirm = "Create", onDismiss = dismiss) {
-            actions.createPlaylist(it, dialog.songs)
+        is AppDialog.NewPlaylist -> TextInputDialog(if (dialog.onServer) "New server playlist" else "New playlist", "Name",
+                confirm = "Create", onDismiss = dismiss) {
+            actions.createPlaylist(it, dialog.songs, dialog.onServer)
         }
         is AppDialog.RenamePlaylist -> TextInputDialog("Rename playlist", "Name", dialog.playlist.title, "Rename", dismiss) {
             actions.applyRename(dialog.playlist, it)
@@ -76,8 +79,18 @@ fun AppDialogHost(actions: AppActions) {
 @Composable
 private fun AddToPlaylistDialog(dialog: AppDialog.AddToPlaylist, actions: AppActions, dismiss: () -> Unit) {
     val mediaRepository: MediaRepository = koinInject()
+    val subsonic: SubsonicRepository = koinInject()
     var playlists by remember { mutableStateOf<List<Playlist>?>(null) }
-    LaunchedEffect(dialog) { playlists = mediaRepository.loadPlaylistsExcept(dialog.excludePlaylistId ?: -1) }
+    // Device playlists take device songs, server playlists server songs: offer the ones that fit.
+    LaunchedEffect(dialog) {
+        val hasLocal = dialog.songs.any { !it.isRemote }
+        val hasRemote = dialog.songs.any { it.isRemote }
+        val local = if (hasLocal) mediaRepository.loadPlaylistsExcept(dialog.excludePlaylistId ?: -1) else emptyList()
+        val remote = if (hasRemote && subsonic.isSignedIn) {
+            runCatching { subsonic.playlists() }.getOrDefault(emptyList()).filter { !it.readonly && it.id != dialog.excludePlaylistId }
+        } else emptyList()
+        playlists = local + remote
+    }
     AlertDialog(
             onDismissRequest = dismiss,
             title = { Text("Add to playlist") },
@@ -94,8 +107,11 @@ private fun AddToPlaylistDialog(dialog: AppDialog.AddToPlaylist, actions: AppAct
                         ListItem(
                                 modifier = Modifier.clickable { dismiss(); actions.addSongsToPlaylist(playlist, dialog.songs) },
                                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                                leadingContent = { Icon(Icons.AutoMirrored.Filled.PlaylistPlay, contentDescription = null) },
-                                headlineContent = { Text(playlist.title) })
+                                leadingContent = {
+                                    Icon(if (playlist.isRemote) Icons.Default.Cloud else Icons.AutoMirrored.Filled.PlaylistPlay, contentDescription = null)
+                                },
+                                headlineContent = { Text(playlist.title) },
+                                supportingContent = if (playlist.isRemote) ({ Text("On the server") }) else null)
                     }
                 }
             },

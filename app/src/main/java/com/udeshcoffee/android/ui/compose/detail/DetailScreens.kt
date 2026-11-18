@@ -1,6 +1,8 @@
 package com.udeshcoffee.android.ui.compose.detail
 
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.Album
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -84,6 +86,8 @@ import com.udeshcoffee.android.ui.compose.components.songCount
 import com.udeshcoffee.android.ui.compose.rememberCurrentSongId
 import com.udeshcoffee.android.ui.compose.components.TopLevelScaffold
 import org.koin.compose.viewmodel.koinViewModel
+import com.udeshcoffee.android.ui.compose.components.ArtworkImage
+import com.udeshcoffee.android.utils.CoverArt
 import org.koin.core.parameter.parametersOf
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
@@ -110,6 +114,21 @@ fun DetailScaffold(title: String, actions: @Composable () -> Unit = {}, content:
 
 @Composable
 private fun Loading() = Box(Modifier.fillMaxWidth().padding(48.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+
+/** Songs, or a spinner while loading, or the music server error with a retry button. */
+private fun LazyListScope.songsOrState(songs: List<Song>?, error: String?, onRetry: () -> Unit, content: LazyListScope.(List<Song>) -> Unit) {
+    when {
+        songs != null -> content(songs)
+        error != null -> item {
+            Column(Modifier.fillMaxWidth().padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(error, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
+                Spacer(Modifier.height(8.dp))
+                androidx.compose.material3.Button(onClick = onRetry) { Text("Try again") }
+            }
+        }
+        else -> item { Loading() }
+    }
+}
 
 /** Play / Shuffle buttons for a song collection. */
 @Composable
@@ -156,9 +175,10 @@ private fun AlbumsRow(albums: List<Album>) {
 // ---------------- Album ----------------
 
 @Composable
-fun AlbumDetailScreen(albumId: Long, title: String) {
-    val viewModel: AlbumDetailViewModel = koinViewModel(key = "album:$albumId") { parametersOf(albumId) }
+fun AlbumDetailScreen(albumId: Long, title: String, remoteId: String? = null) {
+    val viewModel: AlbumDetailViewModel = koinViewModel(key = "album:$albumId") { parametersOf(albumId, remoteId) }
     val songs by viewModel.songs.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
     val sort by SortSettings.albumSongs.state.collectAsStateWithLifecycle()
     val currentId = rememberCurrentSongId()
     DetailScaffold(title, actions = {
@@ -168,7 +188,8 @@ fun AlbumDetailScreen(albumId: Long, title: String) {
         LazyColumn(Modifier.fillMaxSize(), contentPadding = padding) {
             item {
                 Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    AlbumArtwork(albumId, Modifier.size(140.dp), MaterialTheme.shapes.medium)
+                    if (remoteId != null) ArtworkImage(CoverArt(remoteId), Icons.Default.Album, Modifier.size(140.dp), MaterialTheme.shapes.medium)
+                    else AlbumArtwork(albumId, Modifier.size(140.dp), MaterialTheme.shapes.medium)
                     Spacer(Modifier.width(16.dp))
                     Column {
                         val first = songs?.firstOrNull()
@@ -180,7 +201,7 @@ fun AlbumDetailScreen(albumId: Long, title: String) {
                 }
                 PlayButtons(songs.orEmpty())
             }
-            if (songs == null) item { Loading() } else songItems(songs!!, currentId, showArtwork = false)
+            songsOrState(songs, error, viewModel::retry) { songItems(it, currentId, showArtwork = false) }
         }
     }
 }
@@ -188,9 +209,10 @@ fun AlbumDetailScreen(albumId: Long, title: String) {
 // ---------------- Artist ----------------
 
 @Composable
-fun ArtistDetailScreen(artistId: Long, name: String) {
-    val viewModel: ArtistDetailViewModel = koinViewModel(key = "artist:$artistId") { parametersOf(artistId, name) }
+fun ArtistDetailScreen(artistId: Long, name: String, remoteId: String? = null) {
+    val viewModel: ArtistDetailViewModel = koinViewModel(key = "artist:$artistId") { parametersOf(artistId, name, remoteId) }
     val songs by viewModel.songs.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
     val albums by viewModel.albums.collectAsStateWithLifecycle()
     val bio by viewModel.bio.collectAsStateWithLifecycle()
     val imageVersion by viewModel.imageVersion.collectAsStateWithLifecycle()
@@ -210,11 +232,14 @@ fun ArtistDetailScreen(artistId: Long, name: String) {
         Box {
             IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, contentDescription = "More options") }
             DropdownMenu(menu, onDismissRequest = { menu = false }) {
-                DropdownMenuItem(text = { Text("Choose image") }, onClick = {
-                    menu = false
-                    pickImage.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                })
-                DropdownMenuItem(text = { Text("Remove image") }, onClick = { menu = false; viewModel.removeImage() })
+                // Server artists use the server's image.
+                if (!viewModel.isRemote) {
+                    DropdownMenuItem(text = { Text("Choose image") }, onClick = {
+                        menu = false
+                        pickImage.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                    })
+                    DropdownMenuItem(text = { Text("Remove image") }, onClick = { menu = false; viewModel.removeImage() })
+                }
                 DropdownMenuItem(text = { Text("More options…") }, onClick = {
                     menu = false; actions.collectionOptions(name, songs.orEmpty())
                 })
@@ -225,7 +250,7 @@ fun ArtistDetailScreen(artistId: Long, name: String) {
             item {
                 Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     androidx.compose.runtime.key(imageVersion) {
-                        ArtistArtwork(Artist(artistId, name), Modifier.size(120.dp), CircleShape, collect = true)
+                        ArtistArtwork(Artist(artistId, name, remoteId), Modifier.size(120.dp), CircleShape, collect = true)
                     }
                     Spacer(Modifier.width(16.dp))
                     Column {
@@ -243,12 +268,12 @@ fun ArtistDetailScreen(artistId: Long, name: String) {
                 item { AlbumsRow(albums) }
             }
             item { SectionHeader("Songs") }
-            if (songs == null) item { Loading() } else songItems(songs!!, currentId)
+            songsOrState(songs, error, viewModel::retry) { songItems(it, currentId) }
         }
     }
 }
 
-/** Last.fm bio (HTML with a "read more" link), collapsed to a few lines until tapped. */
+/** Artist bio (HTML with a "read more" link), collapsed to a few lines until tapped. */
 @Composable
 private fun BioText(html: String) {
     var expanded by remember { mutableStateOf(false) }
@@ -264,9 +289,10 @@ private fun BioText(html: String) {
 // ---------------- Genre ----------------
 
 @Composable
-fun GenreDetailScreen(genreId: Long, name: String) {
-    val viewModel: GenreDetailViewModel = koinViewModel(key = "genre:$genreId") { parametersOf(genreId) }
+fun GenreDetailScreen(genreId: Long, name: String, remote: Boolean = false) {
+    val viewModel: GenreDetailViewModel = koinViewModel(key = "genre:$genreId") { parametersOf(genreId, name, remote) }
     val songs by viewModel.songs.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
     val albums by viewModel.albums.collectAsStateWithLifecycle()
     val songSort by SortSettings.genreSongs.state.collectAsStateWithLifecycle()
     val albumSort by SortSettings.genreAlbums.state.collectAsStateWithLifecycle()
@@ -283,7 +309,7 @@ fun GenreDetailScreen(genreId: Long, name: String) {
                 item { AlbumsRow(albums) }
             }
             item { SectionHeader("Songs") }
-            if (songs == null) item { Loading() } else songItems(songs!!, currentId)
+            songsOrState(songs, error, viewModel::retry) { songItems(it, currentId) }
         }
     }
 }
@@ -293,6 +319,7 @@ fun GenreDetailScreen(genreId: Long, name: String) {
 @Composable
 fun FavoritesScreen(viewModel: FavoritesViewModel = koinViewModel()) {
     val songs by viewModel.songs.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
     val sort by SortSettings.favoriteSongs.state.collectAsStateWithLifecycle()
     val currentId = rememberCurrentSongId()
     TopLevelScaffold("Favorites", actions = {
@@ -303,6 +330,7 @@ fun FavoritesScreen(viewModel: FavoritesViewModel = koinViewModel()) {
             songs == null -> Loading()
             songs!!.isEmpty() -> EmptyState("Songs you favorite appear here", Modifier.padding(padding), Icons.Default.FavoriteBorder)
             else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = padding) {
+                error?.let { item { ServerNotice("Couldn't load server favorites: $it", viewModel::retry) } }
                 item { PlayButtons(songs!!) }
                 songItems(songs!!, currentId)
             }
@@ -313,17 +341,20 @@ fun FavoritesScreen(viewModel: FavoritesViewModel = koinViewModel()) {
 // ---------------- Playlist ----------------
 
 @Composable
-fun PlaylistDetailScreen(playlistId: Long, type: Int, title: String) {
-    val viewModel: PlaylistDetailViewModel = koinViewModel(key = "playlist:$type:$playlistId") { parametersOf(playlistId, type) }
+fun PlaylistDetailScreen(playlistId: Long, type: Int, title: String, remoteId: String? = null, readonly: Boolean = false) {
+    val viewModel: PlaylistDetailViewModel = koinViewModel(key = "playlist:$type:$playlistId") { parametersOf(playlistId, type, remoteId) }
     val songs by viewModel.songs.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
     val actions = LocalAppActions.current
     val currentId = rememberCurrentSongId()
-    val playlist = remember(playlistId, type, title) { Playlist(type, playlistId, title) }
-    val isUser = type == Playlist.USER
+    val playlist = remember(playlistId, type, title) { Playlist(type, playlistId, title, remoteId, readonly) }
+    // Editable: device user playlists, and server playlists the server lets us change.
+    val isUser = type == Playlist.USER && !readonly
     var menu by remember { mutableStateOf(false) }
 
     DetailScaffold(title, actions = {
-        if (isUser) IconButton(onClick = { actions.openPlaylistAddSongs(playlist) }) { Icon(Icons.Default.Add, contentDescription = "Add songs") }
+        // Picking from the device library only fits device playlists; server playlists get songs via "Add to playlist".
+        if (isUser && remoteId == null) IconButton(onClick = { actions.openPlaylistAddSongs(playlist) }) { Icon(Icons.Default.Add, contentDescription = "Add songs") }
         Box {
             IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, contentDescription = "More options") }
             DropdownMenu(menu, onDismissRequest = { menu = false }) {
@@ -339,8 +370,15 @@ fun PlaylistDetailScreen(playlistId: Long, type: Int, title: String) {
     }) { padding ->
         val list = songs
         when {
+            list == null && error != null -> LazyColumn(Modifier.fillMaxSize(), contentPadding = padding) {
+                songsOrState(null, error, viewModel::retry) {}
+            }
             list == null -> Loading()
-            list.isEmpty() -> EmptyState(if (isUser) "Add songs with the + button" else "Nothing here yet", modifier = Modifier.padding(padding))
+            list.isEmpty() -> EmptyState(when {
+                remoteId != null -> "Add songs with \"Add to playlist\" in a song's options"
+                isUser -> "Add songs with the + button"
+                else -> "Nothing here yet"
+            }, modifier = Modifier.padding(padding))
             isUser -> ReorderablePlaylist(list, playlist, viewModel, currentId, padding)
             else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = padding) {
                 item { PlayButtons(list) }
@@ -405,4 +443,13 @@ fun PlaylistAddSongsScreen(playlistId: Long, title: String) {
             }
         }
     }
+}
+
+/** A one-line problem with the music server, with a retry. */
+@Composable
+fun ServerNotice(message: String, onRetry: () -> Unit) {
+    ListItem(
+            leadingContent = { Icon(Icons.Default.CloudOff, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+            headlineContent = { Text(message, style = MaterialTheme.typography.bodyMedium) },
+            trailingContent = { androidx.compose.material3.TextButton(onClick = onRetry) { Text("Retry") } })
 }

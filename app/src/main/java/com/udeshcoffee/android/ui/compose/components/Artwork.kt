@@ -33,6 +33,8 @@ import com.udeshcoffee.android.model.Artist
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.utils.AlbumArt
 import com.udeshcoffee.android.utils.artistImageFile
+import com.udeshcoffee.android.utils.artworkData
+import com.udeshcoffee.android.utils.CoverArt
 import com.udeshcoffee.android.utils.collectArtistImage
 
 /** Image with a tinted icon placeholder shown until (or instead of) the image. */
@@ -56,7 +58,7 @@ fun ArtworkImage(model: Any?, fallback: ImageVector, modifier: Modifier = Modifi
 
 @Composable
 fun SongArtwork(song: Song?, modifier: Modifier = Modifier, shape: Shape = MaterialTheme.shapes.small) =
-        ArtworkImage(song?.let { AlbumArt(it.albumId, it.dateModified) }, Icons.Default.MusicNote, modifier, shape)
+        ArtworkImage(song?.artworkData(), Icons.Default.MusicNote, modifier, shape)
 
 @Composable
 fun AlbumArtwork(albumId: Long, modifier: Modifier = Modifier, shape: Shape = MaterialTheme.shapes.small) =
@@ -64,11 +66,18 @@ fun AlbumArtwork(albumId: Long, modifier: Modifier = Modifier, shape: Shape = Ma
 
 @Composable
 fun AlbumArtwork(album: Album, modifier: Modifier = Modifier, shape: Shape = MaterialTheme.shapes.small) =
-        AlbumArtwork(album.id, modifier, shape)
+        ArtworkImage(album.artworkData(), Icons.Default.Album, modifier, shape)
 
-/** Artist image from app storage; downloads it from Last.fm first when [collect] is set (and settings allow). */
+/**
+ * Artist image. Server artists use the server's image; device artists use app storage, downloading
+ * from Last.fm first when [collect] is set (and settings allow).
+ */
 @Composable
 fun ArtistArtwork(artist: Artist, modifier: Modifier = Modifier, shape: Shape = MaterialTheme.shapes.small, collect: Boolean = false) {
+    if (artist.isRemote) {
+        ArtworkImage((artist.coverArt ?: artist.remoteId)?.let { CoverArt(it) }, Icons.Default.Person, modifier, shape)
+        return
+    }
     val context = LocalContext.current
     // File checks run off the main thread; the cache key changes whenever the image file does.
     val model by produceState<Any?>(null, artist.id, collect) {

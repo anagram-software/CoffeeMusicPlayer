@@ -35,11 +35,21 @@ import com.udeshcoffee.android.ui.compose.components.TopLevelScaffold
 import com.udeshcoffee.android.ui.compose.components.songCount
 import com.udeshcoffee.android.ui.compose.detail.PlaylistsViewModel
 import org.koin.compose.viewmodel.koinViewModel
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material3.TextButton
+import com.udeshcoffee.android.ui.compose.AppActions
+import com.udeshcoffee.android.ui.compose.detail.ServerNotice
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PlaylistsScreen(viewModel: PlaylistsViewModel = koinViewModel()) {
     val playlists by viewModel.playlists.collectAsStateWithLifecycle()
+    val serverList by viewModel.serverPlaylists.collectAsStateWithLifecycle()
+    val serverError by viewModel.error.collectAsStateWithLifecycle()
+    val account by viewModel.account.collectAsStateWithLifecycle()
     val actions = LocalAppActions.current
     TopLevelScaffold("Playlists", floatingActionButton = {
         ExtendedFloatingActionButton(onClick = { actions.newPlaylist() }, icon = { Icon(Icons.Default.Add, contentDescription = null) },
@@ -50,7 +60,7 @@ fun PlaylistsScreen(viewModel: PlaylistsViewModel = koinViewModel()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             return@TopLevelScaffold
         }
-        LazyColumn(Modifier.fillMaxSize().padding(padding)) {
+        LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(bottom = 88.dp)) {
             items(list, key = { "${it.type}:${it.id}" }) { playlist ->
                 if (playlist.type == Playlist.USER && list.firstOrNull { it.type == Playlist.USER } == playlist) HorizontalDivider()
                 ListItem(
@@ -70,6 +80,35 @@ fun PlaylistsScreen(viewModel: PlaylistsViewModel = koinViewModel()) {
                             IconButton(onClick = { actions.playlistOptions(playlist) }) { Icon(Icons.Default.MoreVert, contentDescription = "Playlist options") }
                         })
             }
+            serverPlaylists(account?.name, serverList, serverError, viewModel::retry, actions)
+        }
+    }
+}
+
+/** The music server's playlists, below the device's. */
+private fun LazyListScope.serverPlaylists(serverName: String?, playlists: List<Playlist>?, error: String?, onRetry: () -> Unit, actions: AppActions) {
+    serverName ?: return
+    item {
+        HorizontalDivider()
+        ListItem(
+                headlineContent = { Text("On $serverName", style = MaterialTheme.typography.titleMedium) },
+                trailingContent = { TextButton(onClick = actions::newServerPlaylist) { Text("New") } })
+    }
+    when {
+        error != null -> item { ServerNotice("Couldn't load server playlists: $error", onRetry) }
+        playlists == null -> item { Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() } }
+        playlists.isEmpty() -> item { ListItem(headlineContent = { Text("No playlists on the server", color = MaterialTheme.colorScheme.onSurfaceVariant) }) }
+        else -> items(playlists, key = { "server:${it.remoteId}" }) { playlist ->
+            ListItem(
+                    modifier = Modifier.combinedClickable(onClick = { actions.openPlaylist(playlist) }, onLongClick = { actions.playlistOptions(playlist) }),
+                    leadingContent = {
+                        Icon(Icons.Default.Cloud, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(40.dp).padding(6.dp))
+                    },
+                    headlineContent = { Text(playlist.title) },
+                    supportingContent = { Text(listOfNotNull(playlist.songCount?.let { songCount(it) }, "read-only".takeIf { playlist.readonly }).joinToString(" · ")) },
+                    trailingContent = {
+                        IconButton(onClick = { actions.playlistOptions(playlist) }) { Icon(Icons.Default.MoreVert, contentDescription = "Playlist options") }
+                    })
         }
     }
 }

@@ -12,6 +12,7 @@ import com.udeshcoffee.android.ui.compose.editor.EditorScreenViewModel
 import com.udeshcoffee.android.ui.compose.equalizer.EqualizerViewModel
 import com.udeshcoffee.android.ui.compose.library.FoldersViewModel
 import com.udeshcoffee.android.ui.compose.library.LibraryViewModel
+import com.udeshcoffee.android.ui.compose.library.ServerLibraryViewModel
 import com.udeshcoffee.android.ui.compose.player.LyricsViewModel
 import com.udeshcoffee.android.ui.compose.player.NowPlayingViewModel
 import org.koin.android.ext.koin.androidApplication
@@ -22,16 +23,17 @@ import org.koin.dsl.module
 val composeModule = module {
     viewModel { LibraryViewModel(get()) }
     viewModel { FoldersViewModel(get()) }
-    viewModel { FavoritesViewModel(get()) }
-    viewModel { PlaylistsViewModel(get()) }
-    viewModel { SearchViewModel(get()) }
-    viewModel { (albumId: Long) -> AlbumDetailViewModel(albumId, get()) }
-    viewModel { (artistId: Long, name: String) -> ArtistDetailViewModel(artistId, name, get(), get()) }
-    viewModel { (genreId: Long) -> GenreDetailViewModel(genreId, get()) }
-    viewModel { (playlistId: Long, type: Int) -> PlaylistDetailViewModel(playlistId, type, get()) }
+    viewModel { FavoritesViewModel(get(), get()) }
+    viewModel { PlaylistsViewModel(get(), get()) }
+    viewModel { SearchViewModel(get(), get()) }
+    viewModel { (albumId: Long, remoteId: String?) -> AlbumDetailViewModel(albumId, remoteId, get(), get()) }
+    viewModel { (artistId: Long, name: String, remoteId: String?) -> ArtistDetailViewModel(artistId, name, remoteId, get(), get(), get()) }
+    viewModel { (genreId: Long, name: String, remote: Boolean) -> GenreDetailViewModel(genreId, name, remote, get(), get()) }
+    viewModel { (playlistId: Long, type: Int, remoteId: String?) -> PlaylistDetailViewModel(playlistId, type, remoteId, get(), get()) }
     viewModel { (playlistId: Long) -> PlaylistAddSongsViewModel(playlistId, get()) }
     viewModel { (songId: Long) -> EditorScreenViewModel(songId, androidApplication(), get(), get()) }
-    viewModel { NowPlayingViewModel(get(), get(), get()) }
-    viewModel { LyricsViewModel(get(), get(), get()) }
+    viewModel { NowPlayingViewModel(get(), get(), get(), get()) }
+    viewModel { LyricsViewModel(get(), get(), get(), get()) }
     viewModel { EqualizerViewModel() }
+    viewModel { ServerLibraryViewModel(get()) }
 }

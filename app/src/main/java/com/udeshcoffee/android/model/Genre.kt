@@ -8,6 +8,8 @@ import android.provider.MediaStore
  * Created by Udathari on 9/8/2017.
  */
 class Genre(var id: Long, var name: String) {
+    /** Server genres are identified by name. */
+    var remote: Boolean = false
 
     var no: Int? = null
     var arts: List<Long>? = null

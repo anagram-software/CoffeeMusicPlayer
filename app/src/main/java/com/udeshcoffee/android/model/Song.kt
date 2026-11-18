@@ -16,7 +16,16 @@ data class Song(val id:Long, val title:String,
            val artistId:Long, val artistName:String,
            val duration:Long, val year:Int,
            val dateAdded:Int, val dateModified: Long,
-           var track:Int): Parcelable {
+           var track:Int,
+           /** Subsonic song ID for server songs (then [id] is derived from it, see RemoteIds); null for device songs. */
+           val remoteId: String? = null,
+           /** Subsonic cover art ID. */
+           val coverArt: String? = null,
+           val albumRemoteId: String? = null,
+           val artistRemoteId: String? = null): Parcelable {
+
+    /** True for songs streamed from the music server. */
+    val isRemote: Boolean get() = remoteId != null
 
     @IgnoredOnParcel var discNumber : Int = 0
     @IgnoredOnParcel var playlistSongId: Long = 0
@@ -42,9 +51,9 @@ data class Song(val id:Long, val title:String,
             cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_MODIFIED)),
             cursor.getInt(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TRACK)))
 
-    fun getAlbum() : Album = Album(albumId, albumName, artistName, year, dateModified)
+    fun getAlbum() : Album = Album(albumId, albumName, artistName, year, dateModified, albumRemoteId, coverArt)
 
-    fun getArtist() : Artist = Artist(artistId, artistName)
+    fun getArtist() : Artist = Artist(artistId, artistName, artistRemoteId)
 
     operator fun compareTo(song: Song): Int {
         return compareString(this.title, song.title)

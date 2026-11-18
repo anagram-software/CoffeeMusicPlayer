@@ -7,6 +7,11 @@ import coil3.PlatformContext
 import coil3.SingletonImageLoader
 import com.udeshcoffee.android.utils.AlbumArt
 import com.udeshcoffee.android.utils.AlbumArtFetcher
+import com.udeshcoffee.android.utils.CoverArt
+import com.udeshcoffee.android.utils.CoverArtMapper
+import com.udeshcoffee.android.data.subsonic.SubsonicRepository
+import coil3.key.Keyer
+import org.koin.core.context.GlobalContext
 import com.udeshcoffee.android.di.appModule
 import org.jaudiotagger.tag.TagOptionSingleton
 import org.koin.android.ext.koin.androidContext
@@ -49,6 +54,9 @@ class App : Application(), SingletonImageLoader.Factory {
                     .components {
                         add(AlbumArtFetcher.Factory())
                         add(AlbumArtFetcher.Key())
+                        // Server artwork: mapped to an authenticated URL, cached under the model (not the URL with its token).
+                        add(CoverArtMapper { GlobalContext.get().get<SubsonicRepository>() })
+                        add(Keyer<CoverArt> { data, _ -> "coverart:${data.id}:${data.size}" })
                     }
                     .build()
 

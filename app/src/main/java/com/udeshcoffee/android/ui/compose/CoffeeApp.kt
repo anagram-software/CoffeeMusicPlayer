@@ -100,8 +100,9 @@ fun CoffeeApp(onDeleteSongs: (List<Song>) -> Unit, playerExpandedRequest: Boolea
         var playerExpanded by rememberSaveable { mutableStateOf(playerExpandedRequest) }
         val dataRepository: DataRepository = koinInject()
         val mediaRepository: MediaRepository = koinInject()
+        val subsonic: com.udeshcoffee.android.data.subsonic.SubsonicRepository = koinInject()
         val actions = remember(navController) {
-            AppActions(context, navController, scope, dataRepository, mediaRepository, snackbar, onDeleteSongs) { playerExpanded = it }
+            AppActions(context, navController, scope, dataRepository, mediaRepository, subsonic, snackbar, onDeleteSongs) { playerExpanded = it }
         }
         val backStack by navController.currentBackStackEntryAsState()
         val destination = backStack?.destination
@@ -136,10 +137,10 @@ fun CoffeeApp(onDeleteSongs: (List<Song>) -> Unit, playerExpandedRequest: Boolea
                                 composable<EqualizerRoute> { EqualizerScreen() }
                                 composable<SettingsRoute> { SettingsScreen() }
                                 composable<SearchRoute> { SearchScreen() }
-                                composable<AlbumRoute> { val r = it.toRoute<AlbumRoute>(); AlbumDetailScreen(r.albumId, r.title) }
-                                composable<ArtistRoute> { val r = it.toRoute<ArtistRoute>(); ArtistDetailScreen(r.artistId, r.name) }
-                                composable<GenreRoute> { val r = it.toRoute<GenreRoute>(); GenreDetailScreen(r.genreId, r.name) }
-                                composable<PlaylistRoute> { val r = it.toRoute<PlaylistRoute>(); PlaylistDetailScreen(r.playlistId, r.type, r.title) }
+                                composable<AlbumRoute> { val r = it.toRoute<AlbumRoute>(); AlbumDetailScreen(r.albumId, r.title, r.remoteId) }
+                                composable<ArtistRoute> { val r = it.toRoute<ArtistRoute>(); ArtistDetailScreen(r.artistId, r.name, r.remoteId) }
+                                composable<GenreRoute> { val r = it.toRoute<GenreRoute>(); GenreDetailScreen(r.genreId, r.name, r.remote) }
+                                composable<PlaylistRoute> { val r = it.toRoute<PlaylistRoute>(); PlaylistDetailScreen(r.playlistId, r.type, r.title, r.remoteId, r.readonly) }
                                 composable<PlaylistAddSongsRoute> { val r = it.toRoute<PlaylistAddSongsRoute>(); PlaylistAddSongsScreen(r.playlistId, r.title) }
                                 composable<EditorRoute> { EditorScreen(it.toRoute<EditorRoute>().songId) }
                             }

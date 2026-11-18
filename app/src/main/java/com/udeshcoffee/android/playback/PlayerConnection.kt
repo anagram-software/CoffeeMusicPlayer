@@ -214,6 +214,15 @@ class PlayerConnection(
         if (index in 0 until c.mediaItemCount) c.removeMediaItem(index)
     }
 
+    /** Removes music server songs from the queue (after signing out they can't stream). */
+    fun removeServerSongs() {
+        val c = controller ?: return
+        for (i in c.mediaItemCount - 1 downTo 0) {
+            if (c.getMediaItemAt(i).mediaId.startsWith(SUBSONIC_MEDIA_PREFIX)) c.removeMediaItem(i)
+        }
+        if (c.mediaItemCount == 0) c.stop()
+    }
+
     fun clearQueue() {
         val c = controller ?: return
         c.stop()

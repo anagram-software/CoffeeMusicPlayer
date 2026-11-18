@@ -13,7 +13,7 @@ import coil3.request.ImageRequest
 import coil3.request.allowHardware
 import coil3.request.target
 import coil3.toBitmap
-import com.udeshcoffee.android.utils.AlbumArt
+import com.udeshcoffee.android.utils.artworkData
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.utils.ArtworkURI
@@ -69,7 +69,7 @@ class MediumAppWidget : BaseAppWidget() {
         views.setImageViewResource(R.id.album_art, R.drawable.default_art)
 
         val request = ImageRequest.Builder(context)
-                .data(AlbumArt(song.albumId, song.dateModified))
+                .data(song.artworkData())
                 .size(180) // Keep widget bitmaps small (RemoteViews memory limit).
                 .allowHardware(false)
                 .target(

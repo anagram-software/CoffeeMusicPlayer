@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.LibraryMusic
@@ -66,7 +67,12 @@ fun SongRow(
                         fontWeight = if (isCurrent) FontWeight.SemiBold else null)
             },
             supportingContent = {
-                Text("${song.artistName} • ${song.albumName}", maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Marks music server songs in lists that mix both sources.
+                    if (song.isRemote) Icon(Icons.Default.Cloud, contentDescription = "On the server",
+                            modifier = Modifier.padding(end = 4.dp).size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("${song.artistName} • ${song.albumName}", maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
             },
             trailingContent = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -79,12 +85,12 @@ fun SongRow(
 
 /** "Shuffle all" row shown at the top of song lists. */
 @Composable
-fun ShuffleRow(count: Int, onClick: () -> Unit) {
+fun ShuffleRow(count: Int, subtitle: String = songCount(count), onClick: () -> Unit) {
     ListItem(
             modifier = Modifier.combinedClickableCompat(onClick),
             leadingContent = { Icon(Icons.Default.Shuffle, contentDescription = null, modifier = Modifier.size(48.dp).padding(10.dp)) },
             headlineContent = { Text("Shuffle all") },
-            supportingContent = { Text(songCount(count)) })
+            supportingContent = { Text(subtitle) })
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -124,7 +130,8 @@ fun AlbumCard(album: Album, onClick: () -> Unit, onLongClick: () -> Unit, onPlay
 
 @Composable
 fun ArtistCard(artist: Artist, onClick: () -> Unit, onLongClick: () -> Unit, onPlay: () -> Unit, modifier: Modifier = Modifier, collectImage: Boolean = true) =
-        MediaCard(artist.name, songCount(artist.songCount), onClick, onLongClick, onPlay,
+        // Server artists come with an album count, device artists with a song count.
+        MediaCard(artist.name, if (artist.isRemote) albumCount(artist.songCount) else songCount(artist.songCount), onClick, onLongClick, onPlay,
                 { ArtistArtwork(artist, it, MaterialTheme.shapes.extraSmall, collectImage) }, modifier)
 
 /** Centered message for empty lists. */
@@ -160,6 +167,8 @@ val QueueIcon: ImageVector get() = Icons.AutoMirrored.Filled.QueueMusic
 val GridPadding = PaddingValues(12.dp)
 
 fun songCount(count: Int) = if (count == 1) "1 song" else "$count songs"
+
+fun albumCount(count: Int) = if (count == 1) "1 album" else "$count albums"
 
 /** "m:ss" or "h:mm:ss". */
 fun formatDuration(ms: Long): String {

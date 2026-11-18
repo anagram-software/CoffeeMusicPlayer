@@ -51,6 +51,9 @@ fun SettingsScreen() {
             ListItem(modifier = Modifier.clickable { dialog = "libstart" },
                     headlineContent = { Text("Start library with") }, supportingContent = { Text(libraryTabs.getOrElse(libStart) { "Songs" }) })
 
+            Header("Music server")
+            ServerSettings()
+
             Header("Playback")
             SwitchPref(prefs, PreferenceUtil.PREF_CALL, false, "Stay paused after interruptions",
                     "Don't resume after a call or another app's sound")

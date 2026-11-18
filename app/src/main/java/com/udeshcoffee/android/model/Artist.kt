@@ -11,7 +11,12 @@ import kotlinx.parcelize.Parcelize
 */
 @SuppressLint("ParcelCreator")
 @Parcelize
-data class Artist(val id:Long, val name:String): Parcelable {
+data class Artist(val id:Long, val name:String,
+                  /** Subsonic artist ID for server artists; null for device artists. */
+                  val remoteId: String? = null,
+                  val coverArt: String? = null): Parcelable {
+
+    val isRemote: Boolean get() = remoteId != null
 
     @IgnoredOnParcel
     @Transient var songCount: Int = 0

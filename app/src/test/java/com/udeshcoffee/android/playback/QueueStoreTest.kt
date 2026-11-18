@@ -2,6 +2,7 @@ package com.udeshcoffee.android.playback
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import com.udeshcoffee.android.data.subsonic.toSong
 
 class QueueStoreTest {
 
@@ -31,5 +32,27 @@ class QueueStoreTest {
     fun `ignores an unterminated trailing id`() {
         assertEquals(listOf(26L), QueueStore.decode("a1;3"))
         assertEquals(emptyList<Long>(), QueueStore.decode(""))
+    }
+
+    @Test
+    fun `mixed queues keep device ids and server song details`() {
+        val local = com.udeshcoffee.android.song(26)
+        val remote = com.udeshcoffee.android.data.subsonic.SubSong(
+                id = "s1", title = "Butch", album = "Imagine Us", albumId = "al1", artist = "Back On Earth",
+                artistId = "ar1", coverArt = "mf-s1", duration = 192, track = 3, discNumber = 2, year = 2015)
+        val entries = QueueStore.decodeEntries(QueueStore.encodeEntries(listOf(local, remote.toSong())))
+        assertEquals(26L, entries[0].localId)
+        val saved = entries[1].remote!!
+        assertEquals("s1", saved.id)
+        assertEquals("Butch", saved.title)
+        assertEquals(192_000L, saved.durationMs)
+        assertEquals(3, saved.track)
+        assertEquals(2, saved.disc)
+        assertEquals("mf-s1", saved.coverArt)
+    }
+
+    @Test
+    fun `corrupt saved queues decode as empty`() {
+        assertEquals(emptyList<QueueStore.Entry>(), QueueStore.decodeEntries("not json"))
     }
 }

@@ -40,6 +40,17 @@ import com.udeshcoffee.android.ui.compose.components.SongRow
 import com.udeshcoffee.android.ui.compose.detail.SearchViewModel
 import com.udeshcoffee.android.ui.compose.rememberCurrentSongId
 import org.koin.compose.viewmodel.koinViewModel
+import org.koin.compose.koinInject
+import com.udeshcoffee.android.data.subsonic.SubsonicRepository
+import com.udeshcoffee.android.model.Album
+import com.udeshcoffee.android.model.Artist
+import com.udeshcoffee.android.model.Song
+import com.udeshcoffee.android.ui.compose.AppActions
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.Alignment
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,6 +59,9 @@ fun SearchScreen(viewModel: SearchViewModel = koinViewModel()) {
     val results by viewModel.results.collectAsStateWithLifecycle()
     val actions = LocalAppActions.current
     val currentId = rememberCurrentSongId()
+    val subsonic: SubsonicRepository = koinInject()
+    val account by subsonic.account.collectAsStateWithLifecycle()
+    val signedIn = account != null
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { focus.requestFocus() }
 
@@ -71,40 +85,62 @@ fun SearchScreen(viewModel: SearchViewModel = koinViewModel()) {
                 })
     }) { padding ->
         val r = results
-        if (query.isNotBlank() && r.songs.isEmpty() && r.albums.isEmpty() && r.artists.isEmpty()) {
+        val server = r.server
+        val nothingLocal = r.songs.isEmpty() && r.albums.isEmpty() && r.artists.isEmpty()
+        val nothingServer = server == null || (server.songs.isEmpty() && server.albums.isEmpty() && server.artists.isEmpty())
+        if (query.isNotBlank() && nothingLocal && nothingServer && r.serverError == null && (server != null || !signedIn)) {
             EmptyState("No results for \"$query\"", Modifier.padding(padding), Icons.Default.Search)
             return@Scaffold
         }
         LazyColumn(Modifier.fillMaxSize(), contentPadding = padding) {
-            if (r.artists.isNotEmpty()) {
-                item { SectionHeader("Artists") }
-                item {
-                    LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        items(r.artists, key = { it.id }) { artist ->
-                            ArtistCard(artist, onClick = { actions.openArtist(artist) }, onLongClick = { actions.artistOptions(artist) },
-                                    onPlay = { actions.playArtist(artist) }, modifier = Modifier.width(140.dp), collectImage = false)
-                        }
-                    }
+            if (signedIn && !nothingLocal) item { SourceHeader("On this device") }
+            results(r.artists, r.albums, r.songs, currentId, actions)
+            if (signedIn && query.isNotBlank()) {
+                item { SourceHeader("On ${account?.name ?: "the server"}") }
+                when {
+                    r.serverError != null -> item { Text(r.serverError, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp)) }
+                    server == null -> item { Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() } }
+                    nothingServer -> item { Text("No results", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(16.dp)) }
+                    else -> results(server.artists, server.albums, server.songs, currentId, actions)
                 }
             }
-            if (r.albums.isNotEmpty()) {
-                item { SectionHeader("Albums") }
-                item {
-                    LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        items(r.albums, key = { it.id }) { album ->
-                            AlbumCard(album, onClick = { actions.openAlbum(album) }, onLongClick = { actions.albumOptions(album) },
-                                    onPlay = { actions.playAlbum(album) }, modifier = Modifier.width(140.dp))
-                        }
-                    }
+        }
+    }
+}
+
+@Composable
+private fun SourceHeader(text: String) {
+    Text(text, style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(start = 16.dp, top = 20.dp, end = 16.dp))
+}
+
+private fun LazyListScope.results(artists: List<Artist>, albums: List<Album>, songs: List<Song>, currentId: Long?, actions: AppActions) {
+    if (artists.isNotEmpty()) {
+        item { SectionHeader("Artists") }
+        item {
+            LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                items(artists, key = { it.id }) { artist ->
+                    ArtistCard(artist, onClick = { actions.openArtist(artist) }, onLongClick = { actions.artistOptions(artist) },
+                            onPlay = { actions.playArtist(artist) }, modifier = Modifier.width(140.dp), collectImage = false)
                 }
             }
-            if (r.songs.isNotEmpty()) {
-                item { SectionHeader("Songs") }
-                items(r.songs, key = { it.id }) { song ->
-                    SongRow(song, onClick = { actions.play(r.songs, r.songs.indexOf(song)) }, onMore = { actions.songOptions(song) },
-                            isCurrent = song.id == currentId)
+        }
+    }
+    if (albums.isNotEmpty()) {
+        item { SectionHeader("Albums") }
+        item {
+            LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                items(albums, key = { it.id }) { album ->
+                    AlbumCard(album, onClick = { actions.openAlbum(album) }, onLongClick = { actions.albumOptions(album) },
+                            onPlay = { actions.playAlbum(album) }, modifier = Modifier.width(140.dp))
                 }
             }
+        }
+    }
+    if (songs.isNotEmpty()) {
+        item { SectionHeader("Songs") }
+        items(songs, key = { it.id }) { song ->
+            SongRow(song, onClick = { actions.play(songs, songs.indexOf(song)) }, onMore = { actions.songOptions(song) },
+                    isCurrent = song.id == currentId)
         }
     }
 }

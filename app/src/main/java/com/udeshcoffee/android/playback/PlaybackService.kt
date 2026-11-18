@@ -25,6 +25,7 @@ import com.google.common.util.concurrent.ListenableFuture
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.data.DataRepository
 import com.udeshcoffee.android.data.MediaRepository
+import com.udeshcoffee.android.data.subsonic.SubsonicRepository
 import com.udeshcoffee.android.service.AudioFXHelper
 import com.udeshcoffee.android.ui.MainActivity
 import com.udeshcoffee.android.utils.PreferenceUtil
@@ -51,10 +52,11 @@ class PlaybackService : MediaLibraryService() {
 
     private val dataRepository: DataRepository by inject()
     private val mediaRepository: MediaRepository by inject()
+    private val subsonic: SubsonicRepository by inject()
+    private val queueStore: QueueStore by inject()
 
     private lateinit var player: ExoPlayer
     private lateinit var prefs: SharedPreferences
-    private lateinit var queueStore: QueueStore
     private lateinit var browser: LibraryBrowser
     private var session: MediaLibrarySession? = null
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -65,7 +67,6 @@ class PlaybackService : MediaLibraryService() {
     override fun onCreate() {
         super.onCreate()
         prefs = PreferenceManager.getDefaultSharedPreferences(this)
-        queueStore = QueueStore(this, mediaRepository)
         browser = LibraryBrowser(mediaRepository)
 
         player = ExoPlayer.Builder(this)
@@ -136,6 +137,8 @@ class PlaybackService : MediaLibraryService() {
             if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO || reason == Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT)
                 lastItem?.let { countPlay(it) }
             lastItem = mediaItem
+            // Server songs: tell the server what's playing (scrobbling "now playing").
+            mediaItem?.toSong()?.remoteId?.let { id -> scope.launch { subsonic.scrobble(id, submission = false) } }
             saveQueue()
             updateWidgets(PlaybackEvents.METADATA_CHANGED)
         }
@@ -172,6 +175,8 @@ class PlaybackService : MediaLibraryService() {
 
     private fun countPlay(item: MediaItem) {
         val song = item.toSong()
+        // Server songs are counted by the server (and passed on to Last.fm / ListenBrainz there).
+        song.remoteId?.let { id -> scope.launch { subsonic.scrobble(id, submission = true) }; return }
         scope.launch {
             try {
                 dataRepository.increasePlayCount(song)
@@ -183,8 +188,8 @@ class PlaybackService : MediaLibraryService() {
 
     private fun saveQueue() {
         if (!::player.isInitialized || player.mediaItemCount == 0) return
-        val ids = (0 until player.mediaItemCount).mapNotNull { player.getMediaItemAt(it).mediaId.toLongOrNull() }
-        queueStore.save(ids, player.currentMediaItemIndex, player.currentPosition)
+        val songs = (0 until player.mediaItemCount).map { player.getMediaItemAt(it).toSong() }
+        queueStore.save(songs, player.currentMediaItemIndex, player.currentPosition)
     }
 
     private fun updateWidgets(what: String) {

@@ -10,7 +10,13 @@ import kotlinx.parcelize.Parcelize
  */
 @SuppressLint("ParcelCreator")
 @Parcelize
-class Playlist(val type: Int, var id: Long = 0,var title: String = ""): Parcelable {
+class Playlist(val type: Int, var id: Long = 0, var title: String = "",
+               /** Subsonic playlist ID for server playlists; null for device playlists. */
+               val remoteId: String? = null,
+               /** Server playlists that can't be edited (smart playlists, other users'). */
+               val readonly: Boolean = false): Parcelable {
+
+    val isRemote: Boolean get() = remoteId != null
 
     @IgnoredOnParcel
     @Transient

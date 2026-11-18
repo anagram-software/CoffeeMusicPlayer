@@ -65,16 +65,21 @@ fun OptionsSheetHost(actions: AppActions) {
                     SheetAction(Icons.Default.SkipNext, "Play next", run { actions.queue(listOf(song), next = true) })
                     SheetAction(QueueIcon, "Add to queue", run { actions.queue(listOf(song), next = false) })
                     SheetAction(Icons.AutoMirrored.Filled.PlaylistAdd, "Add to playlist", run { actions.addToPlaylist(listOf(song)) })
-                    sheet.playlist?.let { playlist ->
+                    sheet.playlist?.takeIf { !it.readonly }?.let { playlist ->
                         SheetAction(Icons.Default.RemoveCircleOutline, "Remove from ${playlist.title}",
                                 run { actions.removeFromPlaylist(playlist, song) })
                     }
                     SheetAction(Icons.Default.Favorite, "Favorite / unfavorite", run { actions.toggleFavorite(song) })
-                    SheetAction(Icons.Default.Album, "Go to album", run { actions.openAlbum(song) })
-                    SheetAction(Icons.Default.Person, "Go to artist", run { actions.openArtist(song) })
-                    SheetAction(Icons.Default.Edit, "Edit tags", run { actions.openEditor(song) })
-                    SheetAction(Icons.Default.Share, "Share", run { actions.share(song) })
-                    SheetAction(Icons.Default.Delete, "Delete from device", run { actions.deleteSongs(listOf(song)) })
+                    if (!song.isRemote || song.albumRemoteId != null)
+                        SheetAction(Icons.Default.Album, "Go to album", run { actions.openAlbum(song) })
+                    if (!song.isRemote || song.artistRemoteId != null)
+                        SheetAction(Icons.Default.Person, "Go to artist", run { actions.openArtist(song) })
+                    // File operations only make sense for songs on this device.
+                    if (!song.isRemote) {
+                        SheetAction(Icons.Default.Edit, "Edit tags", run { actions.openEditor(song) })
+                        SheetAction(Icons.Default.Share, "Share", run { actions.share(song) })
+                        SheetAction(Icons.Default.Delete, "Delete from device", run { actions.deleteSongs(listOf(song)) })
+                    }
                 }
                 is OptionsSheet.ForCollection -> {
                     ListItem(
@@ -88,7 +93,7 @@ fun OptionsSheetHost(actions: AppActions) {
                     SheetAction(Icons.AutoMirrored.Filled.PlaylistAdd, "Add to playlist",
                             run { actions.addToPlaylist(sheet.songs, sheet.playlist?.id) })
                     SheetAction(Icons.Default.Favorite, "Add to favorites", run { actions.addToFavorites(sheet.songs) })
-                    sheet.playlist?.let { playlist ->
+                    sheet.playlist?.takeIf { !it.readonly }?.let { playlist ->
                         SheetAction(Icons.Default.Edit, "Rename playlist", run { actions.renamePlaylist(playlist) })
                         SheetAction(Icons.Default.Delete, "Delete playlist", run { actions.deletePlaylist(playlist) })
                     }
