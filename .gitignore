@@ -18,3 +18,6 @@ local.properties
 
 # OS
 .DS_Store
+
+# Personal notes
+TODO.md
