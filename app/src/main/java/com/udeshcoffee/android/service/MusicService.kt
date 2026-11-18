@@ -15,6 +15,7 @@ import android.os.Handler
 import android.os.IBinder
 import androidx.preference.PreferenceManager
 import android.support.v4.media.session.MediaSessionCompat
+import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import com.cantrowitz.rxbroadcast.RxBroadcast
 import com.udeshcoffee.android.data.DataRepository
@@ -161,42 +162,26 @@ class MusicService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(TAG, "onStartCommand intent:${intent?.extras}")
         if (intent != null) {
+            // Media-button and widget intents arrive via startForegroundService.
+            val startedInForeground = intent.action == Intent.ACTION_MEDIA_BUTTON ||
+                    intent.action in arrayOf(WidgetIntents.PLAY_PAUSE, WidgetIntents.NEXT, WidgetIntents.PREVIOUS)
+            if (startedInForeground)
+                notifyManger.ensureForeground()
+
             androidx.media.session.MediaButtonReceiver.handleIntent(mediaSession, intent)
 
             when (intent.action) {
-                WidgetIntents.PLAY_PAUSE -> {
-                    if (!isPlaying()) {
-                        if (list.isEmpty())
-                            loadLastList { pos, current ->
-                                initSong(pos, true, current)
-                            }
-                        else
-                            play()
-                    } else
-                        pause()
-                }
-                WidgetIntents.NEXT  -> {
-                    if (list.isEmpty())
-                        loadLastList { pos, _ ->
-                            playPosition = pos
-                            gotoNext()
-                        }
-                    else
-                        gotoNext()
-                }
-                WidgetIntents.PREVIOUS-> {
-                    if (list.isEmpty())
-                        loadLastList { pos, _ ->
-                            playPosition = pos
-                            gotoBack()
-                        }
-                    else
-                        gotoBack()
-                }
+                WidgetIntents.PLAY_PAUSE -> if (isPlaying()) pause() else playOrRestoreQueue()
+                WidgetIntents.NEXT -> nextOrRestoreQueue()
+                WidgetIntents.PREVIOUS -> previousOrRestoreQueue()
                 ACTION_STOP -> {
                     stop()
                 }
             }
+            // Leave the foreground again if the action didn't start playback
+            // (an empty queue is still loading asynchronously and handles this itself).
+            if (startedInForeground && !isPlaying() && list.isNotEmpty())
+                notifyManger.notifyChange(InternalIntents.PLAYBACK_STATE_CHANGED, true)
         } else
             Log.e(TAG, "fucked")
 
@@ -273,7 +258,7 @@ class MusicService : Service() {
             }
 
             override fun onPlay() {
-                play()
+                playOrRestoreQueue()
             }
 
             override fun onSeekTo(pos: Long) {
@@ -281,11 +266,11 @@ class MusicService : Service() {
             }
 
             override fun onSkipToNext() {
-                gotoNext()
+                nextOrRestoreQueue()
             }
 
             override fun onSkipToPrevious() {
-                gotoBack()
+                previousOrRestoreQueue()
             }
 
             override fun onStop() {
@@ -293,11 +278,21 @@ class MusicService : Service() {
             }
         })
         mediaSession.setFlags(MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS or MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS)
+        // Media keys are only mapped to callbacks for actions listed in the playback state, so a
+        // freshly created session (cold start from a media button) needs these up front.
+        mediaSession.setPlaybackState(PlaybackStateCompat.Builder()
+                .setActions(PlaybackStateCompat.ACTION_PLAY or PlaybackStateCompat.ACTION_PLAY_PAUSE or
+                        PlaybackStateCompat.ACTION_SKIP_TO_NEXT or PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or
+                        PlaybackStateCompat.ACTION_STOP)
+                .setState(PlaybackStateCompat.STATE_NONE, PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN, 1.0f)
+                .build())
 
         val mediaButtonIntent = Intent(Intent.ACTION_MEDIA_BUTTON)
         mediaButtonIntent.setClass(this, androidx.media.session.MediaButtonReceiver::class.java)
 
-        val mbrIntent = PendingIntent.getBroadcast(this, 0, mediaButtonIntent, 0)
+        // Must be mutable: the system adds the KeyEvent extra when it sends this (e.g. to resume
+        // playback after the process died). The intent is explicit, so mutability is allowed.
+        val mbrIntent = PendingIntent.getBroadcast(this, 0, mediaButtonIntent, PendingIntent.FLAG_MUTABLE)
         mediaSession.setMediaButtonReceiver(mbrIntent)
     }
 
@@ -334,15 +329,48 @@ class MusicService : Service() {
     }
 
     private fun loadLastList(callback: (pos: Int, current: Int)->Unit) {
-        getQueue()?.subscribe { songs ->
+        val queue = getQueue()
+        if (queue == null) {
+            notifyManger.leaveForeground()
+            return
+        }
+        disposables.add(queue.take(1).subscribe { songs ->
             val tempSongPos = getSharedData(PreferenceUtil.LAST_PLAYED_POS)
             if (songs.isNotEmpty() && tempSongPos < songs.size && tempSongPos != -1) {
                 setSongList(songs as ArrayList<Song>)
                 callback(tempSongPos, getSharedData(PreferenceUtil.LAST_CURRENT_POS))
                 checkAndShuffle()
                 notifyManger.notifyChange(InternalIntents.METADATA_CHANGED, true)
+            } else {
+                Log.d(TAG, "loadLastList: nothing to restore")
+                // Nothing to restore (e.g. a media button after the queue was cleared).
+                notifyManger.leaveForeground()
             }
-        }?.let { disposables.add(it) }
+        })
+    }
+
+    // Transport actions that may arrive while the queue is empty (cold start from a media
+    // button, the widget, or the system's resume control): restore the saved queue first.
+
+    private fun playOrRestoreQueue() {
+        if (list.isEmpty())
+            loadLastList { pos, current -> initSong(pos, true, current) }
+        else
+            play()
+    }
+
+    private fun nextOrRestoreQueue() {
+        if (list.isEmpty())
+            loadLastList { pos, _ -> playPosition = pos; gotoNext() }
+        else
+            gotoNext()
+    }
+
+    private fun previousOrRestoreQueue() {
+        if (list.isEmpty())
+            loadLastList { pos, _ -> playPosition = pos; gotoBack() }
+        else
+            gotoBack()
     }
 
     fun clearSongList() {
@@ -399,6 +427,7 @@ class MusicService : Service() {
             return
         playPosition = position
         player.initSong(list.list[playPosition], shouldPlay, startPos)
+        saveUnshuffledQueue()
         Log.d(TAG, "init")
     }
 
@@ -467,6 +496,8 @@ class MusicService : Service() {
         wasPlaying = false
         player.pause()
         disposePlayTimeEvents()
+        // The process may be killed while paused in the background; keep the queue resumable.
+        saveUnshuffledQueue()
     }
 
     fun stop() {

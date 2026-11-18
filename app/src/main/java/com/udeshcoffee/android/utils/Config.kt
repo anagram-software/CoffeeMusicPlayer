@@ -9,6 +9,7 @@ val ArtworkURI = "content://media/external/audio/albumart".toUri()
 
 object PreferenceUtil {
     const val LAST_QUEUE = "queue"
+    const val PLAYLISTS_IMPORTED = "playlists_imported_to_room"
     const val LAST_PLAYED_POS = "lastplayed"
     const val LAST_CURRENT_POS = "lastpos"
 

@@ -178,7 +178,7 @@ class AlbumDetailFragment : Fragment(), com.google.android.material.appbar.AppBa
         } else sortChanged = false
 
         when (item.itemId) {
-            android.R.id.home -> activity?.onBackPressed()
+            android.R.id.home -> activity?.onBackPressedDispatcher?.onBackPressed()
             R.id.action_play -> viewModel.playClick()
             R.id.action_play_next -> viewModel.playNextClick()
             R.id.action_queue -> viewModel.queueClick()

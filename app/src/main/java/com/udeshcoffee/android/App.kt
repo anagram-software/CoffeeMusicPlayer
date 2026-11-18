@@ -1,12 +1,12 @@
 package com.udeshcoffee.android
 
-import android.content.pm.PackageManager
+import android.os.Build
 import android.app.Application
-import androidx.core.content.ContextCompat
 import com.bumptech.glide.Glide
 import com.udeshcoffee.android.data.MediaRepository
 import com.udeshcoffee.android.data.local.LocalDataSource
 import com.udeshcoffee.android.di.appModule
+import com.udeshcoffee.android.utils.Permissions
 import org.jaudiotagger.tag.TagOptionSingleton
 import org.koin.android.ext.android.inject
 import org.koin.android.ext.koin.androidContext
@@ -39,7 +39,8 @@ class App : Application() {
     }
 
     private fun cleanGenres() {
-        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
+        // MediaStore genres are read-only for apps from API 29.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q || !Permissions.hasReadAudio(this))
             return
 
         mediaRepository.cleanGenres()

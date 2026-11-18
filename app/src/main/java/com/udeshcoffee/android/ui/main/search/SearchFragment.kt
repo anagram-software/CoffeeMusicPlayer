@@ -181,7 +181,7 @@ class SearchFragment : androidx.fragment.app.Fragment() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == android.R.id.home ) {
-            activity?.onBackPressed()
+            activity?.onBackPressedDispatcher?.onBackPressed()
         }
         return super.onOptionsItemSelected(item)
     }

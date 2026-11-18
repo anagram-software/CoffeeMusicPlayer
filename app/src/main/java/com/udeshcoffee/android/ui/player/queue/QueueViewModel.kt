@@ -12,6 +12,7 @@ import com.udeshcoffee.android.service.MusicService
 import com.udeshcoffee.android.ui.common.viewmodels.SongContainingViewModel
 import com.udeshcoffee.android.utils.PreferenceUtil
 import com.udeshcoffee.android.utils.SingleLiveEvent
+import com.udeshcoffee.android.utils.call
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
@@ -29,8 +30,8 @@ class QueueViewModel(
     var total = 0
     val playPosition = MutableLiveData<Int>()
     val showAddToPlaylist = SingleLiveEvent<List<Song>>()
-    val showPlayerUI = SingleLiveEvent<Void>()
-    val hideNowPlay = SingleLiveEvent<Void>()
+    val showPlayerUI = SingleLiveEvent<Unit>()
+    val hideNowPlay = SingleLiveEvent<Unit>()
     val scrollTo = SingleLiveEvent<Int>()
 
     private var queueDisposable: Disposable? = null

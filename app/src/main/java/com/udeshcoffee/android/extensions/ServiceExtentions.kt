@@ -10,6 +10,7 @@ import com.udeshcoffee.android.data.MediaRepository
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.service.MusicService
 import com.udeshcoffee.android.utils.DopeUtil
+import com.udeshcoffee.android.utils.Permissions
 import com.udeshcoffee.android.utils.PreferenceUtil
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -26,10 +27,8 @@ fun MusicService.getQueue(): Observable<ArrayList<Song>>? {
 }
 
 private fun getQueueLogic(context: Context, mediaRepository: MediaRepository): Observable<ArrayList<Song>>? {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-        if (context.checkSelfPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
-            return null
-    }
+    if (!Permissions.hasReadAudio(context))
+        return null
     try {
         val q = PreferenceManager.getDefaultSharedPreferences(context).getString(PreferenceUtil.LAST_QUEUE, "")
 

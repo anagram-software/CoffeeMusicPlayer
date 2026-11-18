@@ -16,6 +16,7 @@ import java.io.File
 */
 
 
+/** Confirmation and deletion for API < 30. From API 30 deletion uses the system dialog (see MainActivity.deleteSongs). */
 class DeleteSongDialog : androidx.fragment.app.DialogFragment() {
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {

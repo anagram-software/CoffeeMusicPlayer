@@ -10,6 +10,8 @@ import android.util.Log
 import android.view.*
 import android.view.inputmethod.InputMethodManager
 import android.widget.*
+import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.ActionBar
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
@@ -19,9 +21,9 @@ import com.udeshcoffee.android.R
 import com.udeshcoffee.android.extensions.loadArtwork
 import com.udeshcoffee.android.extensions.setRoundColor
 import com.udeshcoffee.android.model.Song
-import com.udeshcoffee.android.ui.common.dialogs.PermissionToSdCardDialog
 import com.udeshcoffee.android.ui.common.dialogs.SearchSongDialog
 import com.udeshcoffee.android.ui.player.lyrics.LyricsFragment
+import com.udeshcoffee.android.utils.MediaAccess
 import com.udeshcoffee.android.utils.isNetworkAvailable
 import com.udeshcoffee.android.utils.loadAlbumArtworkFromUri
 import org.koin.android.ext.android.inject
@@ -32,6 +34,14 @@ import org.koin.androidx.viewmodel.ext.android.viewModel
  * Created by Udathari on 9/28/2017.
  */
 class EditorFragment : androidx.fragment.app.Fragment() {
+
+    /** Save action waiting for the user's write consent (API 30+). */
+    private var pendingSave: (() -> Unit)? = null
+
+    private val writeAccessLauncher = registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
+        if (result.resultCode == RESULT_OK) pendingSave?.invoke()
+        pendingSave = null
+    }
 
     private val viewModel: EditorViewModel by viewModel()
     @Suppress("DEPRECATION")
@@ -70,7 +80,7 @@ class EditorFragment : androidx.fragment.app.Fragment() {
         val song = arguments!!.getParcelable<Song>(ARGUMENT_SONG)
         if (song == null) {
             Log.d(TAG, "No song")
-            activity?.onBackPressed()
+            activity?.onBackPressedDispatcher?.onBackPressed()
         }
 
         @Suppress("DEPRECATION")
@@ -126,22 +136,22 @@ class EditorFragment : androidx.fragment.app.Fragment() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when(item.itemId) {
             android.R.id.home -> {
-                activity?.onBackPressed()
+                activity?.onBackPressedDispatcher?.onBackPressed()
                 hideKeyboard()
             }
             R.id.action_collect_metadata -> {
                 showSearchDialog()
             }
             R.id.action_save -> {
-                viewModel.save(
-                        title.text.toString(),
-                        album.text.toString(),
-                        artist.text.toString(),
-                        genre.text.toString(),
-                        year.text.toString(),
-                        trackno.text.toString(),
-                        discno.text.toString()
-                )
+                val values = listOf(title, album, artist, genre, year, trackno, discno).map { it.text.toString() }
+                val save = { viewModel.save(values[0], values[1], values[2], values[3], values[4], values[5], values[6]) }
+                val consent = MediaAccess.writeRequest(requireContext().contentResolver, listOf(viewModel.songUri))
+                if (consent == null) {
+                    save()
+                } else {
+                    pendingSave = save
+                    writeAccessLauncher.launch(IntentSenderRequest.Builder(consent).build())
+                }
                 hideKeyboard()
             }
         }
@@ -156,19 +166,6 @@ class EditorFragment : androidx.fragment.app.Fragment() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         when (requestCode) {
-            PermissionToSdCardDialog.REQUEST_CODE -> {
-                if (resultCode == RESULT_OK) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                        data?.data?.let {
-                            context!!.contentResolver
-                                    .takePersistableUriPermission(it,
-                                            Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
-                        }
-                    }
-                } else {
-                    activity?.onBackPressed()
-                }
-            }
             SELECT_IMAGE -> {
                 Log.d(TAG, "onResult")
                 if (resultCode == RESULT_OK) {
@@ -213,7 +210,7 @@ class EditorFragment : androidx.fragment.app.Fragment() {
                 it?.let { reset.isEnabled = it }
             })
             finish.observe(this@EditorFragment, Observer {
-                activity?.onBackPressed()
+                activity?.onBackPressedDispatcher?.onBackPressed()
             })
             showToast.observe(this@EditorFragment, Observer {
                 Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
@@ -228,13 +225,8 @@ class EditorFragment : androidx.fragment.app.Fragment() {
                     dialog.show()
                 }
             })
-            showPermissionDialog.observe(this@EditorFragment, Observer {
-                val takePermissionDialog = PermissionToSdCardDialog()
-                takePermissionDialog.setTargetFragment(this@EditorFragment, 0)
-                fragmentManager?.let { it1 -> takePermissionDialog.show(it1, "PermissionToSdCardDialog") }
-            })
             finish.observe(this@EditorFragment, Observer {
-                activity?.onBackPressed()
+                activity?.onBackPressedDispatcher?.onBackPressed()
             })
         }
     }

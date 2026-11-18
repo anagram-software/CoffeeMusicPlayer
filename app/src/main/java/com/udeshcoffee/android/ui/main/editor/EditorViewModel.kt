@@ -16,6 +16,7 @@ import com.udeshcoffee.android.data.DataRepository
 import com.udeshcoffee.android.data.MediaRepository
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.utils.*
+import io.reactivex.Completable
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
@@ -40,7 +41,7 @@ class EditorViewModel(
 
     val song = MutableLiveData<Song>()
     val path = MutableLiveData<String>()
-    var genre = MutableLiveData<String>()
+    var genre = MutableLiveData<String?>()
     val resetEnabled = MutableLiveData<Boolean>()
 
     val progressDialog = MutableLiveData<String?>()
@@ -61,9 +62,8 @@ class EditorViewModel(
         }
     // Events
     val showToast = ToastMessage()
-    val finish = SingleLiveEvent<Void>()
+    val finish = SingleLiveEvent<Unit>()
     val reloadImage = SingleLiveEvent<Int>()
-    val showPermissionDialog = SingleLiveEvent<Void>()
 
     private var file: File? = null
 
@@ -75,12 +75,6 @@ class EditorViewModel(
 
         fetchFile()
         fetchData()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            file?.let {
-                if (!hasPermission() && isFromSdCard(it.path))
-                    showPermissionDialog.call()
-            }
-        }
         resetEnabled.value = false
     }
 
@@ -89,8 +83,12 @@ class EditorViewModel(
         disposeSaveDisposable()
     }
 
+    /** MediaStore URI of the song being edited. */
+    val songUri: Uri
+        get() = MediaAccess.songUri(song.value!!.id)
+
     private fun fetchFile() {
-        val trackUri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, song.value!!.id)
+        val trackUri = songUri
         val path = mediaRepository.getRealPath(trackUri)
         if (path != null) {
             this.path.value = path
@@ -153,53 +151,50 @@ class EditorViewModel(
                 })
     }
 
+    /**
+     * Writes the tags. The file is copied to the cache, edited there with jaudiotagger (which
+     * needs a real file), then written back through MediaStore. On API 30+ the caller must
+     * first obtain write consent ([MediaAccess.writeRequest]).
+     */
     fun save(title: String, album: String, artist: String, genre: String, year: String, trackNo: String, discNo: String) {
         Log.d(TAG, "save")
         progressDialog.value = "Saving"
-        saveDisposable = Observable.fromCallable {
-            Log.d(TAG, "saveObservable")
-            var tempFile: File
-
-            file?.let {
-                Log.d(TAG, "saveObservable file")
-                if (isFromSdCard(it.path)) {
-                    tempFile = File(App.instance.externalCacheDir?.path, it.name)
-                    copyFile(it, tempFile)
-                    setTags(tempFile, title, album, artist, genre, year, trackNo, discNo)
-                    cutFile(tempFile, it)
-                } else {
-                    file?.let { file -> setTags(file, title, album, artist, genre, year, trackNo, discNo) }
-                }
-                MediaScannerConnection.scanFile(App.instance, arrayOf(it.absolutePath), null,
-                        object : MediaScannerConnection.MediaScannerConnectionClient {
-                            override fun onMediaScannerConnected() {}
-
-                            override fun onScanCompleted(path: String, uri: Uri) {
-                                Log.d(TAG, "onScanComplete")
-                                Observable.fromCallable {
-                                    progressDialog.value = null
-                                    finish.call()
-                                    showToast.value = "Song changed"
-                                }.subscribeOn(AndroidSchedulers.mainThread())
-                                        .observeOn(AndroidSchedulers.mainThread())
-                                        .firstOrError()
-                                        .subscribe()
-                            }
-                        })
+        val uri = songUri
+        val context = App.instance
+        // jaudiotagger picks the format from the file extension.
+        val fileName = file?.name ?: "${song.value!!.id}.mp3"
+        saveDisposable = Completable.fromAction {
+            val resolver = context.contentResolver
+            val tempFile = File(File(context.cacheDir, "tag-edit").apply { mkdirs() }, fileName)
+            try {
+                resolver.openInputStream(uri)!!.use { input -> tempFile.outputStream().use { input.copyTo(it) } }
+                setTags(tempFile, title, album, artist, genre, year, trackNo, discNo)
+                resolver.openOutputStream(uri, "wt")!!.use { output -> tempFile.inputStream().use { it.copyTo(output) } }
+            } finally {
+                tempFile.delete()
             }
         }
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .take(1)
-                .subscribeWith(object : DisposableObserver<Unit>() {
-                    override fun onError(e: Throwable) {
-                        showToast.value = "Couldn't edit the song"
+                .subscribe({
+                    val onDone = {
+                        progressDialog.value = null
+                        showToast.value = "Song changed"
+                        finish.call()
                     }
-
-                    override fun onComplete() {}
-
-                    override fun onNext(t: Unit) {}
-
+                    val path = path.value
+                    if (path == null) {
+                        onDone()
+                    } else {
+                        // Refresh MediaStore so the library shows the new tags.
+                        MediaScannerConnection.scanFile(context, arrayOf(path), null) { _, _ ->
+                            AndroidSchedulers.mainThread().scheduleDirect { onDone() }
+                        }
+                    }
+                }, {
+                    Log.w(TAG, "save failed", it)
+                    progressDialog.value = null
+                    showToast.value = "Couldn't edit the song"
                 })
     }
 
@@ -256,7 +251,7 @@ class EditorViewModel(
 
                 val byteArray = stream.toByteArray()
 
-                val artworkFile = File("${Environment.getExternalStorageDirectory()}/artwork.jpg")
+                val artworkFile = File(App.instance.cacheDir, "artwork.jpg")
 
                 if (!artworkFile.exists())
                     artworkFile.createNewFile()
@@ -277,15 +272,7 @@ class EditorViewModel(
                     tag.addField(artwork)
                 }
 
-                try {
-                    val uri = ContentUris.withAppendedId(ArtworkURI, song.value!!.id)
-                    mediaRepository.getRealPath(uri)?.let { path ->
-                        File(path).delete()
-                    }
-                    artworkFile.delete()
-                } catch (e: Exception) {
-
-                }
+                artworkFile.delete()
             }
 
             Log.d(TAG, "commiting")

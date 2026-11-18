@@ -21,8 +21,7 @@ android {
     defaultConfig {
         applicationId = "com.udeshcoffee.android"
         minSdk = 26
-        // Raised to the latest SDK in Phase 1, together with the required behaviour changes.
-        targetSdk = 29
+        targetSdk = 37
         versionCode = 35
         versionName = "2.0.13"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -57,6 +56,7 @@ android {
 
 ksp {
     arg("room.generateKotlin", "true")
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 dependencies {
@@ -67,7 +67,6 @@ dependencies {
     implementation(libs.androidx.cardview)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.documentfile)
     implementation(libs.androidx.drawerlayout)
     implementation(libs.androidx.fragment.ktx)
     implementation(libs.androidx.gridlayout)
@@ -82,6 +81,7 @@ dependencies {
     implementation(libs.androidx.recyclerview)
     implementation(libs.androidx.transition)
     implementation(libs.androidx.viewpager)
+    implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.material)
 
     // Room
@@ -113,7 +113,6 @@ dependencies {
     implementation(libs.glide)
 
     // Other
-    implementation(libs.permiso)
     implementation(libs.slidinguppanel)
 
     testImplementation(libs.junit)

@@ -11,7 +11,7 @@ import io.reactivex.schedulers.Schedulers
 /**
 * Created by Udathari on 12/19/2017.
 */
-class LocalDataSource(private val dataDao: DataDao) {
+class LocalDataSource(private val dataDao: DataDao, val playlistDao: PlaylistDao) {
 
     fun getMostPlayedSongs(): Observable<List<SongStat>> =
             Observable.fromCallable { dataDao.getSongMostPlayed() }

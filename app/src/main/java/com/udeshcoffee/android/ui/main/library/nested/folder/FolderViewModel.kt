@@ -3,8 +3,6 @@ package com.udeshcoffee.android.ui.main.library.nested.folder
 import android.app.Application
 import androidx.lifecycle.MutableLiveData
 import android.os.Build
-import android.os.Environment
-import android.text.TextUtils
 import android.util.Log
 import com.udeshcoffee.android.data.DataRepository
 import com.udeshcoffee.android.data.MediaRepository
@@ -15,7 +13,8 @@ import com.udeshcoffee.android.ui.common.viewmodels.DetailSongViewModel
 import com.udeshcoffee.android.utils.SingleLiveEvent
 import com.udeshcoffee.android.utils.SortManager
 import com.udeshcoffee.android.utils.ToastMessage
-import com.udeshcoffee.android.utils.getExtSdCardFiles
+import com.udeshcoffee.android.App
+import com.udeshcoffee.android.utils.getStorageRoots
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
@@ -44,8 +43,8 @@ class FolderViewModel(
     private val history: ArrayList<HistoryEntry> = ArrayList()
     private var currentDir: File? = null
 
-    private var internal: String? = null
-    private var sdCard: String? = null
+    /** Mounted storage volumes as (display name, root directory). */
+    private var roots: List<Pair<String, File>> = emptyList()
 
     override fun start() {
         super.start()
@@ -55,92 +54,19 @@ class FolderViewModel(
     }
 
     private fun fetchFolders() {
-        currentDir?.let { it ->
-            val file = it
-            if (!file.canRead()) {
-                if (file.absolutePath.startsWith(
-                                Environment.getExternalStorageDirectory().toString())
-                        || file.absolutePath.startsWith("/sdcard")
-                        || file.absolutePath.startsWith("/mnt/sdcard")) {
-                    if (Environment.getExternalStorageState() != Environment.MEDIA_MOUNTED && Environment.getExternalStorageState() != Environment.MEDIA_MOUNTED_READ_ONLY) {
-                        currentDir = file
-                        val state = Environment.getExternalStorageState()
-                        if (Environment.MEDIA_SHARED == state) {
-                            showToast.setMessage("USB Active")
-                        } else {
-                            showToast.setMessage("Not Mounted")
-                        }
-                        folders.value = ArrayList()
-                    }
-                }
-                showToast.setMessage("Access Error ${file.canRead()},${file.canWrite()},${file.path}")
-            }
-            var files: Array<File>? = null
-            try {
-                files = file.listFiles()
-            } catch (e: Exception) {
-                e.localizedMessage?.let { msg ->
-                    showToast.setMessage(msg)
-                }
-            }
-
-            if (files == null) {
-                showToast.setMessage("No Files Found")
-                return
-            }
-            currentDir = file
-            Arrays.sort(files) { lhs, rhs ->
-                if (lhs.isDirectory != rhs.isDirectory) {
-                    return@sort if (lhs.isDirectory) -1 else 1
-                }
-                lhs.name.compareTo(rhs.name, ignoreCase = true)
-                /*
-             * long lm = lhs.lastModified(); long rm = lhs.lastModified();
-             * if (lm == rm) { return 0; } else if (lm > rm) { return -1; }
-             * else { return 1; }
-             */
-            }
-            val folderItems = ArrayList<Folder>()
-            for (item in files) {
-                if (item.name.startsWith(".")) {
-                    continue
-                }
-                if (item.isDirectory) {
-                    val songCount = mediaRepository.getFolderSongCount(item.path + "/")
-                    if (songCount > 0) {
-                        folderItems.add(Folder(item.name, songCount, item))
-                    }
-                }
-            }
-            // Sorting
-            val items = folderItems as List<Folder>
-            SortManager.sortFolders(items)
-
-            if (!folderSortAscending) {
-                folders.value = items.reversed()
-            } else {
-                folders.value = items
-            }
+        currentDir?.let { dir ->
+            val folderItems = mediaRepository.getChildFolders(dir.path)
+                    .map { (path, count) -> File(path).let { Folder(it.name, count, it) } }
+                    .filterNot { it.title.startsWith(".") }
+            SortManager.sortFolders(folderItems)
+            folders.value = if (!folderSortAscending) folderItems.reversed() else folderItems
         }
     }
 
     private fun fetchRoot() {
-        val folderItems = ArrayList<Folder>()
-
-        val internal = Environment.getExternalStorageDirectory()
-        if (TextUtils.equals(Environment.getExternalStorageState(), Environment.MEDIA_MOUNTED)) {
-            folderItems.add(Folder("Internal", mediaRepository.getFolderSongCount(internal.path + "/"), internal))
-            this.internal = internal.path
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            val sdCardFiles = getExtSdCardFiles()
-            for (file in sdCardFiles) {
-                file.let {
-                    folderItems.add(Folder("SD Card", mediaRepository.getFolderSongCount(it.path + "/"), it))
-                    this.sdCard = it.path
-                }
-            }
+        roots = getStorageRoots(App.instance)
+        val folderItems = roots.map { (name, dir) ->
+            Folder(name, mediaRepository.getFolderSongCount(dir.path + "/"), dir)
         }
 
         //Sorting
@@ -238,20 +164,8 @@ class FolderViewModel(
     }
 
     private fun setPath(path: String) {
-        var newPath: String? = null
-        internal?.let {
-            if (path.contains(it))
-                newPath = "/Internal" + path.substring(it.length)
-
-        }
-        sdCard?.let {
-            if (path.contains(it))
-                newPath = "/SD Card" + path.substring(it.length)
-
-        }
-        if (newPath == null)
-            newPath = path
-        this.path.value = newPath
+        val root = roots.firstOrNull { (_, dir) -> path.startsWith(dir.path) }
+        this.path.value = root?.let { (name, dir) -> "/$name" + path.substring(dir.path.length) } ?: path
     }
 
     override var songSortOrder: Int

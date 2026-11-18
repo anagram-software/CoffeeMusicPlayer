@@ -1,6 +1,6 @@
 package com.udeshcoffee.android.widget
 
-import android.Manifest
+import com.udeshcoffee.android.extensions.padContentForSystemBars
 import android.app.Activity
 import android.app.WallpaperManager
 import android.appwidget.AppWidgetManager
@@ -23,7 +23,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.ConstraintSet
-import com.greysonparrelli.permiso.Permiso
+import com.udeshcoffee.android.utils.Permissions
+import androidx.activity.result.contract.ActivityResultContracts
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.extensions.*
 import com.udeshcoffee.android.service.MusicService
@@ -41,29 +42,26 @@ class AppWidgetConfigureActivity : AppCompatActivity(), ServiceConnection {
     var color: Int = 0
     var alpha: Int = 0
 
+    private val permissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) {
+            bindToService()
+        } else {
+            Toast.makeText(this, R.string.permission_audio_required, Toast.LENGTH_LONG).show()
+            finish()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_app_widget_config)
+        padContentForSystemBars()
 
         volumeControlStream = AudioManager.STREAM_MUSIC
 
-        Permiso.getInstance().setActivity(this)
-        Permiso.getInstance().requestPermissions(object : Permiso.IOnPermissionResult {
-            override fun onPermissionResult(resultSet: Permiso.ResultSet) {
-                if (resultSet.areAllPermissionsGranted()) {
-                    bindToService()
-                } else {
-                    Toast.makeText(this@AppWidgetConfigureActivity, "Permission check failed", Toast.LENGTH_LONG).show()
-                    finish()
-                }
-            }
-
-            override fun onRationaleRequested(callback: Permiso.IOnRationaleProvided, vararg permissions: String) {
-                callback.onRationaleProvided()
-            }
-        }, Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                Manifest.permission.WAKE_LOCK,
-                Manifest.permission.READ_EXTERNAL_STORAGE)
+        if (Permissions.hasReadAudio(this))
+            bindToService()
+        else
+            permissionLauncher.launch(Permissions.readAudio)
 
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
 
@@ -89,8 +87,10 @@ class AppWidgetConfigureActivity : AppCompatActivity(), ServiceConnection {
 
         val background = findViewById<ImageView>(R.id.background)
         val wallpaperManager = WallpaperManager.getInstance(this)
-        val wallpaperDrawable = wallpaperManager.drawable
-        background.post { background.setImageDrawable(wallpaperDrawable) }
+        // Reading the wallpaper needs a privileged permission on newer releases; the preview
+        // then just shows the plain background.
+        val wallpaperDrawable = try { wallpaperManager.drawable } catch (e: SecurityException) { null }
+        wallpaperDrawable?.let { background.post { background.setImageDrawable(it) } }
 
         val themeCheckBox = findViewById<CheckBox>(R.id.theme_check)
         val buttonCheckBox = findViewById<CheckBox>(R.id.button_check)
@@ -219,11 +219,6 @@ class AppWidgetConfigureActivity : AppCompatActivity(), ServiceConnection {
             setResult(Activity.RESULT_OK, resultValue)
             finish()
         }
-    }
-
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        Permiso.getInstance().onRequestPermissionResult(requestCode, permissions, grantResults)
     }
 
     fun bindToService() {

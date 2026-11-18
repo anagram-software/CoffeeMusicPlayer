@@ -1,17 +1,19 @@
 package com.udeshcoffee.android.ui.common.dialogs
 
 import android.app.Dialog
-import android.content.ContentValues
 import android.os.Bundle
-import android.provider.MediaStore
 import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
 import com.udeshcoffee.android.R
+import com.udeshcoffee.android.data.MediaRepository
+import org.koin.android.ext.android.inject
 
 /**
  * Created by Udathari on 10/17/2017.
  */
 class RenamePlaylistDialog: androidx.fragment.app.DialogFragment() {
+
+    private val mediaRepository: MediaRepository by inject()
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
 
@@ -34,12 +36,7 @@ class RenamePlaylistDialog: androidx.fragment.app.DialogFragment() {
                 .setPositiveButton("Rename") { _, _ ->
                     val name = playlist.text.toString()
                     if (name != "") {
-                        val playlistResolver = context!!.contentResolver
-                        val mInserts = ContentValues()
-                        mInserts.put(MediaStore.Audio.Playlists.NAME, name)
-                        val where = MediaStore.Audio.Playlists._ID + "=?"
-                        val whereVal = arrayOf("$playlistId")
-                        playlistResolver.update(MediaStore.Audio.Playlists.EXTERNAL_CONTENT_URI, mInserts, where, whereVal)
+                        mediaRepository.renamePlaylist(playlistId, name)
                     }
                 }
                 .setNegativeButton("Cancel") { _, _ -> this@RenamePlaylistDialog.dialog?.cancel() }

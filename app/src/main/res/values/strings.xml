@@ -107,7 +107,6 @@
     <string name="action_more">More</string>
     <string name="action_collect_metadata">Collect Metadata</string>
     <string name="action_cancel">Cancel</string>
-    <string name="grant_permission">Grant SD Card Permissions</string>
     <string name="action_ok">OK</string>
     <string name="action_select_from_gallery">Select Image</string>
     <string name="action_reset">Reset</string>
@@ -115,7 +114,6 @@
     <string name="msg_sd_permission">Coffee Player need SD card permission to edit this song.\n\n
         • Step 1 - Select the popup menu.\n • Step 2 - Select \"Show SD card\".\n • Step 3 - Select \"SD card\".
     \n • Step 4 - Select \"SELECT SD card\".</string>
-    <string name="action_give_permission">Give Permissions</string>
     <string name="info_name">Name</string>
     <string name="info_home">Home</string>
     <string name="action_home">Home</string>
@@ -135,4 +133,9 @@
     <string name="song_sort">Song Sort</string>
     <string name="action_sort_song_count">Song Count</string>
 
+    <string name="permission_audio_required">Coffee Player needs access to your music to work.</string>
+    <plurals name="playlists_imported">
+        <item quantity="one">Imported %d playlist</item>
+        <item quantity="other">Imported %d playlists</item>
+    </plurals>
 </resources>

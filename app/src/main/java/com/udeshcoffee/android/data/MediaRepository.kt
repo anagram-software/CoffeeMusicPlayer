@@ -14,7 +14,7 @@ import com.udeshcoffee.android.data.local.LocalDataSource
 import com.udeshcoffee.android.data.media.songsToAlbums
 import com.udeshcoffee.android.data.media.songsToArtists
 import com.udeshcoffee.android.data.media.statsToSongs
-import com.udeshcoffee.android.data.media.toCompletePlaylists
+import com.udeshcoffee.android.data.model.UserPlaylist
 import com.udeshcoffee.android.extensions.toBrite
 import com.udeshcoffee.android.model.*
 import com.udeshcoffee.android.utils.DopeUtil
@@ -55,8 +55,6 @@ class MediaRepository constructor(
             MediaStore.Audio.Genres.NAME)
 
 
-    private val playlistProjection = arrayOf(MediaStore.Audio.Playlists._ID, MediaStore.Audio.Playlists.NAME)
-
     // Queries
     private val songQuery = Query(
             MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
@@ -73,12 +71,6 @@ class MediaRepository constructor(
             null,
             MediaStore.Audio.Genres.NAME
     )
-
-    private val playlistQuery = Query(MediaStore.Audio.Playlists.EXTERNAL_CONTENT_URI,
-            playlistProjection,
-            null,
-            null,
-            MediaStore.Audio.Playlists.NAME)
 
     // Functions
     // Songs
@@ -219,82 +211,65 @@ class MediaRepository constructor(
                 }
     }
 
-    // Playlist
-    fun addPlaylist(name: String) {
-        val mInserts = contentValuesOf(
-                Pair(MediaStore.Audio.Playlists.NAME, name),
-                Pair(MediaStore.Audio.Playlists.DATE_ADDED, System.currentTimeMillis()),
-                Pair(MediaStore.Audio.Playlists.DATE_MODIFIED, System.currentTimeMillis())
-        )
-        contentResolver.insert(MediaStore.Audio.Playlists.EXTERNAL_CONTENT_URI, mInserts)
+    // Playlist (stored in Room; see UserPlaylist)
+    private val playlistDao get() = localDataSource.playlistDao
+
+    fun addPlaylist(name: String): Long = playlistDao.insertPlaylist(UserPlaylist(name = name))
+
+    fun renamePlaylist(playlistId: Long, name: String) = playlistDao.renamePlaylist(playlistId, name)
+
+    fun deletePlaylist(playlistId: Long) = playlistDao.deletePlaylist(playlistId)
+
+    fun addToPlaylist(playlistId: Long, songs: List<Song>?) {
+        if (songs.isNullOrEmpty()) return
+        playlistDao.appendSongs(playlistId, songs.map { it.id })
     }
 
-    fun addToPlaylist(playlistId: Long, songs: ArrayList<Song>?) {
-        for (i in songs!!.indices) {
-            val resolver = contentResolver
-            val cols = arrayOf("count(*)")
-            val uri = MediaStore.Audio.Playlists.Members.getContentUri("external", playlistId)
-            val cur = resolver.query(uri, cols, null, null, null)
-            cur!!.moveToFirst()
-            val base = cur.getInt(0)
-            cur.close()
-            val values = ContentValues()
-            values.put(MediaStore.Audio.Playlists.Members.PLAY_ORDER, base)
-            values.put(MediaStore.Audio.Playlists.Members.AUDIO_ID, songs[i].id)
-            resolver.insert(uri, values)
-        }
-    }
+    fun addSongToPlaylist(playlistId: Long, songId: Long) = playlistDao.appendSongs(playlistId, listOf(songId))
+
+    fun removeSongFromPlaylist(playlistId: Long, songId: Long) = playlistDao.removeSong(playlistId, songId)
+
+    fun getPlaylistSongIds(playlistId: Long): List<Long> = playlistDao.getSongIds(playlistId)
 
     fun getPlaylists(): Observable<List<Playlist>> {
-        return briteContentResolver
-                .createQuery(playlistQuery.uri, playlistQuery.projection, playlistQuery.selection,
-                        playlistQuery.args, playlistQuery.sort, false)
-                .mapToList { cursor: Cursor -> Playlist(cursor) }
-                .flatMap { Observable.just(toCompletePlaylists(contentResolver, it)) }
+        return playlistDao.observePlaylists()
+                .toObservable()
+                .map { userPlaylists ->
+                    val list = arrayListOf(
+                            Playlist(Playlist.MOST_PLAYED),
+                            Playlist(Playlist.RECENTLY_PLAYED),
+                            Playlist(Playlist.RECENTLY_ADDED))
+                    userPlaylists.mapTo(list) { p ->
+                        Playlist(Playlist.USER, p.id, p.name).also { it.songCount = p.songCount }
+                    }
+                    list as List<Playlist>
+                }
     }
 
-    fun getPlaylistsExcept(playlistId: Long): List<Playlist> {
-        val items = ArrayList<Playlist>()
-        contentResolver
-                .query(playlistQuery.uri,
-                        playlistQuery.projection,
-                        playlistQuery.selection,
-                        playlistQuery.args,
-                        playlistQuery.sort)?.use { cursor ->
-                    if (cursor.moveToFirst()) {
-                        do {
-                            val item = Playlist(cursor)
-                            if (playlistId != item.id)
-                                items.add(item)
-                        } while (cursor.moveToNext())
-                    }
-                }
-        return items
-    }
+    fun getPlaylistsExcept(playlistId: Long): List<Playlist> =
+            playlistDao.getPlaylistsExcept(playlistId).map { Playlist(Playlist.USER, it.id, it.name) }
 
     fun getPlaylistSongs(playlistId: Long, playlistType: Int): Observable<List<Song>>? {
         when (playlistType) {
             Playlist.USER -> {
-                val query = songQuery.copy(
-                        uri = MediaStore.Audio.Playlists.Members.getContentUri("external", playlistId),
-                        projection = arrayOf(MediaStore.Audio.Playlists.Members.AUDIO_ID,
-                                MediaStore.Audio.Playlists.Members._ID,
-                                MediaStore.Audio.Playlists.Members.TITLE,
-                                MediaStore.Audio.Playlists.Members.ARTIST_ID,
-                                MediaStore.Audio.Playlists.Members.ARTIST,
-                                MediaStore.Audio.Playlists.Members.ALBUM_ID,
-                                MediaStore.Audio.Playlists.Members.ALBUM,
-                                MediaStore.Audio.Playlists.Members.DURATION,
-                                MediaStore.Audio.Playlists.Members.YEAR,
-                                MediaStore.Audio.Playlists.Members.DATE_ADDED,
-                                MediaStore.Audio.Playlists.Members.DATE_MODIFIED,
-                                MediaStore.Audio.Playlists.Members.TRACK),
-                        sort = MediaStore.Audio.Playlists.Members.PLAY_ORDER
-
-                )
-                return briteContentResolver
-                        .createQuery(query.uri, query.projection, query.selection, query.args, query.sort, false)
-                        .mapToList(Playlist.SONGMAPPER)
+                return playlistDao.observeItems(playlistId)
+                        .toObservable()
+                        .switchMap { items ->
+                            if (items.isEmpty()) return@switchMap Observable.just(emptyList<Song>())
+                            val query = songQuery.copy(
+                                    selection = songQuery.selection + " AND " + MediaStore.Audio.Media._ID +
+                                            " IN (" + items.map { it.songId }.distinct().joinToString(",") + ")")
+                            briteContentResolver
+                                    .createQuery(query.uri, query.projection, query.selection, query.args, query.sort, false)
+                                    .mapToList { Song(it) }
+                                    .map { songs ->
+                                        val byId = songs.associateBy { it.id }
+                                        // Keep play order and duplicates; songs deleted from the device drop out.
+                                        items.mapNotNull { item ->
+                                            byId[item.songId]?.copy()?.also { it.playlistSongId = item.id }
+                                        }
+                                    }
+                        }
             }
             Playlist.MOST_PLAYED -> return localDataSource.getMostPlayedSongs()
                     .flatMap { stats ->
@@ -319,6 +294,32 @@ class MediaRepository constructor(
         return null
     }
 
+    /**
+     * One-time import of the device's MediaStore playlists into the app database.
+     * Returns the number of playlists imported.
+     */
+    @Suppress("DEPRECATION")
+    fun importMediaStorePlaylists(): Int {
+        var imported = 0
+        val playlists = ArrayList<Pair<Long, String>>()
+        contentResolver.query(MediaStore.Audio.Playlists.EXTERNAL_CONTENT_URI,
+                arrayOf(MediaStore.Audio.Playlists._ID, MediaStore.Audio.Playlists.NAME),
+                null, null, MediaStore.Audio.Playlists.NAME)?.use { c ->
+            while (c.moveToNext()) playlists.add(c.getLong(0) to (c.getString(1) ?: ""))
+        }
+        for ((id, name) in playlists) {
+            val songIds = ArrayList<Long>()
+            contentResolver.query(MediaStore.Audio.Playlists.Members.getContentUri("external", id),
+                    arrayOf(MediaStore.Audio.Playlists.Members.AUDIO_ID),
+                    null, null, MediaStore.Audio.Playlists.Members.PLAY_ORDER)?.use { c ->
+                while (c.moveToNext()) songIds.add(c.getLong(0))
+            }
+            playlistDao.createWithSongs(name, songIds)
+            imported++
+        }
+        return imported
+    }
+
     private fun getRecentlyAdded(): Observable<List<Song>> {
         val numWeeks = 4 * (3600 * 24 * 7)
         val query = songQuery.copy(
@@ -331,22 +332,10 @@ class MediaRepository constructor(
                 .mapToList { Song(it) }
     }
 
-    fun movePlaylistItem(playlistId: Long, fromPosition: Int, toPosition: Int) {
-        try {
-            MediaStore.Audio.Playlists.Members.moveItem(contentResolver, playlistId, fromPosition, toPosition)
-        } catch (e: IllegalArgumentException) {
+    fun movePlaylistItem(playlistId: Long, fromPosition: Int, toPosition: Int) =
+            playlistDao.moveItem(playlistId, fromPosition, toPosition)
 
-        }
-    }
-
-    fun removePlayistItem(playlistId: Long, itemId: Long) {
-        try {
-            val uri = MediaStore.Audio.Playlists.Members.getContentUri("external", playlistId)
-            contentResolver.delete(ContentUris.withAppendedId(uri, itemId), null, null)
-        } catch (e: IllegalArgumentException) {
-
-        }
-    }
+    fun removePlayistItem(playlistId: Long, itemId: Long) = playlistDao.removeItem(playlistId, itemId)
 
     // Favorites
     fun getFavorites(): Flowable<List<Song>> {
@@ -380,6 +369,29 @@ class MediaRepository constructor(
                 .createQuery(query.uri, query.projection, query.selection, query.args, query.sort, false)
                 .mapToList { Song(it) }
                 .observeOn(AndroidSchedulers.mainThread())
+    }
+
+    /**
+     * Child folders of [dirPath] that contain songs (at any depth), with their song counts.
+     * Built from MediaStore paths instead of listing the file system, which scoped storage restricts.
+     */
+    @Suppress("DEPRECATION") // DATA is deprecated but still populated for reading.
+    fun getChildFolders(dirPath: String): List<Pair<String, Int>> {
+        val prefix = dirPath.trimEnd('/') + "/"
+        val counts = LinkedHashMap<String, Int>()
+        contentResolver.query(songQuery.uri, arrayOf(MediaStore.Audio.Media.DATA),
+                songQuery.selection + " AND " + MediaStore.Audio.Media.DATA + " LIKE ?",
+                arrayOf("$prefix%"), null)?.use { c ->
+            while (c.moveToNext()) {
+                val rest = c.getString(0)?.removePrefix(prefix) ?: continue
+                val slash = rest.indexOf('/')
+                if (slash > 0) {
+                    val child = prefix + rest.substring(0, slash)
+                    counts[child] = (counts[child] ?: 0) + 1
+                }
+            }
+        }
+        return counts.toList()
     }
 
     fun getFolderSongCount(path: String): Int {

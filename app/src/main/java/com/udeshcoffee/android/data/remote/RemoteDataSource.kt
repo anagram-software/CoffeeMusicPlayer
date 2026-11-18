@@ -33,9 +33,9 @@ import java.util.regex.Pattern
  */
 object RemoteDataSource {
 
-    private val geniusBaseUrl: String = "http://api.genius.com/"
+    private val geniusBaseUrl: String = "https://api.genius.com/"
     private val itunesBaseUrl: String = "https://api.music.apple.com/v1/catalog/us/"
-    private val lastFMBaseUrl: String = "http://ws.audioscrobbler.com/"
+    private val lastFMBaseUrl: String = "https://ws.audioscrobbler.com/"
 
     private val geniusParameters = arrayOf(
             Pair("access_token", BuildConfig.GENIUS_ACCESS_TOKEN)
@@ -150,7 +150,7 @@ object RemoteDataSource {
         val text: String
 
         try {
-            lyricsPage = Jsoup.connect("http://www.genius.com$path").userAgent(USER_AGENT).get()
+            lyricsPage = Jsoup.connect("https://genius.com$path").userAgent(USER_AGENT).get()
             val lyricsDiv = lyricsPage.select(".lyrics")
             if (lyricsDiv.isEmpty()) {
                 return ""

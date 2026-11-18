@@ -2,15 +2,18 @@ package com.udeshcoffee.android.ui.common.dialogs
 
 import android.app.Dialog
 import android.os.Bundle
-import android.provider.MediaStore
 import androidx.fragment.app.DialogFragment
 import androidx.appcompat.app.AlertDialog
 import android.widget.Toast
+import com.udeshcoffee.android.data.MediaRepository
+import org.koin.android.ext.android.inject
 
 /**
 * Created by Udathari on 10/17/2017.
 */
 class DeletePlaylistDialog: androidx.fragment.app.DialogFragment() {
+
+    private val mediaRepository: MediaRepository by inject()
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val playlistId = this.arguments!!.getLong(ARGUMENT_ID)
@@ -22,13 +25,10 @@ class DeletePlaylistDialog: androidx.fragment.app.DialogFragment() {
                 .setMessage("Delete $playlistTitle ?")
                 // Add action buttons
                 .setPositiveButton("Delete") { _, _ ->
-                    val resolver = context!!.contentResolver
-                    val where = MediaStore.Audio.Playlists._ID + "=?"
-                    val whereVal: Array<String> = arrayOf("$playlistId")
-                    resolver.delete(MediaStore.Audio.Playlists.EXTERNAL_CONTENT_URI, where, whereVal)
+                    mediaRepository.deletePlaylist(playlistId)
                     Toast.makeText(context, " Deleted", Toast.LENGTH_SHORT).show()
                     if (goBack)
-                        activity!!.onBackPressed()
+                        requireActivity().onBackPressedDispatcher.onBackPressed()
                 }
                 .setNegativeButton("Cancel") { dialog, _ -> dialog.cancel() }
         return builder.create()

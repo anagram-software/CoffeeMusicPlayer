@@ -30,7 +30,7 @@ class PlayerViewModel(
     val current = MutableLiveData<Long>()
     val progress = MutableLiveData<Long>()
     val isFav = MutableLiveData<Boolean>()
-    val seekTime = MutableLiveData<Long>()
+    val seekTime = MutableLiveData<Long?>()
     var isSeekTimeShowing = SingleLiveEvent<Boolean>()
     var isLyricsShowing = SingleLiveEvent<Boolean>()
 

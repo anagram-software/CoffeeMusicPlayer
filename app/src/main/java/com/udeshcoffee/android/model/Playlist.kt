@@ -1,9 +1,7 @@
 package com.udeshcoffee.android.model
 
 import android.annotation.SuppressLint
-import android.database.Cursor
 import android.os.Parcelable
-import android.provider.MediaStore
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 
@@ -35,31 +33,11 @@ class Playlist(val type: Int, var id: Long = 0,var title: String = ""): Parcelab
         }
     }
 
-    constructor(cursor: Cursor) : this(USER,
-            cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Playlists._ID)),
-            cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Playlists.NAME)) ?: "")
-
     companion object {
 
         const val MOST_PLAYED = 0
         const val RECENTLY_ADDED = 1
         const val RECENTLY_PLAYED = 2
         const val USER = 3
-
-        val SONGMAPPER = { cursor: Cursor ->
-            val song = Song(cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Playlists.Members.AUDIO_ID)),
-                    cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Playlists.Members.TITLE)),
-                    cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Playlists.Members.ALBUM_ID)),
-                    cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Playlists.Members.ALBUM)),
-                    cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Playlists.Members.ARTIST_ID)),
-                    cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Playlists.Members.ARTIST)),
-                    cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Playlists.Members.DURATION)),
-                    cursor.getInt(cursor.getColumnIndexOrThrow(MediaStore.Audio.Playlists.Members.YEAR)),
-                    cursor.getInt(cursor.getColumnIndexOrThrow(MediaStore.Audio.Playlists.Members.DATE_ADDED)),
-                    cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Playlists.Members.DATE_MODIFIED)),
-                    cursor.getInt(cursor.getColumnIndexOrThrow(MediaStore.Audio.Playlists.Members.TRACK)))
-            song.playlistSongId = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Playlists.Members._ID))
-            song
-        }
     }
 }

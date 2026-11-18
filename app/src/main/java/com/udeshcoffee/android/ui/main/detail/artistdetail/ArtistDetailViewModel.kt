@@ -9,6 +9,7 @@ import com.udeshcoffee.android.data.DataRepository
 import com.udeshcoffee.android.data.MediaRepository
 import com.udeshcoffee.android.ui.common.viewmodels.DetailSongAlbumViewModel
 import com.udeshcoffee.android.utils.SingleLiveEvent
+import com.udeshcoffee.android.utils.call
 import com.udeshcoffee.android.utils.SortManager
 import com.udeshcoffee.android.utils.deleteArtistArt
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -36,7 +37,7 @@ class ArtistDetailViewModel(
 
     // Events
     val artistArtChanged = SingleLiveEvent<Pair<Long, String>>()
-    val artistArtDeleted = SingleLiveEvent<Void>()
+    val artistArtDeleted = SingleLiveEvent<Unit>()
 
     private var songsDisposable: Disposable? = null
     private var albumsDisposable: Disposable? = null

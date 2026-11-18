@@ -61,15 +61,17 @@ open class SingleLiveEvent<T> : MutableLiveData<T>() {
         super.setValue(t)
     }
 
-    /**
-     * Used for cases where T is Void, to make calls cleaner.
-     */
-    @MainThread
-    fun call() {
-        value = null
-    }
 
     companion object {
         private const val TAG = "SingleLiveEvent"
     }
+}
+
+/**
+ * Fires an event that carries no data. Uses Unit rather than Void: since lifecycle 2.6 Observer
+ * is a Kotlin interface with a non-null parameter, so emitting null crashes the observer.
+ */
+@MainThread
+fun SingleLiveEvent<Unit>.call() {
+    value = Unit
 }

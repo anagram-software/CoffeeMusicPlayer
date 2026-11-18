@@ -15,6 +15,7 @@ import com.udeshcoffee.android.data.DataRepository
 import com.udeshcoffee.android.extensions.playSong
 import com.udeshcoffee.android.extensions.queueSong
 import com.udeshcoffee.android.model.Song
+import com.udeshcoffee.android.ui.MainActivity
 import com.udeshcoffee.android.ui.main.detail.albumdetail.AlbumDetailFragment
 import com.udeshcoffee.android.ui.main.detail.artistdetail.ArtistDetailFragment
 import com.udeshcoffee.android.ui.main.editor.EditorFragment
@@ -75,7 +76,7 @@ class SongLongDialog : androidx.fragment.app.DialogFragment() {
                 }
                 6 -> showEditor(song)
                 7 -> {
-                    fragmentManager?.let { DeleteSongDialog.create(song).show(it, "DeleteSongPlaylistDialog") }
+                    (activity as? MainActivity)?.deleteSongs(listOf(song))
                 }
                 8 -> {
                     dataRepository.toggleFavorite(song.id) {

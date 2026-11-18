@@ -64,21 +64,16 @@ open class BaseAppWidget : AppWidgetProvider() {
     open fun onMetadataChange(context: Context, appWidgetManager: AppWidgetManager, id: Int, views: RemoteViews, song: Song) {}
 
     private fun setupActions(context: Context, views: RemoteViews) {
-        var intent = Intent(context, MainActivity::class.java)
-        var pendingIntent = PendingIntent.getActivity(context, 0, intent, 0)
-        views.setOnClickPendingIntent(R.id.widget_layout_holder, pendingIntent)
+        val openApp = PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
+        views.setOnClickPendingIntent(R.id.widget_layout_holder, openApp)
 
-        intent = Intent(MusicService.WidgetIntents.PLAY_PAUSE)
-        pendingIntent = PendingIntent.getService(context, 0, intent, 0)
-        views.setOnClickPendingIntent(R.id.play_button, pendingIntent)
-
-        intent = Intent(MusicService.WidgetIntents.NEXT)
-        pendingIntent = PendingIntent.getService(context, 0, intent, 0)
-        views.setOnClickPendingIntent(R.id.next_button, pendingIntent)
-
-        intent = Intent(MusicService.WidgetIntents.PREVIOUS)
-        pendingIntent = PendingIntent.getService(context, 0, intent, 0)
-        views.setOnClickPendingIntent(R.id.prev_button, pendingIntent)
+        // Explicit intents: implicit service intents aren't allowed. The service runs in the
+        // foreground while handling them (see MusicService.onStartCommand).
+        fun serviceAction(action: String) = PendingIntent.getForegroundService(context, 0,
+                Intent(context, MusicService::class.java).setAction(action), PendingIntent.FLAG_IMMUTABLE)
+        views.setOnClickPendingIntent(R.id.play_button, serviceAction(MusicService.WidgetIntents.PLAY_PAUSE))
+        views.setOnClickPendingIntent(R.id.next_button, serviceAction(MusicService.WidgetIntents.NEXT))
+        views.setOnClickPendingIntent(R.id.prev_button, serviceAction(MusicService.WidgetIntents.PREVIOUS))
     }
 
     internal fun setStyles(context: Context, views: RemoteViews, id: Int) {

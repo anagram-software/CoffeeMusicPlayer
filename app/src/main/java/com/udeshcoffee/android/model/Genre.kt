@@ -14,7 +14,7 @@ class Genre(var id: Long, var name: String) {
 
     constructor(cursor: Cursor): this(
             cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Genres._ID))
-            ,cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Genres.NAME)))
+            ,cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Genres.NAME)) ?: "<unknown>")
 
     fun setArtsAndSongCount(contentResolver: ContentResolver){
         val cursor = contentResolver.query(

@@ -1,5 +1,6 @@
 package com.udeshcoffee.android.ui.settings
 
+import com.udeshcoffee.android.extensions.padContentForSystemBars
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
@@ -15,7 +16,7 @@ import android.view.LayoutInflater
 import android.webkit.WebView
 import android.widget.TextView
 import com.udeshcoffee.android.R
-import com.udeshcoffee.android.service.CollectionService
+import com.udeshcoffee.android.service.LyricsCollectionWorker
 import com.udeshcoffee.android.extensions.setRoundColor
 import com.udeshcoffee.android.ui.common.dialogs.WhatsNewDialog
 import com.udeshcoffee.android.utils.PreferenceUtil
@@ -29,6 +30,7 @@ class SettingsActivity: AppCompatActivity() {
         setTheme(R.style.SettingsTheme)
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
+        padContentForSystemBars()
 
         val toolbar = findViewById<Toolbar>(R.id.toolbar)
         toolbar.title = ""
@@ -61,9 +63,7 @@ class SettingsActivity: AppCompatActivity() {
             findPreference<Preference>(PreferenceUtil.PREF_WIFI_ONLY)!!.isEnabled = prefCollectContent.isChecked
 
             findPreference<Preference>(PreferenceUtil.PREF_COLLECT_LYRICS)!!.onPreferenceClickListener = Preference.OnPreferenceClickListener {
-                val intent = Intent(context, CollectionService::class.java)
-                intent.action = CollectionService.ACTION_COLLECT_LYRICS
-                ContextCompat.startForegroundService(requireContext(), intent)
+                LyricsCollectionWorker.start(requireContext())
                 true
             }
 

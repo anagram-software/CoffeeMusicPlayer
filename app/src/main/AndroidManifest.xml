@@ -1,17 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:installLocation="auto">
 
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
-    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-    <permission android:name="android.permission.MEDIA_CONTENT_CONTROL" />
+    <!-- Reading music: READ_MEDIA_AUDIO from API 33, READ_EXTERNAL_STORAGE before that. -->
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+    <!-- Editing tags and deleting songs below API 29. From API 30 MediaStore asks the user instead. -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
+
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <!-- Lyrics collection (WorkManager long-running worker). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
     <application
         android:name=".App"
@@ -21,11 +32,14 @@
         android:label="@string/app_name"
         android:largeHeap="true"
         android:supportsRtl="true"
-        android:usesCleartextTraffic="true"
-        android:theme="@style/AppTheme">
+        android:enableOnBackInvokedCallback="true"
+        android:requestLegacyExternalStorage="true"
+        android:theme="@style/AppTheme"
+        tools:targetApi="37">
         <activity
             android:name=".ui.MainActivity"
-            android:launchMode="singleInstance"
+            android:exported="true"
+            android:launchMode="singleTask"
             android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustPan">
             <intent-filter>
@@ -62,7 +76,8 @@
 
         <service
             android:name=".service.MusicService"
-            android:exported="false">
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback">
             <intent-filter>
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
                 <action android:name="com.udeshcoffee.android.widgetintents.previous" />
@@ -70,16 +85,15 @@
                 <action android:name="com.udeshcoffee.android.widgetintents.next" />
             </intent-filter>
         </service>
+        <!-- WorkManager's foreground service, used by LyricsCollectionWorker. -->
         <service
-            android:name=".service.CollectionService"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="com.udeshcoffee.android.collectionservice.ACTION_COLLECT_LYRICS" />
-                <action android:name="com.udeshcoffee.android.collectionservice.ACTION_STOP" />
-            </intent-filter>
-        </service>
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:foregroundServiceType="dataSync"
+            tools:node="merge" />
 
-        <receiver android:name="androidx.media.session.MediaButtonReceiver">
+        <receiver
+            android:name="androidx.media.session.MediaButtonReceiver"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
             </intent-filter>
@@ -87,13 +101,17 @@
 
         <!-- Widget -->
 
-        <activity android:name=".widget.AppWidgetConfigureActivity">
+        <activity
+            android:name=".widget.AppWidgetConfigureActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
             </intent-filter>
         </activity>
 
-        <receiver android:name=".widget.MediumAppWidget">
+        <receiver
+            android:name=".widget.MediumAppWidget"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -102,7 +120,9 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/medium_widget_info" />
         </receiver>
-        <receiver android:name=".widget.BigAppWidget">
+        <receiver
+            android:name=".widget.BigAppWidget"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>

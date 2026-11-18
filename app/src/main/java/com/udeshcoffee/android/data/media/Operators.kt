@@ -65,32 +65,6 @@ fun songsToArtists(songs: List<Song>): List<Artist> {
     return artistMap.toList()
 }
 
-fun toCompletePlaylists(contentResolver: ContentResolver, playlists: List<Playlist>): List<Playlist> {
-
-    val tempList = ArrayList<Playlist>()
-
-    tempList.add(Playlist(Playlist.MOST_PLAYED))
-    tempList.add(Playlist(Playlist.RECENTLY_PLAYED))
-    tempList.add(Playlist(Playlist.RECENTLY_ADDED))
-
-    for (playlist in playlists) {
-        val cursor = contentResolver.query(
-                MediaStore.Audio.Playlists.Members.getContentUri("external", playlist.id),
-                arrayOf(MediaStore.Audio.Playlists.Members._ID),
-                null,
-                null,
-                null)
-        if (cursor != null) {
-            playlist.songCount = cursor.count
-            cursor.close()
-        }
-    }
-
-    tempList.addAll(playlists)
-
-    return tempList
-}
-
 fun statsToSongs(stats: List<SongStat>, briteContentResolver: BriteContentResolver, songQuery: Query): Observable<List<Song>> {
     val query = songQuery.copy(
             selection = MediaStore.Audio.Media.IS_MUSIC + "=1 AND " + MediaStore.Audio.Media._ID + " IN (" +

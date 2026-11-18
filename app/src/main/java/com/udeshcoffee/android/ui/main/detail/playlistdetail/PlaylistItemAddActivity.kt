@@ -1,8 +1,7 @@
 package com.udeshcoffee.android.ui.main.detail.playlistdetail
 
-import android.content.ContentValues
+import com.udeshcoffee.android.extensions.padContentForSystemBars
 import android.os.Bundle
-import android.provider.MediaStore
 import android.view.MenuItem
 import android.widget.TextView
 import android.widget.Toast
@@ -34,6 +33,7 @@ class PlaylistItemAddActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_playlist_item_add)
+        padContentForSystemBars()
 
         val intent = intent
         val title = intent.getStringExtra("title")
@@ -87,43 +87,17 @@ class PlaylistItemAddActivity : AppCompatActivity() {
     }
 
     fun addToPlaylist(audioId: Long) {
-        val resolver = this.contentResolver
-        val cols = arrayOf("count(*)")
-        val uri = MediaStore.Audio.Playlists.Members.getContentUri("external", playlistId!!)
-        val cur = resolver.query(uri, cols, null, null, null)
-        var base = 0
-        if (cur != null) {
-            cur.moveToFirst()
-            base = cur.getInt(0)
-            cur.close()
-        }
-        val values = ContentValues()
-        values.put(MediaStore.Audio.Playlists.Members.PLAY_ORDER, base)
-        values.put(MediaStore.Audio.Playlists.Members.AUDIO_ID, audioId)
-        resolver.insert(uri, values)
-        if (addDeleteToast != null)
-            addDeleteToast!!.cancel()
-        addDeleteToast = Toast.makeText(this, "Added to playlist", Toast.LENGTH_SHORT)
-        addDeleteToast!!.show()
+        mediaRepository.addSongToPlaylist(playlistId!!, audioId)
+        showToast("Added to playlist")
     }
 
     fun deletePlaylistTracks(audioId: Long) {
-        val resolver = this.contentResolver
-        try {
-            val uri = MediaStore.Audio.Playlists.Members.getContentUri(
-                    "external", playlistId!!)
-            val where = MediaStore.Audio.Playlists.Members.AUDIO_ID + "=?" // my mistake was I used .AUDIO_ID here
+        mediaRepository.removeSongFromPlaylist(playlistId!!, audioId)
+        showToast("Removed from playlist")
+    }
 
-            val audioId1 = java.lang.Long.toString(audioId)
-            val whereVal = arrayOf(audioId1)
-            resolver.delete(uri, where, whereVal)
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-
-        if (addDeleteToast != null)
-            addDeleteToast!!.cancel()
-        addDeleteToast = Toast.makeText(this, "Removed from playlist", Toast.LENGTH_SHORT)
-        addDeleteToast!!.show()
+    private fun showToast(message: String) {
+        addDeleteToast?.cancel()
+        addDeleteToast = Toast.makeText(this, message, Toast.LENGTH_SHORT).also { it.show() }
     }
 }

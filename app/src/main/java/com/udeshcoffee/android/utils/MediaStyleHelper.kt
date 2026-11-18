@@ -32,7 +32,7 @@ object MediaStyleHelper {
 
         val stopIntent = Intent(context, MusicService::class.java)
         stopIntent.action = MusicService.ACTION_STOP
-        val stopPendingIntent = PendingIntent.getService(context, 0, stopIntent, 0)
+        val stopPendingIntent = PendingIntent.getService(context, 0, stopIntent, PendingIntent.FLAG_IMMUTABLE)
 
         val builder = if (channelId == null) {
             @Suppress("DEPRECATION") NotificationCompat.Builder(context)

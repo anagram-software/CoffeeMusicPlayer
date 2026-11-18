@@ -16,16 +16,18 @@ val repositoryModule = module {
     // One database instance for the whole app (previously a new Room instance was built per injection).
     single {
         Room.databaseBuilder(get(), LocalDatabase::class.java, "CoffeePlayer.db")
-            .addMigrations(LocalDatabase.Migration_5_6)
+            .addMigrations(LocalDatabase.Migration_5_6, LocalDatabase.Migration_6_7)
             .allowMainThreadQueries()
             .build()
     }
 
     factory { get<LocalDatabase>().dataDao() }
 
+    factory { get<LocalDatabase>().playlistDao() }
+
     factory { RemoteDataSource }
 
-    single { LocalDataSource(get()) }
+    single { LocalDataSource(get(), get()) }
 
     single { DataRepository(get(), get()) }
 

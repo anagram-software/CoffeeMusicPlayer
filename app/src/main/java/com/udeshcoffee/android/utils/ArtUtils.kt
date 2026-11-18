@@ -93,8 +93,7 @@ fun loadArtistArtwork(context: Context,
         return
     }
 
-    val root = Environment.getExternalStorageDirectory().toString()
-    val myDir = File("$root/CoffeePlayer/ArtistImages/$id.jpg")
+    val myDir = File(artistImageDir(), "$id.jpg")
     if (myDir.exists()) {
         Log.d("loadArtwork", "file found")
         loadFileArtistArtwork(glide, myDir, imageView)
@@ -173,22 +172,7 @@ fun saveArtistArt(contentResolver: ContentResolver, id: Long, uri: Uri) {
 
 private fun saveArtistArt(id: Long?, bm: Bitmap) {
     Log.d("saveArtistArt", "bitmap")
-    val root = Environment.getExternalStorageDirectory().toString()
-    val myDir = File("$root/CoffeePlayer/ArtistImages")
-
-    if (!myDir.exists()) {
-        myDir.mkdirs()
-    }
-
-    val noMediaFile = File(myDir, ".nomedia")
-    if (!noMediaFile.exists()) {
-        try {
-            noMediaFile.mkdirs()
-            noMediaFile.createNewFile()
-        } catch (e: IOException) {
-            Log.d("saveArtistArt", "noMediaFileError: $e")
-        }
-    }
+    val myDir = artistImageDir()
     val fName = id!!.toString() + ".jpg"
     Log.d("saveArtistArt", "filename: $fName")
     val file = File(myDir, fName)
@@ -208,11 +192,15 @@ private fun saveArtistArt(id: Long?, bm: Bitmap) {
 }
 
 fun deleteArtistArt(id: Long) {
-    val root = Environment.getExternalStorageDirectory().toString()
-    val myDir = File("$root/CoffeePlayer/ArtistImages")
-    myDir.mkdirs()
+    val myDir = artistImageDir()
     val fName = "$id.jpg"
     val file = File(myDir, fName)
     if (file.exists()) file.delete()
 
 }
+
+/**
+ * Downloaded artist images. App-private storage needs no permission and isn't scanned into the
+ * user's gallery (images used to live in /sdcard/CoffeePlayer/ArtistImages).
+ */
+private fun artistImageDir(): File = File(App.instance.filesDir, "ArtistImages").apply { mkdirs() }

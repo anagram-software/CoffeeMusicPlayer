@@ -1,5 +1,6 @@
 package com.udeshcoffee.android.service
 
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -14,6 +15,8 @@ import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.app.ServiceCompat
+import android.content.pm.ServiceInfo
 import androidx.core.content.ContextCompat
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.SimpleTarget
@@ -120,7 +123,47 @@ class NotifyManager(val service: MusicService) {
 
     private fun createNotification(isPlay: Boolean) {
         Log.d(TAG, "createNotification isPlay:$isPlay")
+        val notification = buildNotification(isPlay)
 
+        NotificationManagerCompat.from(service).notify(NOTIFY_ID, notification)
+
+        if (isPlay) {
+            startForeground(notification)
+        } else {
+            ServiceCompat.stopForeground(service, ServiceCompat.STOP_FOREGROUND_DETACH)
+        }
+    }
+
+    /**
+     * Puts the service in the foreground immediately. Needed when the service was started with
+     * startForegroundService (widget buttons, media buttons), which must call startForeground
+     * within a few seconds even if nothing ends up playing.
+     */
+    fun ensureForeground() {
+        val notification = if (service.currentSong() != null) {
+            buildNotification(service.isPlaying())
+        } else {
+            NotificationCompat.Builder(service, channel!!.id)
+                    .setSmallIcon(R.drawable.ic_notification)
+                    .setContentTitle(service.getString(R.string.app_name))
+                    .setSilent(true)
+                    .build()
+        }
+        startForeground(notification)
+    }
+
+    /** Leaves the foreground and removes the notification when there is nothing to show. */
+    fun leaveForeground() {
+        if (service.currentSong() == null) removeNotification()
+        else ServiceCompat.stopForeground(service, ServiceCompat.STOP_FOREGROUND_DETACH)
+    }
+
+    private fun startForeground(notification: Notification) {
+        ServiceCompat.startForeground(service, NOTIFY_ID, notification,
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK else 0)
+    }
+
+    private fun buildNotification(isPlay: Boolean): Notification {
         val builder = MediaStyleHelper.from(service, service.mediaSession)
 
         builder.setSmallIcon(R.drawable.ic_notification)
@@ -151,7 +194,7 @@ class NotifyManager(val service: MusicService) {
 
         val stopIntent = Intent(service, MusicService::class.java)
         stopIntent.action = MusicService.ACTION_STOP
-        val stopPendingIntent = PendingIntent.getService(service, 0, stopIntent, 0)
+        val stopPendingIntent = PendingIntent.getService(service, 0, stopIntent, PendingIntent.FLAG_IMMUTABLE)
 
         builder.setStyle(androidx.media.app.NotificationCompat.MediaStyle()
                 .setShowActionsInCompactView(0,1,2)
@@ -161,19 +204,11 @@ class NotifyManager(val service: MusicService) {
 
         val notIntent = Intent(service, MainActivity::class.java)
         notIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-        val launchNowPlayingPendingIntent = PendingIntent.getActivity(service, 0, notIntent, PendingIntent.FLAG_UPDATE_CURRENT)
+        val launchNowPlayingPendingIntent = PendingIntent.getActivity(service, 0, notIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         builder.setContentIntent(launchNowPlayingPendingIntent)
 
-        //Build the notification object.
-        val notification = builder.build()
-
-        NotificationManagerCompat.from(service).notify(NOTIFY_ID, notification)
-
-        if (isPlay) {
-            service.startForeground(NOTIFY_ID, notification)
-        } else {
-            service.stopForeground(false)
-        }
+        return builder.build()
     }
 
     private fun createNotificationChannel(): NotificationChannel? {
@@ -198,7 +233,7 @@ class NotifyManager(val service: MusicService) {
 
     private fun removeNotification(){
         NotificationManagerCompat.from(mContext).cancel(NOTIFY_ID)
-        service.stopForeground(true)
+        ServiceCompat.stopForeground(service, ServiceCompat.STOP_FOREGROUND_REMOVE)
     }
 
     companion object {

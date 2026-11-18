@@ -1,6 +1,7 @@
 package com.udeshcoffee.android.ui
 
-import android.Manifest
+import com.udeshcoffee.android.extensions.padForSystemBars
+import android.app.Activity.RESULT_OK
 import android.content.*
 import android.media.AudioManager
 import android.net.Uri
@@ -12,7 +13,11 @@ import android.util.Log
 import android.view.MenuItem
 import android.view.View
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.edit
 import androidx.core.view.GravityCompat
 import androidx.core.view.ViewCompat
 import androidx.drawerlayout.widget.DrawerLayout
@@ -21,7 +26,6 @@ import androidx.navigation.*
 import androidx.preference.PreferenceManager
 import com.cantrowitz.rxbroadcast.RxBroadcast
 import com.google.android.material.navigation.NavigationView
-import com.greysonparrelli.permiso.Permiso
 import com.sothree.slidinguppanel.SlidingUpPanelLayout
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.extensions.*
@@ -29,9 +33,18 @@ import com.udeshcoffee.android.service.MusicService
 import com.udeshcoffee.android.ui.miniplayer.MiniPlayerFragment
 import com.udeshcoffee.android.ui.player.player.PlayerFragment
 import com.udeshcoffee.android.ui.player.queue.QueueFragment
+import com.udeshcoffee.android.data.MediaRepository
+import com.udeshcoffee.android.model.Song
+import com.udeshcoffee.android.ui.common.dialogs.DeleteSongDialog
+import com.udeshcoffee.android.utils.MediaAccess
+import com.udeshcoffee.android.utils.Permissions
+import com.udeshcoffee.android.utils.PreferenceUtil
 import com.udeshcoffee.android.utils.ServiceConnectionUtil
 import com.udeshcoffee.android.views.FadableLayout
 import io.reactivex.Completable
+import io.reactivex.Single
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.schedulers.Schedulers
 import io.reactivex.disposables.Disposable
 import org.koin.android.ext.android.inject
 import java.util.concurrent.TimeUnit
@@ -48,6 +61,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection, NavController.OnDes
     private val miniPlayerFragment: MiniPlayerFragment by inject()
     private val playerFragment: PlayerFragment by inject()
     private val queueFragment: QueueFragment by inject()
+    private val mediaRepository: MediaRepository by inject()
 
     private lateinit var controlBack: FadableLayout
     private lateinit var slidingPanel: SlidingUpPanelLayout
@@ -66,29 +80,47 @@ class MainActivity : AppCompatActivity(), ServiceConnection, NavController.OnDes
 
     private lateinit var broadcastDisposable: Disposable
 
+    private val permissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        if (Permissions.hasReadAudio(this)) {
+            onAudioPermissionGranted()
+        } else {
+            Toast.makeText(this, R.string.permission_audio_required, Toast.LENGTH_LONG).show()
+            finish()
+        }
+    }
+
+    private val deleteLauncher = registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
+        if (result.resultCode == RESULT_OK)
+            Toast.makeText(this, "Song deleted", Toast.LENGTH_SHORT).show()
+    }
+
+    /** Deletes songs from the device, asking for confirmation in a way that fits the API level. */
+    fun deleteSongs(songs: List<Song>) {
+        if (songs.isEmpty()) return
+        val consent = MediaAccess.deleteRequest(contentResolver, songs.map { MediaAccess.songUri(it.id) })
+        if (consent != null)
+            deleteLauncher.launch(IntentSenderRequest.Builder(consent).build())
+        else
+            DeleteSongDialog.create(songs.first()).show(supportFragmentManager, "DeleteSongDialog")
+    }
+
+    /** Intercepts back only while the queue, the expanded player or the drawer is showing. */
+    private val backCallback = object : OnBackPressedCallback(false) {
+        override fun handleOnBackPressed() {
+            when {
+                isQueueVisible -> showPlayer()
+                slidingPanel.panelState == SlidingUpPanelLayout.PanelState.EXPANDED -> closeNowPlay()
+                drawerLayout.isDrawerOpen(drawer) -> closeDrawerLayout()
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        findViewById<View>(R.id.main_content).padForSystemBars()
 
         volumeControlStream = AudioManager.STREAM_MUSIC
-
-        Permiso.getInstance().setActivity(this)
-        Permiso.getInstance().requestPermissions(object : Permiso.IOnPermissionResult {
-            override fun onPermissionResult(resultSet: Permiso.ResultSet) {
-                if (resultSet.areAllPermissionsGranted()) {
-                    bindToService()
-                } else {
-                    Toast.makeText(this@MainActivity, "Permission check failed", Toast.LENGTH_LONG).show()
-                    finish()
-                }
-            }
-
-            override fun onRationaleRequested(callback: Permiso.IOnRationaleProvided, vararg permissions: String) {
-                callback.onRationaleProvided()
-            }
-        }, Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                Manifest.permission.WAKE_LOCK,
-                Manifest.permission.READ_EXTERNAL_STORAGE)
 
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
 
@@ -97,6 +129,11 @@ class MainActivity : AppCompatActivity(), ServiceConnection, NavController.OnDes
         drawer = findViewById(R.id.navigation)
         drawer.setNavigationItemSelectedListener(this)
         drawerLayout = findViewById(R.id.drawer_layout)
+        drawerLayout.addDrawerListener(object : DrawerLayout.SimpleDrawerListener() {
+            override fun onDrawerOpened(drawerView: View) = updateBackCallback()
+            override fun onDrawerClosed(drawerView: View) = updateBackCallback()
+        })
+        onBackPressedDispatcher.addCallback(this, backCallback)
 
         slidingPanel = findViewById(R.id.slidingpanel)
         slidingPanel.panelState = SlidingUpPanelLayout.PanelState.HIDDEN
@@ -113,6 +150,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection, NavController.OnDes
             }
 
             override fun onPanelStateChanged(panel: View?, previousState: SlidingUpPanelLayout.PanelState?, newState: SlidingUpPanelLayout.PanelState?) {
+                updateBackCallback()
                 if (newState == SlidingUpPanelLayout.PanelState.COLLAPSED) {
                     miniPlayerFragment.setVisibility(View.VISIBLE)
                     miniPlayerFragment.setAlpha(1f)
@@ -153,11 +191,15 @@ class MainActivity : AppCompatActivity(), ServiceConnection, NavController.OnDes
         }
 
         navController.addOnDestinationChangedListener(this)
+
+        if (Permissions.hasReadAudio(this))
+            onAudioPermissionGranted()
+        else
+            permissionLauncher.launch(Permissions.startupPermissions())
     }
 
     override fun onResume() {
         super.onResume()
-        Permiso.getInstance().setActivity(this)
 
         val filter = IntentFilter()
         filter.addAction(MusicService.InternalIntents.METADATA_CHANGED)
@@ -188,11 +230,6 @@ class MainActivity : AppCompatActivity(), ServiceConnection, NavController.OnDes
         super.onDestroy()
         navController.removeOnDestinationChangedListener(this)
         serviceToken?.let { unbindFromService(it) }
-    }
-
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        Permiso.getInstance().onRequestPermissionResult(requestCode, permissions, grantResults)
     }
 
     override fun onDestinationChanged(controller: NavController, destination: NavDestination, arguments: Bundle?) {
@@ -313,6 +350,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection, NavController.OnDes
         }
         transaction.commit()
         slidingPanel.isTouchEnabled = false
+        updateBackCallback()
         ViewCompat.requestApplyInsets(findViewById(R.id.player_container))
     }
 
@@ -326,19 +364,33 @@ class MainActivity : AppCompatActivity(), ServiceConnection, NavController.OnDes
         }
         transaction.commit()
         slidingPanel.isTouchEnabled = true
+        updateBackCallback()
         ViewCompat.requestApplyInsets(findViewById(R.id.player_container))
     }
 
-    override fun onBackPressed() {
-        Log.d(TAG, "onBackPressedSuper")
-        when {
-            isQueueVisible -> showPlayer()
-            slidingPanel.panelState == SlidingUpPanelLayout.PanelState.EXPANDED -> closeNowPlay()
-            drawerLayout.isDrawerOpen(drawer) -> closeDrawerLayout()
-            else -> {
-                super.onBackPressed()
-            }
-        }
+    private fun updateBackCallback() {
+        backCallback.isEnabled = isQueueVisible ||
+                slidingPanel.panelState == SlidingUpPanelLayout.PanelState.EXPANDED ||
+                drawerLayout.isDrawerOpen(drawer)
+    }
+
+    private fun onAudioPermissionGranted() {
+        bindToService()
+        importMediaStorePlaylistsOnce()
+    }
+
+    /** Playlists moved from MediaStore to the app database in DB version 7; copy existing ones once. */
+    @Suppress("CheckResult") // One-shot; should finish even if the activity goes away.
+    private fun importMediaStorePlaylistsOnce() {
+        if (sharedPreferences.getBoolean(PreferenceUtil.PLAYLISTS_IMPORTED, false)) return
+        Single.fromCallable { mediaRepository.importMediaStorePlaylists() }
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe({ count ->
+                    sharedPreferences.edit { putBoolean(PreferenceUtil.PLAYLISTS_IMPORTED, true) }
+                    if (count > 0)
+                        Toast.makeText(this, resources.getQuantityString(R.plurals.playlists_imported, count, count), Toast.LENGTH_LONG).show()
+                }, { Log.w(TAG, "Playlist import failed", it) })
     }
 
 
