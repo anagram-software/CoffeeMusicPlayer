@@ -3,6 +3,8 @@ package com.udeshcoffee.android.ui.compose.components
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -102,7 +104,11 @@ private fun AddToPlaylistDialog(dialog: AppDialog.AddToPlaylist, actions: AppAct
                         ListItem(
                                 modifier = Modifier.clickable { dismiss(); actions.addSongsToPlaylist(playlist, dialog.songs) },
                                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                                leadingContent = { Icon(Icons.AutoMirrored.Filled.PlaylistPlay, contentDescription = null) },
+                                leadingContent = {
+                                    PlaylistArtwork(playlist, Modifier.size(40.dp)) { m ->
+                                        Icon(Icons.AutoMirrored.Filled.PlaylistPlay, contentDescription = null, modifier = m.padding(8.dp))
+                                    }
+                                },
                                 headlineContent = { Text(playlist.title) })
                     }
                 }

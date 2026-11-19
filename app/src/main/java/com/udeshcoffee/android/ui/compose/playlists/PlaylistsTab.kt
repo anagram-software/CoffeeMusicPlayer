@@ -11,12 +11,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
-import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.NewReleases
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -28,24 +24,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.udeshcoffee.android.model.Playlist
 import com.udeshcoffee.android.ui.compose.LocalAppActions
+import com.udeshcoffee.android.ui.compose.components.PlaylistArtwork
+import com.udeshcoffee.android.ui.compose.components.icon
 import com.udeshcoffee.android.ui.compose.components.songCount
 import com.udeshcoffee.android.ui.compose.detail.PlaylistsViewModel
 import com.udeshcoffee.android.ui.compose.detail.ServerNotice
 import org.koin.compose.viewmodel.koinViewModel
-
-/** Icon for a playlist: the smart playlists have their own, user playlists a generic one. */
-val Playlist.icon: ImageVector
-    get() = when (type) {
-        Playlist.MOST_PLAYED -> Icons.AutoMirrored.Filled.TrendingUp
-        Playlist.RECENTLY_PLAYED -> Icons.Default.History
-        Playlist.RECENTLY_ADDED -> Icons.Default.NewReleases
-        else -> Icons.AutoMirrored.Filled.PlaylistPlay
-    }
 
 /** The Library's Playlists tab: the current music source's playlists, with "New playlist" on top. */
 @OptIn(ExperimentalFoundationApi::class)
@@ -84,8 +72,10 @@ fun PlaylistsTab(viewModel: PlaylistsViewModel = koinViewModel()) {
                     modifier = Modifier.combinedClickable(onClick = { actions.openPlaylist(playlist) },
                             onLongClick = { actions.playlistOptions(playlist) }),
                     leadingContent = {
-                        Icon(playlist.icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(40.dp).padding(6.dp))
+                        PlaylistArtwork(playlist, Modifier.size(40.dp)) { modifier ->
+                            Icon(playlist.icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary,
+                                    modifier = modifier.padding(6.dp))
+                        }
                     },
                     headlineContent = { Text(playlist.title) },
                     supportingContent = {

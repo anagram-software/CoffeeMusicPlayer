@@ -38,7 +38,8 @@ import com.udeshcoffee.android.ui.compose.components.SectionHeader
 import com.udeshcoffee.android.ui.compose.components.TopLevelScaffold
 import com.udeshcoffee.android.ui.compose.components.songCount
 import com.udeshcoffee.android.ui.compose.detail.ServerNotice
-import com.udeshcoffee.android.ui.compose.playlists.icon
+import com.udeshcoffee.android.ui.compose.components.PlaylistArtwork
+import com.udeshcoffee.android.ui.compose.components.icon
 import org.koin.compose.viewmodel.koinViewModel
 
 private val CardWidth = 150.dp
@@ -98,10 +99,12 @@ private fun LazyListScope.playlistSection(playlists: List<Playlist>, actions: Ap
                         onClick = { actions.openPlaylist(playlist) }, onLongClick = { actions.playlistOptions(playlist) },
                         onPlay = { actions.playPlaylist(playlist) },
                         artwork = { modifier ->
-                            Box(modifier.fillMaxWidth().aspectRatio(1f).background(MaterialTheme.colorScheme.secondaryContainer),
-                                    contentAlignment = Alignment.Center) {
-                                Icon(playlist.icon, contentDescription = null, modifier = Modifier.size(48.dp),
-                                        tint = MaterialTheme.colorScheme.onSecondaryContainer)
+                            PlaylistArtwork(playlist, modifier, MaterialTheme.shapes.extraSmall) { m ->
+                                Box(m.fillMaxWidth().aspectRatio(1f).background(MaterialTheme.colorScheme.secondaryContainer),
+                                        contentAlignment = Alignment.Center) {
+                                    Icon(playlist.icon, contentDescription = null, modifier = Modifier.size(48.dp),
+                                            tint = MaterialTheme.colorScheme.onSecondaryContainer)
+                                }
                             }
                         },
                         modifier = Modifier.width(CardWidth))

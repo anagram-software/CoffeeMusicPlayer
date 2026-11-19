@@ -30,6 +30,11 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.udeshcoffee.android.model.Album
 import com.udeshcoffee.android.model.Artist
+import com.udeshcoffee.android.model.Playlist
+import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.NewReleases
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.utils.AlbumArt
 import com.udeshcoffee.android.utils.artistImageFile
@@ -54,6 +59,26 @@ fun ArtworkImage(model: Any?, fallback: ImageVector, modifier: Modifier = Modifi
                 onError = { loaded = false },
                 modifier = Modifier.fillMaxSize())
     }
+}
+
+/** Icon for a playlist: the smart playlists have their own, user playlists a generic one. */
+val Playlist.icon: ImageVector
+    get() = when (type) {
+        Playlist.MOST_PLAYED -> Icons.AutoMirrored.Filled.TrendingUp
+        Playlist.RECENTLY_PLAYED -> Icons.Default.History
+        Playlist.RECENTLY_ADDED -> Icons.Default.NewReleases
+        else -> Icons.AutoMirrored.Filled.PlaylistPlay
+    }
+
+/**
+ * A playlist's picture: the server's cover art for server playlists (with the playlist icon while it
+ * loads or if it fails), else [noArtwork], since device playlists have none.
+ */
+@Composable
+fun PlaylistArtwork(playlist: Playlist, modifier: Modifier = Modifier, shape: Shape = MaterialTheme.shapes.small,
+                    noArtwork: @Composable (Modifier) -> Unit) {
+    val cover = playlist.coverArt
+    if (cover != null) ArtworkImage(CoverArt(cover), playlist.icon, modifier, shape) else noArtwork(modifier)
 }
 
 @Composable

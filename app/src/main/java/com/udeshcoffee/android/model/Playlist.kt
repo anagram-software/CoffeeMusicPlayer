@@ -14,7 +14,9 @@ class Playlist(val type: Int, var id: Long = 0, var title: String = "",
                /** Subsonic playlist ID for server playlists; null for device playlists. */
                val remoteId: String? = null,
                /** Server playlists that can't be edited (smart playlists, other users'). */
-               val readonly: Boolean = false): Parcelable {
+               val readonly: Boolean = false,
+               /** Subsonic cover art ID of a server playlist (e.g. Navidrome's generated mosaic); null for device playlists. */
+               val coverArt: String? = null): Parcelable {
 
     val isRemote: Boolean get() = remoteId != null
 

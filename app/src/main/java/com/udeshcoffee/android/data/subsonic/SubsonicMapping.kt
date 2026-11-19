@@ -42,7 +42,7 @@ fun SubGenre.toGenre(): Genre =
         Genre(RemoteIds.genre(value), value).also { it.remote = true; it.no = songCount }
 
 fun SubPlaylist.toPlaylist(): Playlist =
-        Playlist(Playlist.USER, RemoteIds.playlist(id), name, remoteId = id, readonly = readonly)
+        Playlist(Playlist.USER, RemoteIds.playlist(id), name, remoteId = id, readonly = readonly, coverArt = coverArt)
                 .also { it.songCount = songCount }
 
 /** Playable songs only (search and directories can include folders). */
