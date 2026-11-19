@@ -3,6 +3,11 @@ package com.udeshcoffee.android.ui.compose.components
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -41,12 +46,14 @@ fun SectionPill(title: String, modifier: Modifier = Modifier) {
 
 /**
  * Scaffold for the section pages: the [title] pill, [actions], then the settings button. With
- * [onBack] it gets a back button (Settings itself, opened over a page).
+ * [onBack] it gets a back button (Settings itself, opened over a page). [pageTitle] follows the
+ * pill, for pages within a section (Library -> Albums).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopLevelScaffold(
         title: String,
+        pageTitle: String? = null,
         actions: @Composable () -> Unit = {},
         floatingActionButton: @Composable () -> Unit = {},
         onBack: (() -> Unit)? = null,
@@ -58,7 +65,15 @@ fun TopLevelScaffold(
             modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
             topBar = {
                 TopAppBar(
-                        title = { SectionPill(title) },
+                        title = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                SectionPill(title)
+                                pageTitle?.let {
+                                    Spacer(Modifier.width(12.dp))
+                                    Text(it, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                }
+                            }
+                        },
                         navigationIcon = {
                             onBack?.let { IconButton(onClick = it) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") } }
                         },

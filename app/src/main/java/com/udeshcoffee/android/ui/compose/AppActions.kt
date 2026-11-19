@@ -13,6 +13,8 @@ import com.udeshcoffee.android.data.MediaRepository
 import com.udeshcoffee.android.data.download.DownloadRepository
 import com.udeshcoffee.android.data.subsonic.SubsonicException
 import com.udeshcoffee.android.data.subsonic.externalProvider
+import com.udeshcoffee.android.ui.compose.library.LibraryCategory
+import com.udeshcoffee.android.ui.compose.navigation.LibraryCategoryRoute
 import com.udeshcoffee.android.ui.compose.components.songCount
 import com.udeshcoffee.android.data.subsonic.SubsonicRepository
 import com.udeshcoffee.android.extensions.connectedPlayer
@@ -172,6 +174,7 @@ class AppActions(
         if (song.isRemote && song.artistRemoteId == null) return
         open(ArtistRoute(song.artistId, song.artistName, song.artistRemoteId))
     }
+    fun openLibraryCategory(category: LibraryCategory) = open(LibraryCategoryRoute(category.name))
     fun openGenre(genre: Genre) = open(GenreRoute(genre.id, genre.name, genre.remote))
     fun openPlaylist(playlist: Playlist) = open(PlaylistRoute(playlist.id, playlist.type, playlist.title, playlist.remoteId, playlist.readonly))
     fun openPlaylistAddSongs(playlist: Playlist) = open(PlaylistAddSongsRoute(playlist.id, playlist.title))

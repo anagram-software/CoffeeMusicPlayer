@@ -92,6 +92,7 @@ import com.udeshcoffee.android.ui.compose.components.formatDuration
 import com.udeshcoffee.android.ui.compose.components.songCount
 import com.udeshcoffee.android.ui.compose.rememberCurrentSongId
 import com.udeshcoffee.android.ui.compose.components.TopLevelScaffold
+import com.udeshcoffee.android.ui.compose.components.withPageBottom
 import org.koin.compose.viewmodel.koinViewModel
 import com.udeshcoffee.android.ui.compose.components.ArtworkImage
 import com.udeshcoffee.android.ui.compose.components.DownloadButton
@@ -124,7 +125,7 @@ fun DetailScaffold(title: String, actions: @Composable () -> Unit = {}, content:
                         actions = { actions() },
                         scrollBehavior = scrollBehavior)
             },
-            content = content)
+            content = { content(it.withPageBottom()) })
 }
 
 @Composable

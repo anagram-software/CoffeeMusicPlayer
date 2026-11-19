@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.udeshcoffee.android.model.Playlist
 import com.udeshcoffee.android.ui.compose.LocalAppActions
+import com.udeshcoffee.android.ui.compose.components.PageBottomPadding
 import com.udeshcoffee.android.ui.compose.components.PlaylistArtwork
 import com.udeshcoffee.android.ui.compose.components.icon
 import com.udeshcoffee.android.ui.compose.components.songCount
@@ -47,7 +48,7 @@ fun PlaylistsTab(viewModel: PlaylistsViewModel = koinViewModel()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
         return
     }
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 8.dp)) {
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = PageBottomPadding)) {
         item {
             ListItem(
                     modifier = Modifier.clickable { actions.newPlaylist() },

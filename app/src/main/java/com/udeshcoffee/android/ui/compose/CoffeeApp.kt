@@ -92,6 +92,9 @@ import com.udeshcoffee.android.ui.compose.theme.CoffeeTheme
 import com.udeshcoffee.android.ui.compose.theme.Section
 import com.udeshcoffee.android.ui.compose.theme.SectionTheme
 import com.udeshcoffee.android.ui.compose.theme.rememberArtworkSeed
+import com.udeshcoffee.android.ui.compose.library.LibraryCategory
+import com.udeshcoffee.android.ui.compose.library.LibraryCategoryScreen
+import com.udeshcoffee.android.ui.compose.navigation.LibraryCategoryRoute
 import org.koin.compose.koinInject
 
 private data class TopLevel(val label: String, val icon: ImageVector, val route: Any, val section: Section)
@@ -218,6 +221,7 @@ fun CoffeeApp(onDeleteSongs: (List<Song>) -> Unit, playerExpandedRequest: Boolea
                                 composable<LibraryRoute> { needsSetup { LibraryScreen() } }
                                 composable<SearchRoute> { needsSetup { SearchScreen() } }
                                 composable<SettingsRoute> { SettingsScreen() }
+                                composable<LibraryCategoryRoute> { LibraryCategoryScreen(LibraryCategory.valueOf(it.toRoute<LibraryCategoryRoute>().category)) }
                                 composable<AlbumRoute> { val r = it.toRoute<AlbumRoute>(); AlbumDetailScreen(r.albumId, r.title, r.remoteId) }
                                 composable<ArtistRoute> { val r = it.toRoute<ArtistRoute>(); ArtistDetailScreen(r.artistId, r.name, r.remoteId) }
                                 composable<GenreRoute> { val r = it.toRoute<GenreRoute>(); GenreDetailScreen(r.genreId, r.name, r.remote) }

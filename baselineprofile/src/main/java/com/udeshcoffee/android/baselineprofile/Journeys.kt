@@ -27,7 +27,7 @@ fun MacrobenchmarkScope.waitForLibrary() {
     }
 }
 
-/** The common path: Home, then the Library's album, artist and song tabs, then the player. Skips what isn't there. */
+/** The common path: Home, then the Library's album, artist and song pages, then the player. Skips what isn't there. */
 fun MacrobenchmarkScope.browseLibrary() {
     waitForLibrary()
     device.findObject(By.scrollable(true))?.let { list ->
@@ -37,9 +37,14 @@ fun MacrobenchmarkScope.browseLibrary() {
     }
     device.findObject(By.text("Library"))?.click()
     device.wait(Until.hasObject(By.text("Playlists")), 5_000)
-    for (tab in listOf("Albums", "Artists", "Songs")) {
-        device.findObject(By.text(tab))?.click()
+    // Each category opens its own page; stay on Songs, which has "Shuffle all".
+    for (category in listOf("Albums", "Artists", "Songs")) {
+        device.findObject(By.text(category))?.click() ?: continue
         device.waitForIdle()
+        if (category != "Songs") {
+            device.pressBack()
+            device.wait(Until.hasObject(By.text("Playlists")), 5_000)
+        }
     }
     // Start something if nothing is queued (a fresh install), so the player can be opened.
     if (!device.hasObject(By.desc("Open player"))) {

@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -166,7 +168,19 @@ fun IconLabel(icon: ImageVector, label: String) {
 
 val QueueIcon: ImageVector get() = Icons.AutoMirrored.Filled.QueueMusic
 
-val GridPadding = PaddingValues(12.dp)
+/** Space below the last item of a page, so it doesn't end flush against the mini player / navigation bar. */
+val PageBottomPadding = 24.dp
+
+/** Padding for page grids (Library category pages), with [PageBottomPadding] at the end. */
+val GridPadding = PaddingValues(start = 12.dp, top = 12.dp, end = 12.dp, bottom = 12.dp + PageBottomPadding)
+
+/** [this] with [PageBottomPadding] added at the bottom (a Scaffold's inner padding for a page's list). */
+@Composable
+fun PaddingValues.withPageBottom(): PaddingValues {
+    val direction = androidx.compose.ui.platform.LocalLayoutDirection.current
+    return PaddingValues(start = calculateStartPadding(direction), top = calculateTopPadding(),
+            end = calculateEndPadding(direction), bottom = calculateBottomPadding() + PageBottomPadding)
+}
 
 fun songCount(count: Int) = if (count == 1) "1 song" else "$count songs"
 

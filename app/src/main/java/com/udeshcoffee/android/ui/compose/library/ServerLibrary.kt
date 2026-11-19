@@ -57,6 +57,7 @@ import com.udeshcoffee.android.ui.compose.components.AlbumCard
 import com.udeshcoffee.android.ui.compose.components.ArtistCard
 import com.udeshcoffee.android.ui.compose.components.EmptyState
 import com.udeshcoffee.android.ui.compose.components.GridPadding
+import com.udeshcoffee.android.ui.compose.components.PageBottomPadding
 import com.udeshcoffee.android.ui.compose.components.ShuffleRow
 import com.udeshcoffee.android.ui.compose.components.SongRow
 import com.udeshcoffee.android.ui.compose.rememberCurrentSongId
@@ -102,6 +103,11 @@ class ServerPager<T>(private val scope: CoroutineScope, private val pageSize: In
         }
     }
 
+    /** Loads the first page, unless already loading or loaded. */
+    fun start() {
+        if (_state.value == PagedState<T>()) loadMore()
+    }
+
     fun reset() {
         job?.cancel()
         _state.value = PagedState()
@@ -126,15 +132,16 @@ class ServerLibraryViewModel(private val subsonic: SubsonicRepository) : ViewMod
     private val _genres = MutableStateFlow(LoadState<List<Genre>>())
     val genres: StateFlow<LoadState<List<Genre>>> = _genres.asStateFlow()
 
-    init {
-        refresh()
+    // Nothing loads up front: each Library category page asks for its own list (start / ensure...).
+    private var artistsJob: Job? = null
+    private var genresJob: Job? = null
+
+    fun ensureArtists() {
+        if (_artists.value.data == null && _artists.value.error == null && artistsJob?.isActive != true) artistsJob = loadArtists()
     }
 
-    fun refresh() {
-        songs.reset()
-        albums.reset()
-        loadArtists()
-        loadGenres()
+    fun ensureGenres() {
+        if (_genres.value.data == null && _genres.value.error == null && genresJob?.isActive != true) genresJob = loadGenres()
     }
 
     fun setAlbumSort(sort: ServerAlbumSort) {
@@ -157,16 +164,18 @@ class ServerLibraryViewModel(private val subsonic: SubsonicRepository) : ViewMod
     suspend fun randomSongs(): List<Song> = try { subsonic.randomSongs() } catch (e: SubsonicException) { emptyList() }
 }
 
-/** The Library tab when the music source is the server; [startTab] indexes [libraryTabs]. */
+/** A Library category page when the music source is the server: only its list loads. */
 @Composable
-fun ServerLibraryScreen(startTab: Int, viewModel: ServerLibraryViewModel = koinViewModel()) {
-    LibraryScaffold(startTab, sortMenu = { page -> if (page == 1) ServerAlbumSortMenu(viewModel) }) { page ->
-        when (page) {
-            0 -> PlaylistsTab()
-            1 -> ServerAlbumsTab(viewModel)
-            2 -> ServerArtistsTab(viewModel)
-            3 -> ServerSongsTab(viewModel)
-            else -> ServerGenresTab(viewModel)
+fun ServerLibraryCategory(category: LibraryCategory, viewModel: ServerLibraryViewModel = koinViewModel()) {
+    LibraryCategoryScaffold(category, actions = { if (category == LibraryCategory.ALBUMS) ServerAlbumSortMenu(viewModel) }) { padding ->
+        Box(Modifier.padding(padding)) {
+            when (category) {
+                LibraryCategory.PLAYLISTS -> PlaylistsTab()
+                LibraryCategory.ALBUMS -> ServerAlbumsTab(viewModel)
+                LibraryCategory.ARTISTS -> ServerArtistsTab(viewModel)
+                LibraryCategory.SONGS -> ServerSongsTab(viewModel)
+                LibraryCategory.GENRES -> ServerGenresTab(viewModel)
+            }
         }
     }
 }
@@ -223,12 +232,13 @@ private fun ServerSongsTab(viewModel: ServerLibraryViewModel) {
     val currentId = rememberCurrentSongId()
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
+    LaunchedEffect(Unit) { viewModel.songs.start() }
     LoadMoreEffect(listState, viewModel.songs)
     when {
         state.isInitialLoad -> Loading()
         state.items.isEmpty() && state.error != null -> ServerError(state.error, viewModel.songs::reset)
         state.items.isEmpty() -> EmptyState("No songs on the server")
-        else -> LazyColumn(Modifier.fillMaxSize(), state = listState, contentPadding = PaddingValues(bottom = 8.dp)) {
+        else -> LazyColumn(Modifier.fillMaxSize(), state = listState, contentPadding = PaddingValues(bottom = PageBottomPadding)) {
             item { ShuffleRow(0, subtitle = "A random mix from the server") { scope.launch { actions.play(viewModel.randomSongs()) } } }
             items(state.items, key = { it.id }) { song ->
                 SongRow(song, onClick = { actions.play(state.items, state.items.indexOf(song)) }, onMore = { actions.songOptions(song) },
@@ -253,6 +263,7 @@ private fun ServerAlbumsTab(viewModel: ServerLibraryViewModel) {
     val state by viewModel.albums.state.collectAsStateWithLifecycle()
     val actions = LocalAppActions.current
     val gridState = rememberLazyGridState()
+    LaunchedEffect(Unit) { viewModel.albums.start() }
     LoadMoreEffect(gridState, viewModel.albums)
     when {
         state.isInitialLoad -> Loading()
@@ -285,6 +296,7 @@ private fun ServerArtistsTab(viewModel: ServerLibraryViewModel) {
     val state by viewModel.artists.collectAsStateWithLifecycle()
     val actions = LocalAppActions.current
     val artists = state.data
+    LaunchedEffect(Unit) { viewModel.ensureArtists() }
     when {
         state.error != null -> ServerError(state.error, { viewModel.loadArtists() })
         artists == null -> Loading()
@@ -304,11 +316,12 @@ private fun ServerGenresTab(viewModel: ServerLibraryViewModel) {
     val state by viewModel.genres.collectAsStateWithLifecycle()
     val actions = LocalAppActions.current
     val genres = state.data
+    LaunchedEffect(Unit) { viewModel.ensureGenres() }
     when {
         state.error != null -> ServerError(state.error, { viewModel.loadGenres() })
         genres == null -> Loading()
         genres.isEmpty() -> EmptyState("No genres on the server")
-        else -> LazyColumn(Modifier.fillMaxSize()) {
+        else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = PageBottomPadding)) {
             items(genres, key = { it.id }) { genre ->
                 ListItem(
                         modifier = Modifier.clickable { actions.openGenre(genre) },

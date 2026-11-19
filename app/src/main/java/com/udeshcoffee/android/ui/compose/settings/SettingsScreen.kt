@@ -7,6 +7,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Spacer
+import com.udeshcoffee.android.ui.compose.components.PageBottomPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -33,7 +35,6 @@ import com.udeshcoffee.android.ui.compose.LocalAppActions
 import com.udeshcoffee.android.ui.compose.components.TopLevelScaffold
 import com.udeshcoffee.android.utils.PreferenceUtil
 import com.udeshcoffee.android.data.source.MusicSourceStore
-import com.udeshcoffee.android.ui.compose.library.libraryTabs
 import org.koin.compose.koinInject
 
 /** Settings, stored in the default SharedPreferences (keys in [PreferenceUtil]). */
@@ -42,7 +43,6 @@ fun SettingsScreen() {
     val context = LocalContext.current
     val prefs = remember { PreferenceManager.getDefaultSharedPreferences(context) }
     var dialog by remember { mutableStateOf<String?>(null) }
-    var libStart by remember { mutableIntStateOf(prefs.getString(PreferenceUtil.PREF_LIB_START, "0")?.toIntOrNull() ?: 0) }
     var collect by rememberPref(prefs, PreferenceUtil.PREF_COLLECT_CONTENT, true)
     val version = remember { context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "" }
     val isServer = koinInject<MusicSourceStore>().isServer
@@ -52,10 +52,6 @@ fun SettingsScreen() {
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())) {
             Header("Music source")
             MusicSourceSettings()
-
-            Header("Interface")
-            ListItem(modifier = Modifier.clickable { dialog = "libstart" },
-                    headlineContent = { Text("Start library with") }, supportingContent = { Text(libraryTabs.getOrElse(libStart) { "Songs" }) })
 
             Header("Playback")
             SwitchPref(prefs, PreferenceUtil.PREF_CALL, false, "Stay paused after interruptions",
@@ -76,25 +72,11 @@ fun SettingsScreen() {
             ListItem(modifier = Modifier.clickable { dialog = "whatsnew" }, headlineContent = { Text("What's new") })
             ListItem(modifier = Modifier.clickable { dialog = "licences" }, headlineContent = { Text("Open source licences") })
             ListItem(headlineContent = { Text("Version") }, supportingContent = { Text(version) })
+            Spacer(Modifier.height(PageBottomPadding))
         }
     }
 
     when (dialog) {
-        "libstart" -> AlertDialog(
-                onDismissRequest = { dialog = null },
-                title = { Text("Start library with") },
-                text = {
-                    Column {
-                        libraryTabs.forEachIndexed { i, name ->
-                            ListItem(modifier = Modifier.clickable {
-                                libStart = i
-                                prefs.edit { putString(PreferenceUtil.PREF_LIB_START, i.toString()) }
-                                dialog = null
-                            }, leadingContent = { RadioButton(selected = libStart == i, onClick = null) }, headlineContent = { Text(name) })
-                        }
-                    }
-                },
-                confirmButton = { TextButton(onClick = { dialog = null }) { Text("Cancel") } })
         "whatsnew" -> AlertDialog(
                 onDismissRequest = { dialog = null },
                 title = { Text("What's new") },
