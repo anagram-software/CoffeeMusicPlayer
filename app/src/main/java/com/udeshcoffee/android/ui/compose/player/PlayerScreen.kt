@@ -108,7 +108,7 @@ fun PlayerScreen(onCollapse: () -> Unit, viewModel: NowPlayingViewModel = koinVi
     val showLyrics = lyricsPreferred && song.isRemote
     val actions = LocalAppActions.current
 
-    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface).safeDrawingPadding()) {
+    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceContainer).safeDrawingPadding()) {
         TopAppBar(
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
                 navigationIcon = { IconButton(onClick = onCollapse) { Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Close player") } },
@@ -266,7 +266,8 @@ private fun QueueList(state: PlayerUiState, modifier: Modifier) {
                     ListItem(
                             modifier = Modifier.clickable { player.playAt(index) },
                             colors = if (index == state.index) ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
-                            else ListItemDefaults.colors(),
+                            // Opaque (the swipe-to-remove background is behind it), in the player's colour.
+                            else ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
                             leadingContent = { SongArtwork(song, Modifier.size(44.dp)) },
                             headlineContent = { Text(song.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                             supportingContent = { Text(song.artistName, maxLines = 1, overflow = TextOverflow.Ellipsis) },
@@ -289,7 +290,8 @@ fun LyricsPanel(modifier: Modifier = Modifier, viewModel: LyricsViewModel = koin
     val state by viewModel.state.collectAsStateWithLifecycle()
     val size by viewModel.size.collectAsStateWithLifecycle()
 
-    androidx.compose.material3.Surface(modifier, shape = MaterialTheme.shapes.large, tonalElevation = 2.dp) {
+    // One step above the player's background, so the lyrics read as a card on it.
+    androidx.compose.material3.Surface(modifier, shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainerHigh) {
         Column(Modifier.fillMaxSize()) {
             Row(Modifier.padding(start = 16.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text("Lyrics", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))

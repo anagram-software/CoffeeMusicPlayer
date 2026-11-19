@@ -190,8 +190,9 @@ fun PlayerSheetHost(state: PlayerSheetState, content: @Composable () -> Unit) {
         }
     }
 
+    // Same colour as the mini player and the navigation bar, so the sheet reads as the mini player grown.
     Surface(
-            color = MaterialTheme.colorScheme.surface,
+            color = MaterialTheme.colorScheme.surfaceContainer,
             modifier = Modifier
                     .fillMaxSize()
                     .offset { IntOffset(0, state.offset.roundToInt()) }
