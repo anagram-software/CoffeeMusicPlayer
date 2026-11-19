@@ -10,7 +10,6 @@ import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.common.util.Util
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.LibraryResult
@@ -27,7 +26,6 @@ import com.udeshcoffee.android.data.DataRepository
 import com.udeshcoffee.android.data.MediaRepository
 import com.udeshcoffee.android.data.source.MusicSourceStore
 import com.udeshcoffee.android.data.subsonic.SubsonicRepository
-import com.udeshcoffee.android.service.AudioFXHelper
 import com.udeshcoffee.android.ui.MainActivity
 import com.udeshcoffee.android.utils.PreferenceUtil
 import com.udeshcoffee.android.widget.BigAppWidget
@@ -45,8 +43,7 @@ import org.koin.android.ext.android.inject
  *
  * Media3 handles the notification, foreground state, media buttons, audio focus, headphone
  * unplugging and playback resumption. This class adds the app's own behaviour: queue
- * persistence, play counts, widget updates, the fade and on-call settings, audio effects,
- * and a browse tree for Android Auto and other media browsers.
+ * persistence, play counts, widget updates, the fade and on-call settings, and a browse tree for Android Auto and other media browsers.
  */
 @OptIn(UnstableApi::class)
 class PlaybackService : MediaLibraryService() {
@@ -80,20 +77,8 @@ class PlaybackService : MediaLibraryService() {
                 .setHandleAudioBecomingNoisy(true)
                 .setWakeMode(C.WAKE_MODE_LOCAL)
                 .build()
-        // A fixed session ID lets the equalizer attach before playback starts.
-        player.setAudioSessionId(Util.generateAudioSessionIdV21(this))
         player.repeatMode = RepeatModes.fromPreference(prefs.getInt(PreferenceUtil.REPEAT_MODE, RepeatModes.PREF_ALL))
         player.addListener(playerListener)
-
-        val audioSessionId = player.audioSessionId
-        scope.launch {
-            AudioEffects.helper = try {
-                AudioFXHelper(this@PlaybackService, audioSessionId, dataRepository, dataRepository.getEQPresets())
-            } catch (e: Exception) {
-                Log.w(TAG, "Audio effects unavailable", e)
-                null
-            }
-        }
 
         val sessionActivity = PendingIntent.getActivity(this, 0,
                 Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
@@ -129,8 +114,6 @@ class PlaybackService : MediaLibraryService() {
             release()
         }
         session = null
-        AudioEffects.helper?.release()
-        AudioEffects.helper = null
         scope.cancel()
         super.onDestroy()
     }

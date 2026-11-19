@@ -36,13 +36,6 @@ class LocalDataSource(
 
     suspend fun setLyrics(lyrics: Lyric) = dataDao.setLyrics(lyrics)
 
-    // Equalizer
-    suspend fun getEQPresets(): List<EQPreset> = dataDao.getEQPresets()
-
-    suspend fun addEQPreset(eqPreset: EQPreset): Long = dataDao.addEQPreset(eqPreset)
-
-    suspend fun deleteEQPreset(eqPreset: EQPreset) = dataDao.deleteEQPreset(eqPreset)
-
     // Favorites
     suspend fun isFavorite(songId: Long): Boolean = dataDao.getFavorite(songId) != null
 

@@ -9,7 +9,6 @@ import com.udeshcoffee.android.ui.compose.detail.PlaylistDetailViewModel
 import com.udeshcoffee.android.ui.compose.detail.PlaylistsViewModel
 import com.udeshcoffee.android.ui.compose.detail.SearchViewModel
 import com.udeshcoffee.android.ui.compose.editor.EditorScreenViewModel
-import com.udeshcoffee.android.ui.compose.equalizer.EqualizerViewModel
 import com.udeshcoffee.android.ui.compose.library.FoldersViewModel
 import com.udeshcoffee.android.ui.compose.library.LibraryViewModel
 import com.udeshcoffee.android.ui.compose.library.ServerLibraryViewModel
@@ -34,6 +33,5 @@ val composeModule = module {
     viewModel { (songId: Long) -> EditorScreenViewModel(songId, androidApplication(), get(), get()) }
     viewModel { NowPlayingViewModel(get(), get(), get(), get()) }
     viewModel { LyricsViewModel(get(), get(), get(), get()) }
-    viewModel { EqualizerViewModel() }
     viewModel { ServerLibraryViewModel(get()) }
 }

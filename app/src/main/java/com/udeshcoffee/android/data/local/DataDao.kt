@@ -43,16 +43,6 @@ interface DataDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun setLyrics(lyrics: Lyric)
 
-    // Equalizer
-    @Insert
-    suspend fun addEQPreset(eqPreset: EQPreset): Long
-
-    @Delete
-    suspend fun deleteEQPreset(eqPreset: EQPreset)
-
-    @Query("SELECT * FROM equalizer")
-    suspend fun getEQPresets(): List<EQPreset>
-
     // Favorites
     @Query("SELECT * FROM favorites WHERE fav = :songId")
     suspend fun getFavorite(songId: Long): Favorite?

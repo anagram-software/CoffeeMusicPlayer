@@ -1,7 +1,6 @@
 package com.udeshcoffee.android.data
 
 import com.udeshcoffee.android.data.local.LocalDataSource
-import com.udeshcoffee.android.data.model.EQPreset
 import com.udeshcoffee.android.data.model.Favorite
 import com.udeshcoffee.android.data.model.Lyric
 import com.udeshcoffee.android.data.remote.RemoteDataSource
@@ -11,7 +10,7 @@ import com.udeshcoffee.android.model.Song
 import kotlinx.coroutines.flow.Flow
 
 /**
- * App-owned data (lyrics, EQ presets, favorites, play stats, artist bios), combining the local
+ * App-owned data (lyrics, favorites, play stats, artist bios), combining the local
  * database with network sources. All functions are main-safe.
  */
 class DataRepository(
@@ -38,13 +37,6 @@ class DataRepository(
     }
 
     suspend fun setLyrics(lyrics: Lyric) = localDataSource.setLyrics(lyrics)
-
-    // Equalizer
-    suspend fun getEQPresets(): List<EQPreset> = localDataSource.getEQPresets()
-
-    suspend fun addEQPreset(eqPreset: EQPreset): Long = localDataSource.addEQPreset(eqPreset)
-
-    suspend fun deleteEQPreset(eqPreset: EQPreset) = localDataSource.deleteEQPreset(eqPreset)
 
     // Favorites
     suspend fun isFavorite(songId: Long): Boolean = localDataSource.isFavorite(songId)

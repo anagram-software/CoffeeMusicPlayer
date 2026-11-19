@@ -6,7 +6,6 @@ import kotlinx.serialization.Serializable
 @Serializable object LibraryRoute
 @Serializable object FavoritesRoute
 @Serializable object PlaylistsRoute
-@Serializable object EqualizerRoute
 @Serializable object SettingsRoute
 
 // Detail screens.

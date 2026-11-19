@@ -31,7 +31,7 @@ import com.udeshcoffee.android.ui.compose.AppActions
 import com.udeshcoffee.android.ui.compose.AppDialog
 import org.koin.compose.koinInject
 
-/** Dialog with a single text field (playlist names, preset names...). */
+/** Dialog with a single text field (playlist names...). */
 @Composable
 fun TextInputDialog(title: String, label: String, initial: String = "", confirm: String, onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
     var text by remember { mutableStateOf(initial) }

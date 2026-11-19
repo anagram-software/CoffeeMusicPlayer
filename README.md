@@ -14,7 +14,6 @@ Special features
 * Simple and elegant design.
 * Advanced instant lyrics with offline access.
 * Folder browser.
-* Build in 5 band Equalizer, Bassboost & Virtualizer.
 * Automatic artist art, tags and bio downloading.
 * ID3 tag editing with album art and metadata fetching.
 * Personalizable home screen widget.

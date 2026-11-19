@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
-import androidx.compose.material.icons.filled.Equalizer
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Settings
@@ -59,12 +58,10 @@ import com.udeshcoffee.android.ui.compose.detail.GenreDetailScreen
 import com.udeshcoffee.android.ui.compose.detail.PlaylistAddSongsScreen
 import com.udeshcoffee.android.ui.compose.detail.PlaylistDetailScreen
 import com.udeshcoffee.android.ui.compose.editor.EditorScreen
-import com.udeshcoffee.android.ui.compose.equalizer.EqualizerScreen
 import com.udeshcoffee.android.ui.compose.library.LibraryScreen
 import com.udeshcoffee.android.ui.compose.navigation.AlbumRoute
 import com.udeshcoffee.android.ui.compose.navigation.ArtistRoute
 import com.udeshcoffee.android.ui.compose.navigation.EditorRoute
-import com.udeshcoffee.android.ui.compose.navigation.EqualizerRoute
 import com.udeshcoffee.android.ui.compose.navigation.FavoritesRoute
 import com.udeshcoffee.android.ui.compose.navigation.GenreRoute
 import com.udeshcoffee.android.ui.compose.navigation.LibraryRoute
@@ -88,7 +85,6 @@ private val topLevels = listOf(
         TopLevel("Library", Icons.Default.LibraryMusic, LibraryRoute),
         TopLevel("Favorites", Icons.Default.Favorite, FavoritesRoute),
         TopLevel("Playlists", Icons.AutoMirrored.Filled.QueueMusic, PlaylistsRoute),
-        TopLevel("Equalizer", Icons.Default.Equalizer, EqualizerRoute),
         TopLevel("Settings", Icons.Default.Settings, SettingsRoute))
 
 /** Root of the Compose UI. [onDeleteSongs] asks the user to confirm deleting files (activity result). */
@@ -148,7 +144,6 @@ fun CoffeeApp(onDeleteSongs: (List<Song>) -> Unit, playerExpandedRequest: Boolea
                                 composable<LibraryRoute> { needsSetup { LibraryScreen() } }
                                 composable<FavoritesRoute> { needsSetup { FavoritesScreen() } }
                                 composable<PlaylistsRoute> { needsSetup { PlaylistsScreen() } }
-                                composable<EqualizerRoute> { EqualizerScreen() }
                                 composable<SettingsRoute> { SettingsScreen() }
                                 composable<SearchRoute> { needsSetup { SearchScreen() } }
                                 composable<AlbumRoute> { val r = it.toRoute<AlbumRoute>(); AlbumDetailScreen(r.albumId, r.title, r.remoteId) }
