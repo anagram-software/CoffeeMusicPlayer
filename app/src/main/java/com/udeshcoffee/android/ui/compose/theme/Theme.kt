@@ -35,7 +35,7 @@ private val FallbackLight = lightColorScheme(primary = CoffeeBrown, secondary = 
 @Composable
 fun CoffeeTheme(seedColor: Color? = null, darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
     if (seedColor != null) {
-        DynamicMaterialTheme(seedColor = seedColor, isDark = darkTheme, animate = true, content = content)
+        DynamicMaterialTheme(seedColor = seedColor, isDark = darkTheme, animate = true, typography = AppTypography, content = content)
         return
     }
     val context = LocalContext.current
@@ -45,7 +45,7 @@ fun CoffeeTheme(seedColor: Color? = null, darkTheme: Boolean = isSystemInDarkThe
         darkTheme -> FallbackDark
         else -> FallbackLight
     }
-    MaterialTheme(colorScheme = scheme, content = content)
+    MaterialTheme(colorScheme = scheme, typography = AppTypography, content = content)
 }
 
 /** A seed colour extracted from [song]'s artwork, or null while loading / without artwork. */

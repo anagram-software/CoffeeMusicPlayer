@@ -51,7 +51,7 @@ fun SectionTheme(section: Section, darkTheme: Boolean = isSystemInDarkTheme(), c
     val accent by animateColorAsState(section.accent, spec, label = "sectionAccent")
     val scheme = if (darkTheme) darkSectionScheme(primary, onPrimary, accent) else lightSectionScheme(primary, onPrimary, accent)
     CompositionLocalProvider(LocalSection provides section) {
-        MaterialTheme(colorScheme = scheme, content = content)
+        MaterialTheme(colorScheme = scheme, typography = AppTypography, content = content)
     }
 }
 
