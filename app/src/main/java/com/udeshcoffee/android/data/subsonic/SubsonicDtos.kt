@@ -70,6 +70,7 @@ data class SubPlaylist(
         val coverArt: String? = null,
         /** Navidrome: smart playlists and other users' playlists can't be edited. */
         val readonly: Boolean = false,
+        val created: String? = null,
         val entry: List<SubSong> = emptyList()
 )
 

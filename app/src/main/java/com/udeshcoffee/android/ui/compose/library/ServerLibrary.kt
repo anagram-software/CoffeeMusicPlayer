@@ -72,6 +72,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 import com.udeshcoffee.android.ui.compose.playlists.PlaylistsTab
+import com.udeshcoffee.android.ui.compose.components.SortSettings
+import com.udeshcoffee.android.ui.compose.components.SortGroup
+import com.udeshcoffee.android.ui.compose.components.SortMenu
+import com.udeshcoffee.android.ui.compose.components.SortOption
+import com.udeshcoffee.android.ui.compose.components.sortedArtists
 
 /** A list loaded from the server a page at a time. */
 data class PagedState<T>(
@@ -167,7 +172,14 @@ class ServerLibraryViewModel(private val subsonic: SubsonicRepository) : ViewMod
 /** A Library category page when the music source is the server: only its list loads. */
 @Composable
 fun ServerLibraryCategory(category: LibraryCategory, viewModel: ServerLibraryViewModel = koinViewModel()) {
-    LibraryCategoryScaffold(category, actions = { if (category == LibraryCategory.ALBUMS) ServerAlbumSortMenu(viewModel) }) { padding ->
+    LibraryCategoryScaffold(category, actions = {
+        when (category) {
+            LibraryCategory.ALBUMS -> ServerAlbumSortMenu(viewModel)
+            LibraryCategory.ARTISTS -> ServerArtistSortMenu()
+            LibraryCategory.PLAYLISTS -> PlaylistSortMenu()
+            else -> {}
+        }
+    }) { padding ->
         Box(Modifier.padding(padding)) {
             when (category) {
                 LibraryCategory.PLAYLISTS -> PlaylistsTab()
@@ -180,21 +192,12 @@ fun ServerLibraryCategory(category: LibraryCategory, viewModel: ServerLibraryVie
     }
 }
 
-/** Album order for the server's album list (shown in the Library top bar). */
+/** Album order for the server's album list: the server sorts it, so there's no direction to choose. */
 @Composable
 private fun ServerAlbumSortMenu(viewModel: ServerLibraryViewModel) {
     val sort by viewModel.albumSort.collectAsStateWithLifecycle()
-    var expanded by remember { mutableStateOf(false) }
-    Box {
-        IconButton(onClick = { expanded = true }) { Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = "Sort albums") }
-        DropdownMenu(expanded, { expanded = false }) {
-            DropdownMenuItem(text = { Text("Albums") }, onClick = {}, enabled = false)
-            ServerAlbumSort.entries.forEach { option ->
-                DropdownMenuItem(text = { Text(option.label) }, onClick = { expanded = false; viewModel.setAlbumSort(option) },
-                        trailingIcon = { if (option == sort) Icon(Icons.Default.Check, contentDescription = "Selected") })
-            }
-        }
-    }
+    SortMenu(SortGroup("Albums", ServerAlbumSort.entries.map { SortOption(it.ordinal, it.label) }, sort.ordinal, ascending = null,
+            onSelect = { viewModel.setAlbumSort(ServerAlbumSort.entries[it]) }))
 }
 
 @Composable
@@ -294,8 +297,9 @@ private fun ServerAlbumCard(album: Album) {
 @Composable
 private fun ServerArtistsTab(viewModel: ServerLibraryViewModel) {
     val state by viewModel.artists.collectAsStateWithLifecycle()
+    val sort by SortSettings.artists.state.collectAsStateWithLifecycle()
     val actions = LocalAppActions.current
-    val artists = state.data
+    val artists = remember(state.data, sort) { state.data?.sortedArtists(sort) }
     LaunchedEffect(Unit) { viewModel.ensureArtists() }
     when {
         state.error != null -> ServerError(state.error, { viewModel.loadArtists() })

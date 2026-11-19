@@ -18,6 +18,10 @@ import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.ui.compose.components.SortSettings
 import com.udeshcoffee.android.ui.compose.components.sortedAlbums
 import com.udeshcoffee.android.ui.compose.components.sortedSongs
+import com.udeshcoffee.android.ui.compose.components.sortedPlaylists
+import com.udeshcoffee.android.utils.PlaylistPlays
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.filterNotNull
 import com.udeshcoffee.android.utils.deleteArtistArt
 import com.udeshcoffee.android.utils.saveArtistImage
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -308,11 +312,21 @@ class PlaylistsViewModel(
         }
     }
 
-    val playlists: StateFlow<List<Playlist>?> = (if (isServer) {
+    private val unsorted: Flow<List<Playlist>> = if (isServer) {
         combine(serverPlaylists, downloads.downloadedIds) { server, downloaded ->
             listOf(Playlist(Playlist.DOWNLOADS).also { it.songCount = downloaded.size }) + server
         }
-    } else mediaRepository.observePlaylists()).stateIn(this, null)
+    } else mediaRepository.observePlaylists()
+
+    /** In the chosen order ("Recently played" uses [PlaylistPlays], loaded off the main thread first). */
+    val playlists: StateFlow<List<Playlist>?> =
+            combine(unsorted, SortSettings.playlists.state, PlaylistPlays.plays.filterNotNull()) { list, sort, plays ->
+                list.sortedPlaylists(sort) { plays[PlaylistPlays.key(it)] }
+            }.stateIn(this, null)
+
+    init {
+        viewModelScope.launch(Dispatchers.IO) { PlaylistPlays.load() }
+    }
 }
 
 data class SearchResults(

@@ -14,6 +14,7 @@ import com.udeshcoffee.android.data.download.DownloadRepository
 import com.udeshcoffee.android.data.subsonic.SubsonicException
 import com.udeshcoffee.android.data.subsonic.externalProvider
 import com.udeshcoffee.android.ui.compose.library.LibraryCategory
+import com.udeshcoffee.android.utils.PlaylistPlays
 import com.udeshcoffee.android.ui.compose.navigation.LibraryCategoryRoute
 import com.udeshcoffee.android.ui.compose.components.songCount
 import com.udeshcoffee.android.data.subsonic.SubsonicRepository
@@ -127,7 +128,10 @@ class AppActions(
     fun genreOptions(genre: Genre) = launch {
         sheet = OptionsSheet.ForCollection(genre.name, if (genre.remote) subsonic.genreSongs(genre.name) else mediaRepository.loadGenreSongs(genre.id))
     }
-    fun playPlaylist(playlist: Playlist) = launch { play(playlistSongs(playlist)) }
+    fun playPlaylist(playlist: Playlist) = launch {
+        play(playlistSongs(playlist))
+        PlaylistPlays.record(playlist)
+    }
     fun playlistOptions(playlist: Playlist) = launch {
         sheet = OptionsSheet.ForCollection(playlist.title, playlistSongs(playlist), playlist.takeIf { it.type == Playlist.USER })
     }

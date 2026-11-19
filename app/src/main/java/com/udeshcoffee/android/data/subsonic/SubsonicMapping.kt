@@ -43,7 +43,7 @@ fun SubGenre.toGenre(): Genre =
 
 fun SubPlaylist.toPlaylist(): Playlist =
         Playlist(Playlist.USER, RemoteIds.playlist(id), name, remoteId = id, readonly = readonly, coverArt = coverArt)
-                .also { it.songCount = songCount }
+                .also { it.songCount = songCount; it.created = epochSeconds(created) }
 
 /** Playable songs only (search and directories can include folders). */
 fun List<SubSong>.toSongs(): List<Song> = filter { !it.isDir && it.type != "video" }.map { it.toSong() }

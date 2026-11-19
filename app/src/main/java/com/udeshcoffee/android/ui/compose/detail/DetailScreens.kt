@@ -116,6 +116,7 @@ import org.koin.compose.viewmodel.koinViewModel
 import com.udeshcoffee.android.ui.compose.components.ArtworkImage
 import com.udeshcoffee.android.ui.compose.components.DownloadButton
 import com.udeshcoffee.android.utils.CoverArt
+import com.udeshcoffee.android.utils.PlaylistPlays
 import com.udeshcoffee.android.utils.artworkData
 import com.udeshcoffee.android.ui.compose.components.icon
 import com.udeshcoffee.android.utils.AlbumArt
@@ -297,10 +298,12 @@ private fun CollectionMenuButton(title: String, songs: List<Song>) {
     }
 }
 
-private fun LazyListScope.songItems(songs: List<Song>, currentId: Long?, playlist: Playlist? = null, showArtwork: Boolean = true) {
+/** [onPlayed] runs when a song is started from the list (playlists record it for their "Recently played" sort). */
+private fun LazyListScope.songItems(songs: List<Song>, currentId: Long?, playlist: Playlist? = null, showArtwork: Boolean = true,
+                                    onPlayed: () -> Unit = {}) {
     items(songs, key = { if (playlist != null) "${it.playlistSongId}" else "${it.id}" }) { song ->
         val actions = LocalAppActions.current
-        SongRow(song, onClick = { actions.play(songs, songs.indexOf(song)) }, onMore = { actions.songOptions(song, playlist) },
+        SongRow(song, onClick = { actions.play(songs, songs.indexOf(song)); onPlayed() }, onMore = { actions.songOptions(song, playlist) },
                 isCurrent = song.id == currentId, showArtwork = showArtwork)
     }
 }
@@ -340,7 +343,7 @@ private fun AlbumDetailContent(albumId: Long, title: String, remoteId: String?) 
     val listState = rememberLazyListState()
     HeaderScaffold(title, listState, actions = {
         if (remoteId != null) DownloadButton(songs.orEmpty())
-        SortMenu(SortSettings.albumSongs.group(null, SongSortOptions, sort))
+        SortMenu(SortSettings.albumSongs.group("Songs", SongSortOptions, sort))
         CollectionMenuButton(title, songs.orEmpty())
     }) { padding ->
         LazyColumn(Modifier.fillMaxSize(), state = listState, contentPadding = padding) {
@@ -611,7 +614,7 @@ fun FavoritesScreen(viewModel: FavoritesViewModel = koinViewModel()) {
     val sort by SortSettings.favoriteSongs.state.collectAsStateWithLifecycle()
     val currentId = rememberCurrentSongId()
     TopLevelScaffold("Favorites", actions = {
-        SortMenu(SortSettings.favoriteSongs.group(null, SongSortOptions, sort))
+        SortMenu(SortSettings.favoriteSongs.group("Songs", SongSortOptions, sort))
         CollectionMenuButton("Favorites", songs.orEmpty())
     }) { padding ->
         when {
@@ -683,7 +686,9 @@ private fun PlaylistDetailContent(viewModel: PlaylistDetailViewModel, artwork: A
                     title = title,
                     pills = listOfNotNull("Read-only".takeIf { readonly && remoteId != null }),
                     details = list?.let { "${songCount(shown.size)} • ${formatDuration(shown.sumOf { it.duration })}" }) {
-                HeaderPlayButtons(shown.isNotEmpty(), onPlay = { actions.play(shown) }, onShuffle = { actions.shuffle(shown) })
+                HeaderPlayButtons(shown.isNotEmpty(),
+                        onPlay = { actions.play(shown); PlaylistPlays.record(playlist) },
+                        onShuffle = { actions.shuffle(shown); PlaylistPlays.record(playlist) })
             }
         }
         if (list != null && list.isNotEmpty() && isUser) {
@@ -703,7 +708,7 @@ private fun PlaylistDetailContent(viewModel: PlaylistDetailViewModel, artwork: A
                     }, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center,
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 24.dp))
                 }
-                else -> songItems(list, currentId)
+                else -> songItems(list, currentId) { PlaylistPlays.record(playlist) }
             }
         }
     }
@@ -728,7 +733,7 @@ private fun ReorderablePlaylist(songs: List<Song>, playlist: Playlist, viewModel
         items(items, key = { it.playlistSongId }) { song ->
             ReorderableItem(reorderState, key = song.playlistSongId) { _ ->
                 SongRow(song,
-                        onClick = { actions.play(items.toList(), items.indexOf(song)) },
+                        onClick = { actions.play(items.toList(), items.indexOf(song)); PlaylistPlays.record(playlist) },
                         onMore = { actions.songOptions(song, playlist) },
                         isCurrent = song.id == currentId,
                         trailing = {

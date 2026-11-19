@@ -44,11 +44,21 @@ object SortManager {
 
     // Album sort typedef
     object ArtistSort {
-        const val DEFAULT = 0
         const val NAME = 1
+        /** Song count on the device, album count on a server (what each source gives). */
+        const val COUNT = 2
+    }
+
+    object PlaylistSort {
+        const val RECENTLY_PLAYED = 1
+        const val NAME = 2
+        const val SONG_COUNT = 3
+        const val RECENTLY_ADDED = 4
     }
 
     object Key {
+        const val PLAYLISTS = "key_playlists_sort_order"
+        const val PLAYLISTS_ASC = "key_playlists_sort_order_asc"
         const val ARTISTS = "key_artists_sort_order"
         const val ALBUMS = "key_albums_sort_order"
         const val SONGS = "key_songs_sort_order"
@@ -267,10 +277,19 @@ object SortManager {
 
     fun sortArtists(artists: List<Artist>, key: Int) {
         when (key) {
-            ArtistSort.DEFAULT -> Collections.sort(artists) { a, b -> a.compareTo(b) }
-            ArtistSort.NAME -> Collections.sort(artists) { a, b -> compareString(a.name, b.name) }
+            ArtistSort.COUNT -> Collections.sort(artists) { a, b -> a.songCount.compareTo(b.songCount) }
+            else -> Collections.sort(artists) { a, b -> compareString(a.name, b.name) }
         }
     }
+
+    var playlistsSortOrder: Int
+        get() = mPrefs.getInt(Key.PLAYLISTS, PlaylistSort.RECENTLY_PLAYED)
+        set(value) = mPrefs.edit().putInt(Key.PLAYLISTS, value).apply()
+
+    /** Most recently played first by default. */
+    var playlistsAscending: Boolean
+        get() = mPrefs.getBoolean(Key.PLAYLISTS_ASC, false)
+        set(value) = setAscending(Key.PLAYLISTS_ASC, value)
 
     private fun setAscending(key: String, ascending: Boolean) {
         mPrefs.edit().putBoolean(key, ascending).apply()

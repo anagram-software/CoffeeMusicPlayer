@@ -74,7 +74,10 @@ import com.udeshcoffee.android.ui.compose.components.AlbumArtwork
 import com.udeshcoffee.android.ui.compose.components.AlbumCard
 import com.udeshcoffee.android.ui.compose.components.AlbumSortOptions
 import com.udeshcoffee.android.ui.compose.components.ArtistCard
-import com.udeshcoffee.android.ui.compose.components.ArtistSortOptions
+import com.udeshcoffee.android.ui.compose.components.DeviceArtistSortOptions
+import com.udeshcoffee.android.ui.compose.components.ServerArtistSortOptions
+import com.udeshcoffee.android.ui.compose.components.artistNaturalAscending
+import com.udeshcoffee.android.ui.compose.components.playlistNaturalAscending
 import com.udeshcoffee.android.ui.compose.components.EmptyState
 import com.udeshcoffee.android.ui.compose.components.GridPadding
 import com.udeshcoffee.android.ui.compose.components.PageBottomPadding
@@ -82,6 +85,7 @@ import com.udeshcoffee.android.ui.compose.components.ShuffleRow
 import com.udeshcoffee.android.ui.compose.components.SongRow
 import com.udeshcoffee.android.ui.compose.components.SongSortOptions
 import com.udeshcoffee.android.ui.compose.components.SortMenu
+import com.udeshcoffee.android.ui.compose.components.PlaylistSortOptions
 import com.udeshcoffee.android.ui.compose.components.SortSettings
 import com.udeshcoffee.android.ui.compose.components.songCount
 import com.udeshcoffee.android.ui.compose.rememberCurrentSongId
@@ -230,11 +234,26 @@ private fun DeviceLibraryCategory(category: LibraryCategory, viewModel: LibraryV
 @Composable
 private fun LibrarySortMenu(category: LibraryCategory) {
     when (category) {
-        LibraryCategory.ALBUMS -> { val s by SortSettings.albums.state.collectAsStateWithLifecycle(); SortMenu(SortSettings.albums.group(null, AlbumSortOptions, s)) }
-        LibraryCategory.ARTISTS -> { val s by SortSettings.artists.state.collectAsStateWithLifecycle(); SortMenu(SortSettings.artists.group(null, ArtistSortOptions, s)) }
-        LibraryCategory.SONGS -> { val s by SortSettings.songs.state.collectAsStateWithLifecycle(); SortMenu(SortSettings.songs.group(null, SongSortOptions, s)) }
+        LibraryCategory.ALBUMS -> { val s by SortSettings.albums.state.collectAsStateWithLifecycle(); SortMenu(SortSettings.albums.group("Albums", AlbumSortOptions, s)) }
+        LibraryCategory.ARTISTS -> { val s by SortSettings.artists.state.collectAsStateWithLifecycle(); SortMenu(SortSettings.artists.group("Artists", DeviceArtistSortOptions, s, ::artistNaturalAscending)) }
+        LibraryCategory.SONGS -> { val s by SortSettings.songs.state.collectAsStateWithLifecycle(); SortMenu(SortSettings.songs.group("Songs", SongSortOptions, s)) }
+        LibraryCategory.PLAYLISTS -> PlaylistSortMenu()
         else -> {}
     }
+}
+
+/** Playlists (both sources): recently played (default), name, song count or recently added. */
+@Composable
+internal fun PlaylistSortMenu() {
+    val s by SortSettings.playlists.state.collectAsStateWithLifecycle()
+    SortMenu(SortSettings.playlists.group("Playlists", PlaylistSortOptions, s, ::playlistNaturalAscending))
+}
+
+/** Server artists: alphabetical (default) or most albums. */
+@Composable
+internal fun ServerArtistSortMenu() {
+    val s by SortSettings.artists.state.collectAsStateWithLifecycle()
+    SortMenu(SortSettings.artists.group("Artists", ServerArtistSortOptions, s, ::artistNaturalAscending))
 }
 
 @Composable

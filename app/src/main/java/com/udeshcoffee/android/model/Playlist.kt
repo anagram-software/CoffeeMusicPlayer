@@ -24,6 +24,11 @@ class Playlist(val type: Int, var id: Long = 0, var title: String = "",
     @Transient
     var songCount: Int? = null
 
+    /** When the playlist was created, for sorting: epoch seconds on a server, creation order (the Room ID) on the device. */
+    @IgnoredOnParcel
+    @Transient
+    var created: Long = 0
+
     init {
         when (type) {
             MOST_PLAYED -> {

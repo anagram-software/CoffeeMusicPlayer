@@ -177,7 +177,7 @@ class MediaRepository(
     /** Smart playlists (most/recently played, recently added) followed by the user's playlists. */
     fun observePlaylists(): Flow<List<Playlist>> = playlistDao.observePlaylists().map { userPlaylists ->
         listOf(Playlist(Playlist.MOST_PLAYED), Playlist(Playlist.RECENTLY_PLAYED), Playlist(Playlist.RECENTLY_ADDED)) +
-                userPlaylists.map { p -> Playlist(Playlist.USER, p.id, p.name).also { it.songCount = p.songCount } }
+                userPlaylists.map { p -> Playlist(Playlist.USER, p.id, p.name).also { it.songCount = p.songCount; it.created = p.id } }
     }
 
     suspend fun loadPlaylistsExcept(playlistId: Long): List<Playlist> =
