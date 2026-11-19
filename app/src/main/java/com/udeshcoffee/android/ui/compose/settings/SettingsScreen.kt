@@ -29,7 +29,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.edit
 import androidx.preference.PreferenceManager
-import com.udeshcoffee.android.service.LyricsCollectionWorker
 import com.udeshcoffee.android.ui.compose.LocalAppActions
 import com.udeshcoffee.android.ui.compose.components.TopLevelScaffold
 import com.udeshcoffee.android.utils.PreferenceUtil
@@ -71,8 +70,6 @@ fun SettingsScreen() {
                         supportingContent = { Text("Artist images and bios from Last.fm") },
                         trailingContent = { Switch(checked = collect, onCheckedChange = { collect = it }) })
                 SwitchPref(prefs, PreferenceUtil.PREF_WIFI_ONLY, true, "Wi-Fi only", "Download artist images only on Wi-Fi", enabled = collect)
-                ListItem(modifier = Modifier.clickable { LyricsCollectionWorker.start(context) },
-                        headlineContent = { Text("Collect lyrics") }, supportingContent = { Text("Find missing lyrics for your library in the background") })
             }
 
             Header("About")

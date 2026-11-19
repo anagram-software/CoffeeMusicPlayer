@@ -2,8 +2,6 @@ package com.udeshcoffee.android.data.remote
 
 import android.util.Log
 import com.udeshcoffee.android.BuildConfig
-import com.udeshcoffee.android.data.remote.genius.GeniusService
-import com.udeshcoffee.android.data.remote.genius.Hit
 import com.udeshcoffee.android.data.remote.lastfm.ImageArtist
 import com.udeshcoffee.android.data.remote.lastfm.LastFmService
 import com.udeshcoffee.android.data.remote.lastfm.TrackMetadata
@@ -13,21 +11,15 @@ import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import org.jsoup.Jsoup
-import org.jsoup.nodes.Document
-import org.jsoup.nodes.Element
-import org.jsoup.safety.Safelist
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
-import java.text.Normalizer
 import java.util.concurrent.TimeUnit
 
 /**
- * Network sources: Genius (lyrics search + page scraping) and Last.fm (artist info and track
- * metadata). All functions are main-safe and return null/empty on failure.
+ * Network source: Last.fm (artist info and image, and track metadata for the tag editor). All functions are main-safe and return null/empty on failure.
  */
 object RemoteDataSource {
 
-    private const val GENIUS_BASE_URL = "https://api.genius.com/"
     private const val LASTFM_BASE_URL = "https://ws.audioscrobbler.com/"
     private const val USER_AGENT = "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Mobile Safari/537.36"
     /** Last.fm's placeholder image ("no artwork"). */
@@ -60,45 +52,12 @@ object RemoteDataSource {
             .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
             .build()
 
-    private val geniusService: GeniusService by lazy {
-        retrofit(GENIUS_BASE_URL, mapOf("access_token" to BuildConfig.GENIUS_ACCESS_TOKEN)).create(GeniusService::class.java)
-    }
-
     private val lastFmService: LastFmService by lazy {
         retrofit(LASTFM_BASE_URL, mapOf("api_key" to BuildConfig.LASTFM_API_KEY, "format" to "json")).create(LastFmService::class.java)
     }
 
     // Services are created lazily on first use; do that on the IO dispatcher (TLS setup does disk reads).
-    private suspend fun genius(): GeniusService = withContext(Dispatchers.IO) { geniusService }
     private suspend fun lastFm(): LastFmService = withContext(Dispatchers.IO) { lastFmService }
-
-    // ---- Genius ----
-
-    /** Genius hits by the given artist; only exact title matches when [exactTitle] and any exist. */
-    suspend fun searchGenius(title: String, artist: String, exactTitle: Boolean): List<Hit> {
-        val hits = try {
-            genius().search(title).response?.hits ?: emptyList()
-        } catch (e: Exception) {
-            Log.w(TAG, "Genius search failed", e)
-            return emptyList()
-        }
-        val byArtist = hits.filter { it.result.primaryArtist.name.contains(artist, ignoreCase = true) }
-        val exact = byArtist.filter { it.result.titleWithFeatured.equals(title, ignoreCase = true) }
-        return if (exactTitle && exact.isNotEmpty()) exact else byArtist
-    }
-
-    /**
-     * Scrapes lyrics from a Genius song page ([path] like "/Artist-song-lyrics").
-     * Returns HTML with `<br/>` line breaks and highlighted section headers, or null.
-     */
-    suspend fun loadGeniusLyrics(path: String): String? = withContext(Dispatchers.IO) {
-        try {
-            extractLyrics(fetchPage("https://genius.com$path") ?: return@withContext null)
-        } catch (e: Exception) {
-            Log.w(TAG, "Couldn't load lyrics page", e)
-            null
-        }
-    }
 
     /** Fetches a web page with browser-like headers; null on any HTTP error. */
     private fun fetchPage(url: String): String? {
@@ -115,39 +74,6 @@ object RemoteDataSource {
             }
             return response.body.string()
         }
-    }
-
-    /** Lyrics HTML from a Genius song page, or null if the page has none. */
-    internal fun extractLyrics(pageHtml: String): String? {
-        val page = Jsoup.parse(pageHtml).apply { outputSettings().prettyPrint(false) }
-        // Current markup: one or more lyrics containers; older pages used a ".lyrics" div.
-        val containers = page.select("div[data-lyrics-container=true]").ifEmpty { page.select(".lyrics") }
-        if (containers.isEmpty()) return null
-        return formatLyrics(containers.flatMap { textLines(it) }).takeIf { it.isNotBlank() }
-    }
-
-    private fun textLines(container: Element): List<String> {
-        val copy = container.clone()
-        // Genius puts the translations/contributors header inside the container, marked like this.
-        copy.select("[data-exclude-from-selection=true]").remove()
-        val html = copy.html().replace(Regex("(?i)<br\\s*/?>"), "\n")
-        val text = Jsoup.clean(html, "", Safelist.none(), Document.OutputSettings().prettyPrint(false))
-        return text.lines().map { org.jsoup.parser.Parser.unescapeEntities(it, false).trim() }
-    }
-
-    private fun formatLyrics(lines: List<String>): String {
-        val header = Regex("^\\[.+]$")
-        val builder = StringBuilder()
-        for (line in lines.dropLastWhile { it.isEmpty() }) {
-            if (line.isEmpty() && builder.isEmpty()) continue
-            if (header.matches(line)) {
-                builder.append("<font color=#1976D2><b>").append(line.trim('[', ']')).append("</b></font>")
-            } else {
-                builder.append(line.replace("\\P{Print}".toRegex(), ""))
-            }
-            builder.append("<br/>")
-        }
-        return Normalizer.normalize(builder.toString().removeSuffix("<br/>"), Normalizer.Form.NFC)
     }
 
     // ---- Last.fm ----

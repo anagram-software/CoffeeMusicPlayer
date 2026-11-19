@@ -12,7 +12,7 @@ Coffee Music Player a simple yet powerful music player for a special music exper
 Special features
 ----------------
 * Simple and elegant design.
-* Advanced instant lyrics with offline access.
+* Lyrics from your music server.
 * Folder browser.
 * Automatic artist art, tags and bio downloading.
 * ID3 tag editing with album art and metadata fetching.

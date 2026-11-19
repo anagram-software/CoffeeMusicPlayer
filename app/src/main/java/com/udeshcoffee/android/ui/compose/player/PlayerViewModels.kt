@@ -5,9 +5,6 @@ import androidx.core.content.edit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.udeshcoffee.android.data.DataRepository
-import com.udeshcoffee.android.data.model.Lyric
-import com.udeshcoffee.android.data.remote.genius.Result
-import com.udeshcoffee.android.extensions.toLastFMArtistQuery
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.playback.PlayerConnection
 import com.udeshcoffee.android.utils.PreferenceUtil
@@ -24,8 +21,10 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.onStart
-import androidx.core.text.htmlEncode
+import com.udeshcoffee.android.data.subsonic.SubsonicException
 import com.udeshcoffee.android.data.subsonic.SubsonicRepository
+import android.util.Log
+import kotlinx.coroutines.CancellationException
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class NowPlayingViewModel(
@@ -69,19 +68,19 @@ class NowPlayingViewModel(
 sealed interface LyricsState {
     object NoSong : LyricsState
     object Loading : LyricsState
-    object Searching : LyricsState
-    data class Found(val html: String) : LyricsState
+    /** Plain text lines, as the server sends them. */
+    data class Found(val lines: List<String>) : LyricsState
     object NotFound : LyricsState
-    data class Choose(val results: List<Result>) : LyricsState
+    /** The server request failed (network, auth or an unexpected response); offers a retry. */
+    object Failed : LyricsState
 }
 
 /**
- * Lyrics for the playing song: ones saved in the app, then (for server songs) the server's own,
- * else a Genius search.
+ * Lyrics for the playing song, from the music server only (OpenSubsonic `getLyricsBySongId`, else
+ * the classic `getLyrics`). Device songs have none.
  */
 class LyricsViewModel(
         private val player: PlayerConnection,
-        private val dataRepository: DataRepository,
         private val subsonic: SubsonicRepository,
         private val prefs: SharedPreferences
 ) : ViewModel() {
@@ -105,9 +104,19 @@ class LyricsViewModel(
         }
     }
 
+    /** Runs one lyrics request at a time; a failure shows [LyricsState.Failed] instead of crashing the app. */
     private fun launch(block: suspend () -> Unit) {
         job?.cancel()
-        job = viewModelScope.launch { block() }
+        job = viewModelScope.launch {
+            try {
+                block()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(TAG, "Couldn't load lyrics", e)
+                _state.value = LyricsState.Failed
+            }
+        }
     }
 
     private fun load(s: Song?) {
@@ -116,52 +125,22 @@ class LyricsViewModel(
             _state.value = LyricsState.NoSong
             return
         }
+        if (!s.isRemote) {
+            job?.cancel()
+            _state.value = LyricsState.NotFound
+            return
+        }
         launch {
             _state.value = LyricsState.Loading
-            val stored = dataRepository.getLyrics(s)
-            val server = if (stored == null && s.isRemote) runCatching { subsonic.lyrics(s) }.getOrNull() else null
-            when {
-                stored != null -> _state.value = LyricsState.Found(stored)
-                server != null -> _state.value = LyricsState.Found(server.joinToString("<br/>") { it.htmlEncode() })
-                else -> search(s, s.title, s.artistName, exact = true)
+            val lines = try {
+                subsonic.lyrics(s)
+            } catch (e: SubsonicException) {
+                Log.w(TAG, "Couldn't load lyrics from the server", e)
+                _state.value = LyricsState.Failed
+                return@launch
             }
+            _state.value = if (lines != null) LyricsState.Found(lines) else LyricsState.NotFound
         }
-    }
-
-    private suspend fun search(s: Song, title: String, artist: String, exact: Boolean) {
-        _state.value = LyricsState.Searching
-        val hits = dataRepository.searchLyrics(title, artist.toLastFMArtistQuery(), exact)
-        if (song?.id != s.id) return
-        when {
-            hits.isEmpty() -> _state.value = LyricsState.NotFound
-            hits.size == 1 -> download(s, hits[0].result.path)
-            else -> _state.value = LyricsState.Choose(hits.map { it.result })
-        }
-    }
-
-    private suspend fun download(s: Song, path: String) {
-        _state.value = LyricsState.Loading
-        val lyrics = dataRepository.loadLyrics(s.id, path)
-        if (song?.id != s.id) return
-        _state.value = if (lyrics != null) LyricsState.Found(lyrics) else LyricsState.NotFound
-    }
-
-    /** Manual search (title/artist edited by the user). */
-    fun search(title: String, artist: String) {
-        val s = song ?: return
-        launch { search(s, title, artist, exact = false) }
-    }
-
-    fun choose(result: Result) {
-        val s = song ?: return
-        launch { download(s, result.path) }
-    }
-
-    fun saveCustom(text: String) {
-        val s = song ?: return
-        val html = text.trim().replace("\n", "<br/>")
-        _state.value = LyricsState.Found(html)
-        viewModelScope.launch { dataRepository.setLyrics(Lyric(s.id, html)) }
     }
 
     fun retry() = load(song)
@@ -171,5 +150,7 @@ class LyricsViewModel(
         prefs.edit { putInt(PreferenceUtil.LYRICS_SIZE, _size.value) }
     }
 
-    fun currentSong(): Song? = song
+    companion object {
+        private const val TAG = "LyricsViewModel"
+    }
 }

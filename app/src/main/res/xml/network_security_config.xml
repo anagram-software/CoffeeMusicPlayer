@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Self-hosted music servers are often reached over plain HTTP on a home network, so cleartext
-  is allowed. The app's own services (Genius, Last.fm) use HTTPS regardless, and the sign-in
+  is allowed. The app's own service (Last.fm) use HTTPS regardless, and the sign-in
   screen warns when a server address isn't HTTPS.
 -->
 <network-security-config xmlns:tools="http://schemas.android.com/tools">

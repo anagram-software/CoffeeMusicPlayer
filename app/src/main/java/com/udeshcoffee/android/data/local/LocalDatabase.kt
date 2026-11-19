@@ -21,11 +21,11 @@ import androidx.room.RoomDatabase
 import com.udeshcoffee.android.data.model.*
 
 /**
- * The app's own data: play stats, artist bios, favorites, lyrics and playlists.
+ * The app's own data: play stats, artist bios, favorites and playlists.
  * This release starts fresh (no upgrade path from the old Play Store versions), at version 1.
  */
 @Database(entities = [SongStat::class, AlbumStat::class, ArtistStat::class, Bio::class,
-        Favorite::class, Lyric::class, UserPlaylist::class, PlaylistItem::class],
+        Favorite::class, UserPlaylist::class, PlaylistItem::class],
         version = 1, exportSchema = true)
 abstract class LocalDatabase : RoomDatabase() {
 

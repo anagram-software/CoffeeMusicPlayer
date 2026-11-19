@@ -36,13 +36,6 @@ interface DataDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun setStats(artistStats: ArtistStat)
 
-    // Lyrics
-    @Query("SELECT * FROM lyrics WHERE songid = :songId")
-    suspend fun getLyrics(songId: Long): Lyric?
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun setLyrics(lyrics: Lyric)
-
     // Favorites
     @Query("SELECT * FROM favorites WHERE fav = :songId")
     suspend fun getFavorite(songId: Long): Favorite?

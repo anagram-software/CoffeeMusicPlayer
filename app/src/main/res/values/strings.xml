@@ -26,7 +26,6 @@
     <string name="info_buttons">Buttons</string>
     <string name="info_opacity">Opacity</string>
     <string name="info_lyrics_caps">LYRICS</string>
-    <string name="action_cancel">Cancel</string>
     <string name="action_ok">OK</string>
     <string name="msg_sd_permission">Coffee Player need SD card permission to edit this song.\n\n
         • Step 1 - Select the popup menu.\n • Step 2 - Select \"Show SD card\".\n • Step 3 - Select \"SD card\".

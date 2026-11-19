@@ -31,11 +31,6 @@ class LocalDataSource(
         }
     }
 
-    // Lyric
-    suspend fun getLyrics(songId: Long): String? = dataDao.getLyrics(songId)?.lyric
-
-    suspend fun setLyrics(lyrics: Lyric) = dataDao.setLyrics(lyrics)
-
     // Favorites
     suspend fun isFavorite(songId: Long): Boolean = dataDao.getFavorite(songId) != null
 

@@ -30,7 +30,6 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
 
-        buildConfigField("String", "GENIUS_ACCESS_TOKEN", secret("genius.accessToken"))
         buildConfigField("String", "LASTFM_API_KEY", secret("lastfm.apiKey"))
     }
 
@@ -78,7 +77,6 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.palette)
     implementation(libs.androidx.preference.ktx)
-    implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.profileinstaller)
     implementation(libs.material)
 

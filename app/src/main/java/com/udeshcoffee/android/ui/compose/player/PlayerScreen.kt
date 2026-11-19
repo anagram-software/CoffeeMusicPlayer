@@ -68,9 +68,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.fromHtml
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -82,7 +80,6 @@ import com.udeshcoffee.android.playback.PlayerUiState
 import com.udeshcoffee.android.playback.RepeatModes
 import com.udeshcoffee.android.ui.compose.LocalAppActions
 import com.udeshcoffee.android.ui.compose.components.SongArtwork
-import com.udeshcoffee.android.ui.compose.components.TextInputDialog
 import com.udeshcoffee.android.ui.compose.components.formatDuration
 import com.udeshcoffee.android.ui.compose.rememberPlayerState
 import org.koin.compose.koinInject
@@ -106,7 +103,9 @@ fun PlayerScreen(onCollapse: () -> Unit, viewModel: NowPlayingViewModel = koinVi
     LaunchedEffect(state.connected, state.queue.isEmpty()) { if (state.connected && state.queue.isEmpty()) onCollapse() }
     song ?: return
 
-    val showLyrics by viewModel.showLyrics.collectAsStateWithLifecycle()
+    // Lyrics come from the music server only, so device songs always show their artwork.
+    val lyricsPreferred by viewModel.showLyrics.collectAsStateWithLifecycle()
+    val showLyrics = lyricsPreferred && song.isRemote
     val actions = LocalAppActions.current
 
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface).safeDrawingPadding()) {
@@ -223,7 +222,7 @@ private fun Controls(state: PlayerUiState, song: Song, viewModel: NowPlayingView
         }
         Spacer(Modifier.height(8.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            TextButton(onClick = { viewModel.toggleLyrics() }) {
+            if (song.isRemote) TextButton(onClick = { viewModel.toggleLyrics() }) {
                 Icon(Icons.Default.Lyrics, contentDescription = null); Spacer(Modifier.size(8.dp))
                 Text(if (showLyrics) "Artwork" else "Lyrics")
             }
@@ -284,41 +283,29 @@ private fun QueueList(state: PlayerUiState, modifier: Modifier) {
     }
 }
 
-/** Lyrics for the playing song with search / add / text size actions. */
+/** The music server's lyrics for the playing song, with a text size toggle. */
 @Composable
 fun LyricsPanel(modifier: Modifier = Modifier, viewModel: LyricsViewModel = koinViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val size by viewModel.size.collectAsStateWithLifecycle()
-    var dialog by remember { mutableStateOf<String?>(null) }
 
     androidx.compose.material3.Surface(modifier, shape = MaterialTheme.shapes.large, tonalElevation = 2.dp) {
         Column(Modifier.fillMaxSize()) {
             Row(Modifier.padding(start = 16.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text("Lyrics", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
                 IconButton(onClick = viewModel::cycleSize) { Icon(Icons.Default.TextFields, contentDescription = "Text size") }
-                TextButton(onClick = { dialog = "search" }) { Text("Search") }
-                TextButton(onClick = { dialog = "add" }) { Text("Add") }
             }
             Box(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 16.dp), contentAlignment = Alignment.Center) {
                 when (val s = state) {
                     LyricsState.NoSong -> Text("Nothing playing")
                     LyricsState.Loading -> Text("Loading…")
-                    LyricsState.Searching -> Text("Searching…")
-                    LyricsState.NotFound -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Lyrics not found")
-                        TextButton(onClick = { dialog = "search" }) { Text("Search") }
-                    }
-                    is LyricsState.Choose -> LazyColumn(Modifier.fillMaxSize()) {
-                        item { Text("Choose a match", style = MaterialTheme.typography.labelLarge) }
-                        itemsIndexed(s.results) { _, result ->
-                            ListItem(modifier = Modifier.clickable { viewModel.choose(result) },
-                                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                                    headlineContent = { Text(result.titleWithFeatured) },
-                                    supportingContent = { Text(result.primaryArtist.name) })
-                        }
+                    LyricsState.NotFound -> Text("No lyrics on the server for this song", textAlign = TextAlign.Center)
+                    LyricsState.Failed -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Couldn't load lyrics")
+                        TextButton(onClick = viewModel::retry) { Text("Try again") }
                     }
                     is LyricsState.Found -> {
-                        val text = remember(s.html) { AnnotatedString.fromHtml(s.html) }
+                        val text = remember(s.lines) { s.lines.joinToString("\n") }
                         Text(text, fontSize = when (size) { 3 -> 24.sp; 2 -> 20.sp; else -> 16.sp },
                                 lineHeight = when (size) { 3 -> 34.sp; 2 -> 28.sp; else -> 24.sp },
                                 textAlign = TextAlign.Start,
@@ -328,27 +315,4 @@ fun LyricsPanel(modifier: Modifier = Modifier, viewModel: LyricsViewModel = koin
             }
         }
     }
-
-    val song = viewModel.currentSong()
-    when (dialog) {
-        "search" -> LyricsSearchDialog(song?.title ?: "", song?.artistName ?: "", onDismiss = { dialog = null }) { t, a -> viewModel.search(t, a) }
-        "add" -> TextInputDialog("Add lyrics", "Lyrics", confirm = "Save", onDismiss = { dialog = null }) { viewModel.saveCustom(it) }
-    }
-}
-
-@Composable
-private fun LyricsSearchDialog(title: String, artist: String, onDismiss: () -> Unit, onSearch: (String, String) -> Unit) {
-    var t by remember { mutableStateOf(title) }
-    var a by remember { mutableStateOf(artist) }
-    androidx.compose.material3.AlertDialog(
-            onDismissRequest = onDismiss,
-            title = { Text("Search lyrics") },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    androidx.compose.material3.OutlinedTextField(t, { t = it }, label = { Text("Title") }, singleLine = true)
-                    androidx.compose.material3.OutlinedTextField(a, { a = it }, label = { Text("Artist") }, singleLine = true)
-                }
-            },
-            confirmButton = { TextButton(onClick = { onSearch(t, a); onDismiss() }, enabled = t.isNotBlank()) { Text("Search") } },
-            dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } })
 }

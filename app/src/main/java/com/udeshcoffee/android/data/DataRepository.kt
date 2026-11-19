@@ -2,41 +2,19 @@ package com.udeshcoffee.android.data
 
 import com.udeshcoffee.android.data.local.LocalDataSource
 import com.udeshcoffee.android.data.model.Favorite
-import com.udeshcoffee.android.data.model.Lyric
 import com.udeshcoffee.android.data.remote.RemoteDataSource
-import com.udeshcoffee.android.data.remote.genius.Hit
 import com.udeshcoffee.android.data.remote.lastfm.TrackMetadata
 import com.udeshcoffee.android.model.Song
 import kotlinx.coroutines.flow.Flow
 
 /**
- * App-owned data (lyrics, favorites, play stats, artist bios), combining the local
+ * App-owned data (favorites, play stats, artist bios), combining the local
  * database with network sources. All functions are main-safe.
  */
 class DataRepository(
         private val localDataSource: LocalDataSource,
         private val remoteDataSource: RemoteDataSource
 ) {
-
-    // Lyrics
-    suspend fun getLyrics(song: Song): String? = localDataSource.getLyrics(song.id)
-
-    suspend fun searchLyrics(title: String, artist: String, exactTitle: Boolean): List<Hit> =
-            remoteDataSource.searchGenius(title, artist, exactTitle)
-
-    /** Downloads lyrics from a Genius page and stores them for [songId]. */
-    suspend fun loadLyrics(songId: Long, path: String): String? =
-            remoteDataSource.loadGeniusLyrics(path)?.also { localDataSource.setLyrics(Lyric(songId, it)) }
-
-    /** Downloads lyrics when none are stored and Genius has exactly one match. Returns true if downloaded. */
-    suspend fun downloadLyricsIfMissing(song: Song): Boolean {
-        if (localDataSource.getLyrics(song.id) != null) return false
-        val hits = remoteDataSource.searchGenius(song.title, song.artistName, exactTitle = true)
-        if (hits.size != 1) return false
-        return loadLyrics(song.id, hits[0].result.path) != null
-    }
-
-    suspend fun setLyrics(lyrics: Lyric) = localDataSource.setLyrics(lyrics)
 
     // Favorites
     suspend fun isFavorite(songId: Long): Boolean = localDataSource.isFavorite(songId)

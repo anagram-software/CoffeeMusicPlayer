@@ -20,8 +20,6 @@
 
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
-    <!-- Lyrics collection (WorkManager long-running worker). -->
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
     <application
         android:name=".App"
@@ -86,11 +84,6 @@
                 <action android:name="android.media.browse.MediaBrowserService" />
             </intent-filter>
         </service>
-        <!-- WorkManager's foreground service, used by LyricsCollectionWorker. -->
-        <service
-            android:name="androidx.work.impl.foreground.SystemForegroundService"
-            android:foregroundServiceType="dataSync"
-            tools:node="merge" />
 
         <receiver
             android:name="androidx.media3.session.MediaButtonReceiver"

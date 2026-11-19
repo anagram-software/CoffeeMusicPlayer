@@ -32,6 +32,6 @@ val composeModule = module {
     viewModel { (playlistId: Long) -> PlaylistAddSongsViewModel(playlistId, get()) }
     viewModel { (songId: Long) -> EditorScreenViewModel(songId, androidApplication(), get(), get()) }
     viewModel { NowPlayingViewModel(get(), get(), get(), get()) }
-    viewModel { LyricsViewModel(get(), get(), get(), get()) }
+    viewModel { LyricsViewModel(get(), get(), get()) }
     viewModel { ServerLibraryViewModel(get()) }
 }

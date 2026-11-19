@@ -1,5 +1,5 @@
 # R8 rules for Coffee Music Player. Most libraries (Media3, Room, OkHttp, Retrofit,
-# kotlinx.serialization, WorkManager, Coil, Koin) ship their own consumer rules.
+# kotlinx.serialization, Coil, Koin) ship their own consumer rules.
 
 # Keep line numbers for readable crash reports.
 -keepattributes SourceFile,LineNumberTable

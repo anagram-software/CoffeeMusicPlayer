@@ -11,7 +11,6 @@ lifecycle = "2.11.0"
 navigation = "2.10.2"
 palette = "1.1.0"
 preference = "1.2.1"
-work = "2.12.0"
 material = "1.14.0"
 media3 = "1.11.1"
 room = "2.8.5"
@@ -52,7 +51,6 @@ androidx-preference-ktx = { module = "androidx.preference:preference-ktx", versi
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
-androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "work" }
 androidx-media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "media3" }
 androidx-media3-session = { module = "androidx.media3:media3-session", version.ref = "media3" }
 material = { module = "com.google.android.material:material", version.ref = "material" }
