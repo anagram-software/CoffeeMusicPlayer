@@ -41,6 +41,9 @@ data class SubsonicAccount(
 
 data class ArtistInfo(val biography: String?, val imageUrl: String?, val similarArtists: List<Artist> = emptyList())
 
+/** A server album page's data: its tracks plus details for the header. */
+data class ServerAlbumDetails(val tracks: AlbumTracks, val genre: String?, val year: Int)
+
 data class ServerSearchResults(val songs: List<Song>, val albums: List<Album>, val artists: List<Artist>)
 
 /** Album list orders offered by getAlbumList2. */
@@ -76,6 +79,20 @@ class SubsonicRepository(context: Context) {
     /** Starred (favorite) server song IDs, kept up to date by [loadStarred] and [setStarred]. */
     val starredIds: StateFlow<Set<String>> = _starredIds.asStateFlow()
 
+    private val _starredAlbumIds = MutableStateFlow<Set<String>>(emptySet())
+    /** Starred server album IDs (the heart on album pages). */
+    val starredAlbumIds: StateFlow<Set<String>> = _starredAlbumIds.asStateFlow()
+
+    private val _starredArtistIds = MutableStateFlow<Set<String>>(emptySet())
+    /** Starred server artist IDs (the heart on artist pages). */
+    val starredArtistIds: StateFlow<Set<String>> = _starredArtistIds.asStateFlow()
+
+    private fun clearStars() {
+        _starredIds.value = emptySet()
+        _starredAlbumIds.value = emptySet()
+        _starredArtistIds.value = emptySet()
+    }
+
     // ---- Account ----
 
     val isSignedIn: Boolean get() = _account.value != null
@@ -103,7 +120,7 @@ class SubsonicRepository(context: Context) {
         prefs.edit { putString(KEY_ACCOUNT, SubsonicClient.json.encodeToString(SubsonicAccount.serializer(), account)) }
         cachedClient = client
         _account.value = account
-        _starredIds.value = emptySet()
+        clearStars()
         starredLoadedFor = null
         playlistsVersion.value++
         return account
@@ -115,7 +132,7 @@ class SubsonicRepository(context: Context) {
         cachedClient = null
         starredLoadedFor = null
         _account.value = null
-        _starredIds.value = emptySet()
+        clearStars()
         playlistsVersion.value++
     }
 
@@ -181,9 +198,15 @@ class SubsonicRepository(context: Context) {
     // Behind Octo-Fiesta, getAlbum, getArtist and getTopSongs also return streaming-provider items
     // (see External.kt). The functions below keep the library's apart and play only those.
 
+    /** An album's details and tracks (behind Octo-Fiesta, also the provider tracks the library copy lacks). */
+    suspend fun albumDetails(albumId: String): ServerAlbumDetails {
+        val album = client().get("getAlbum", "album", SubAlbum.serializer(), listOf("id" to albumId))
+        if (album.starred != null) _starredAlbumIds.update { it + albumId }
+        return ServerAlbumDetails(splitAlbumTracks(album.song.toSongs()), album.genre?.takeIf { it.isNotBlank() }, album.year)
+    }
+
     /** An album's library tracks and, behind Octo-Fiesta, the provider tracks the library copy lacks. */
-    suspend fun album(albumId: String): AlbumTracks =
-            splitAlbumTracks(client().get("getAlbum", "album", SubAlbum.serializer(), listOf("id" to albumId)).song.toSongs())
+    suspend fun album(albumId: String): AlbumTracks = albumDetails(albumId).tracks
 
     /** What playing the album plays: its library tracks (all tracks for a provider album). */
     suspend fun albumSongs(albumId: String): List<Song> = album(albumId).playable
@@ -220,7 +243,9 @@ class SubsonicRepository(context: Context) {
             client().get("getArtist", "artist", SubArtist.serializer(), listOf("id" to artistId))
 
     /** The artist's albums, library and provider ones (one request; [groupReleases] separates them). */
-    suspend fun artistAlbums(artistId: String): List<Album> = getArtist(artistId).album.map { it.toAlbum() }
+    suspend fun artistAlbums(artistId: String): List<Album> = getArtist(artistId).also {
+        if (it.starred != null) _starredArtistIds.update { ids -> ids + artistId }
+    }.album.map { it.toAlbum() }
 
     /**
      * What playing the artist plays: the songs of their library albums (a few requests at a time),
@@ -283,11 +308,30 @@ class SubsonicRepository(context: Context) {
         runCatching { loadStarred() }.onSuccess { starredLoadedFor = credentials }
     }
 
-    /** Starred songs; also refreshes [starredIds]. */
+    /** Starred songs; also refreshes [starredIds], [starredAlbumIds] and [starredArtistIds]. */
     suspend fun loadStarred(): List<Song> {
-        val songs = client().get("getStarred2", "starred2", SubSearchResult.serializer()).song
-        _starredIds.value = songs.map { it.id }.toSet()
-        return songs.toSongs()
+        val starred = client().get("getStarred2", "starred2", SubSearchResult.serializer())
+        _starredIds.value = starred.song.map { it.id }.toSet()
+        _starredAlbumIds.value = starred.album.map { it.id }.toSet()
+        _starredArtistIds.value = starred.artist.map { it.id }.toSet()
+        return starred.song.toSongs()
+    }
+
+    /** Stars or unstars an album (optimistically updating [starredAlbumIds]). */
+    suspend fun setAlbumStarred(albumId: String, starred: Boolean) = setCollectionStarred(_starredAlbumIds, "albumId", albumId, starred)
+
+    /** Stars or unstars an artist (optimistically updating [starredArtistIds]). */
+    suspend fun setArtistStarred(artistId: String, starred: Boolean) = setCollectionStarred(_starredArtistIds, "artistId", artistId, starred)
+
+    private suspend fun setCollectionStarred(ids: MutableStateFlow<Set<String>>, param: String, id: String, starred: Boolean) {
+        val before = ids.value
+        ids.update { if (starred) it + id else it - id }
+        try {
+            client().call(if (starred) "star" else "unstar", listOf(param to id))
+        } catch (e: SubsonicException) {
+            ids.value = before
+            throw e
+        }
     }
 
     /** Stars or unstars a song (optimistically updating [starredIds]). */

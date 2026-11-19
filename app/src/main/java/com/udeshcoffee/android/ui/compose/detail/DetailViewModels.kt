@@ -43,6 +43,7 @@ import com.udeshcoffee.android.data.source.MusicSourceStore
 import kotlinx.coroutines.flow.transformLatest
 import com.udeshcoffee.android.data.subsonic.AlbumTracks
 import com.udeshcoffee.android.data.subsonic.ArtistReleases
+import com.udeshcoffee.android.data.subsonic.ServerAlbumDetails
 import com.udeshcoffee.android.data.subsonic.SubsonicException
 import com.udeshcoffee.android.data.subsonic.groupReleases
 import com.udeshcoffee.android.data.subsonic.SubsonicRepository
@@ -74,10 +75,15 @@ abstract class SourceAwareViewModel : ViewModel() {
     protected fun <T> server(load: suspend () -> T): Flow<T?> = serverFlow(reload, _error, load)
 }
 
-class AlbumDetailViewModel(albumId: Long, remoteId: String?, mediaRepository: MediaRepository, subsonic: SubsonicRepository) : SourceAwareViewModel() {
-    private val tracks: Flow<AlbumTracks?> =
-            if (remoteId != null) server { subsonic.album(remoteId) }
-            else mediaRepository.observeAlbumSongs(albumId).map { AlbumTracks(it, emptyList()) }
+class AlbumDetailViewModel(albumId: Long, private val remoteId: String?, mediaRepository: MediaRepository, private val subsonic: SubsonicRepository) : SourceAwareViewModel() {
+    private val details: Flow<ServerAlbumDetails?> =
+            if (remoteId != null) server { subsonic.albumDetails(remoteId) }
+            else mediaRepository.observeAlbumSongs(albumId).map { ServerAlbumDetails(AlbumTracks(it, emptyList()), genre = null, year = 0) }
+
+    private val tracks: Flow<AlbumTracks?> = details.map { it?.tracks }
+
+    /** The server's genre for the album (header pill); null for device albums. */
+    val genre: StateFlow<String?> = details.map { it?.genre }.stateIn(this, null)
 
     /** The album's library songs (all of a streaming-provider album's), sorted. */
     val songs: StateFlow<List<Song>?> =
@@ -86,6 +92,14 @@ class AlbumDetailViewModel(albumId: Long, remoteId: String?, mediaRepository: Me
     /** Tracks Octo-Fiesta adds from the streaming provider that the library copy lacks, in album order. */
     val providerSongs: StateFlow<List<Song>> =
             tracks.map { t -> t?.takeIf { it.library.isNotEmpty() }?.provider?.sortedBy { it.track }.orEmpty() }.stateIn(this, emptyList())
+
+    /** The album is starred on the server (the header's heart; server albums only). */
+    val starred: StateFlow<Boolean> = subsonic.starredAlbumIds.map { remoteId != null && remoteId in it }.stateIn(this, false)
+
+    fun toggleStar() {
+        val id = remoteId ?: return
+        viewModelScope.launch { try { subsonic.setAlbumStarred(id, !starred.value) } catch (_: SubsonicException) {} }
+    }
 
     /** Every streaming-provider track of the album (all of a provider album's): what "Add to library" downloads. */
     val missingSongs: StateFlow<List<Song>> = tracks.map { it?.provider.orEmpty() }.stateIn(this, emptyList())
@@ -101,7 +115,7 @@ class ArtistDetailViewModel(
         private val remoteId: String?,
         mediaRepository: MediaRepository,
         dataRepository: DataRepository,
-        subsonic: SubsonicRepository
+        private val subsonic: SubsonicRepository
 ) : SourceAwareViewModel() {
     val isRemote = remoteId != null
 
@@ -124,6 +138,14 @@ class ArtistDetailViewModel(
             (if (remoteId != null) flowOf(emptyList())
             else combine(mediaRepository.observeArtistAlbums(artistName), SortSettings.artistAlbums.state) { a, sort -> a.sortedAlbums(sort) })
                     .stateIn(this, emptyList())
+
+    /** The artist is starred on the server (the header's heart; server artists only). */
+    val starred: StateFlow<Boolean> = subsonic.starredArtistIds.map { remoteId != null && remoteId in it }.stateIn(this, false)
+
+    fun toggleStar() {
+        val id = remoteId ?: return
+        viewModelScope.launch { try { subsonic.setArtistStarred(id, !starred.value) } catch (_: SubsonicException) {} }
+    }
 
     /** Server artists' releases: the library's by kind, then the streaming provider's. Null until loaded or for device artists. */
     val releases: StateFlow<ArtistReleases?> =

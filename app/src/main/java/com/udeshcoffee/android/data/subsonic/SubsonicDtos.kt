@@ -38,6 +38,7 @@ data class SubAlbum(
         val coverArt: String? = null,
         val songCount: Int = 0,
         val year: Int = 0,
+        val genre: String? = null,
         val created: String? = null,
         val starred: String? = null,
         val song: List<SubSong> = emptyList()
