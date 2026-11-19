@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -19,9 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.udeshcoffee.android.ui.compose.LocalAppActions
 import com.udeshcoffee.android.ui.compose.theme.LocalSection
 
@@ -34,7 +33,7 @@ fun SectionPill(title: String, modifier: Modifier = Modifier) {
     val section = LocalSection.current
     val background by animateColorAsState(section.accent, label = "pill")
     val content by animateColorAsState(section.onAccent, label = "pillText")
-    Text(title.uppercase(), color = content, fontSize = 16.sp, fontWeight = FontWeight.Medium, letterSpacing = 0.5.sp,
+    Text(title.uppercase(), color = content, style = MaterialTheme.typography.titleSmall,
             modifier = modifier
                     .background(background, RoundedCornerShape(8.dp))
                     .padding(horizontal = 10.dp, vertical = 4.dp))
