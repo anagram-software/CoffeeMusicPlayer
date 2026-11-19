@@ -235,47 +235,8 @@ class MediaRepository(
                     }
                     .flowOn(Dispatchers.IO)
 
-    // ---- Folders ----
+    // ---- Files ----
 
+    /** The file path of a song (shown by the tag editor). */
     suspend fun getRealPath(uri: Uri): String? = withContext(Dispatchers.IO) { DopeUtil.getRealPathFromURI(contentResolver, uri) }
-
-    @Suppress("DEPRECATION") // DATA is deprecated but still populated for reading.
-    private fun folderSongsQuery(path: String) = songQuery.copy(
-            selection = songQuery.selection + " AND (" + MediaStore.Audio.Media.DATA + " LIKE ? AND "
-                    + MediaStore.Audio.Media.DATA + " NOT LIKE ?)",
-            args = arrayOf("$path%", "$path%/%")
-    )
-
-    fun observeFolderSongs(path: String): Flow<List<Song>> = observeQuery(folderSongsQuery(path)) { Song(it) }
-
-    suspend fun loadFolderSongs(path: String): List<Song> = load(folderSongsQuery(path)) { Song(it) }
-
-    /**
-     * Child folders of [dirPath] that contain songs (at any depth), with their song counts.
-     * Built from MediaStore paths instead of listing the file system, which scoped storage restricts.
-     */
-    @Suppress("DEPRECATION")
-    suspend fun getChildFolders(dirPath: String): List<Pair<String, Int>> = withContext(Dispatchers.IO) {
-        val prefix = dirPath.trimEnd('/') + "/"
-        val counts = LinkedHashMap<String, Int>()
-        val paths = queryList(songQuery.copy(projection = arrayOf(MediaStore.Audio.Media.DATA),
-                selection = songQuery.selection + " AND " + MediaStore.Audio.Media.DATA + " LIKE ?",
-                args = arrayOf("$prefix%"), sort = null)) { it.getString(0) }
-        for (path in paths) {
-            val rest = path?.removePrefix(prefix) ?: continue
-            val slash = rest.indexOf('/')
-            if (slash > 0) {
-                val child = prefix + rest.substring(0, slash)
-                counts[child] = (counts[child] ?: 0) + 1
-            }
-        }
-        counts.toList()
-    }
-
-    @Suppress("DEPRECATION")
-    suspend fun getFolderSongCount(path: String): Int = withContext(Dispatchers.IO) {
-        contentResolver.query(songQuery.uri, arrayOf(MediaStore.Audio.Media._ID),
-                songQuery.selection + " AND (" + MediaStore.Audio.Media.DATA + " LIKE ? )",
-                arrayOf("$path%"), null)?.use { it.count } ?: 0
-    }
 }

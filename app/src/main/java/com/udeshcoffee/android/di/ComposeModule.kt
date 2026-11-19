@@ -9,7 +9,7 @@ import com.udeshcoffee.android.ui.compose.detail.PlaylistDetailViewModel
 import com.udeshcoffee.android.ui.compose.detail.PlaylistsViewModel
 import com.udeshcoffee.android.ui.compose.detail.SearchViewModel
 import com.udeshcoffee.android.ui.compose.editor.EditorScreenViewModel
-import com.udeshcoffee.android.ui.compose.library.FoldersViewModel
+import com.udeshcoffee.android.ui.compose.home.HomeViewModel
 import com.udeshcoffee.android.ui.compose.library.LibraryViewModel
 import com.udeshcoffee.android.ui.compose.library.ServerLibraryViewModel
 import com.udeshcoffee.android.ui.compose.player.LyricsViewModel
@@ -21,7 +21,7 @@ import org.koin.dsl.module
 /** ViewModels of the Compose UI. Parameterised ones take their IDs via parametersOf(...). */
 val composeModule = module {
     viewModel { LibraryViewModel(get()) }
-    viewModel { FoldersViewModel(get()) }
+    viewModel { HomeViewModel(get(), get(), get()) }
     viewModel { FavoritesViewModel(get(), get(), get()) }
     viewModel { PlaylistsViewModel(get(), get(), get()) }
     viewModel { SearchViewModel(get(), get(), get()) }

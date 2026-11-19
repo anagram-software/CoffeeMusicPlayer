@@ -41,11 +41,6 @@ val ArtistSortOptions = listOf(
         SortOption(SortManager.ArtistSort.DEFAULT, "Default"),
         SortOption(SortManager.ArtistSort.NAME, "Name"))
 
-val FolderSortOptions = listOf(
-        SortOption(SortManager.FolderSort.DEFAULT, "Default"),
-        SortOption(SortManager.FolderSort.NAME, "Name"),
-        SortOption(SortManager.FolderSort.SONG_COUNT, "Song count"))
-
 /** One sortable list in a [SortMenu]: options, current choice and direction. */
 data class SortGroup(
         val title: String?,

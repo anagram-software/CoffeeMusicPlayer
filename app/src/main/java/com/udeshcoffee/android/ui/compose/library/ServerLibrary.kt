@@ -18,16 +18,10 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CloudOff
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -36,8 +30,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PrimaryScrollableTabRow
-import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -78,6 +70,7 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
+import com.udeshcoffee.android.ui.compose.playlists.PlaylistsTab
 
 /** A list loaded from the server a page at a time. */
 data class PagedState<T>(
@@ -164,39 +157,16 @@ class ServerLibraryViewModel(private val subsonic: SubsonicRepository) : ViewMod
     suspend fun randomSongs(): List<Song> = try { subsonic.randomSongs() } catch (e: SubsonicException) { emptyList() }
 }
 
-/** Server library tabs (no Folders: Subsonic browses by tags). */
-private val serverTabs = listOf("Songs", "Albums", "Artists", "Genres")
-
-/** The Library tab when the music source is the server. [startTab] is a tab name from the device list. */
-@OptIn(ExperimentalMaterial3Api::class)
+/** The Library tab when the music source is the server; [startTab] indexes [libraryTabs]. */
 @Composable
-fun ServerLibraryScreen(startTab: String, viewModel: ServerLibraryViewModel = koinViewModel()) {
-    val pager = rememberPagerState(initialPage = serverTabs.indexOf(startTab).coerceAtLeast(0)) { serverTabs.size }
-    val scope = rememberCoroutineScope()
-    val actions = LocalAppActions.current
-    Scaffold(topBar = {
-        TopAppBar(
-                title = { Text("Library") },
-                actions = {
-                    IconButton(onClick = actions::openSearch) { Icon(Icons.Default.Search, contentDescription = "Search") }
-                    if (pager.currentPage == 1) ServerAlbumSortMenu(viewModel)
-                })
-    }) { padding ->
-        Column(Modifier.padding(padding)) {
-            PrimaryScrollableTabRow(selectedTabIndex = pager.currentPage, edgePadding = 8.dp) {
-                serverTabs.forEachIndexed { index, title ->
-                    Tab(selected = pager.currentPage == index, onClick = { scope.launch { pager.animateScrollToPage(index) } },
-                            text = { Text(title) })
-                }
-            }
-            HorizontalPager(pager, Modifier.fillMaxSize(), beyondViewportPageCount = 1) { page ->
-                when (page) {
-                    0 -> ServerSongsTab(viewModel)
-                    1 -> ServerAlbumsTab(viewModel)
-                    2 -> ServerArtistsTab(viewModel)
-                    else -> ServerGenresTab(viewModel)
-                }
-            }
+fun ServerLibraryScreen(startTab: Int, viewModel: ServerLibraryViewModel = koinViewModel()) {
+    LibraryScaffold(startTab, sortMenu = { page -> if (page == 1) ServerAlbumSortMenu(viewModel) }) { page ->
+        when (page) {
+            0 -> PlaylistsTab()
+            1 -> ServerAlbumsTab(viewModel)
+            2 -> ServerArtistsTab(viewModel)
+            3 -> ServerSongsTab(viewModel)
+            else -> ServerGenresTab(viewModel)
         }
     }
 }

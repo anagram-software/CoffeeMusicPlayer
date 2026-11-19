@@ -14,10 +14,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LibraryMusic
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
@@ -58,21 +59,21 @@ import com.udeshcoffee.android.ui.compose.detail.GenreDetailScreen
 import com.udeshcoffee.android.ui.compose.detail.PlaylistAddSongsScreen
 import com.udeshcoffee.android.ui.compose.detail.PlaylistDetailScreen
 import com.udeshcoffee.android.ui.compose.editor.EditorScreen
+import com.udeshcoffee.android.ui.compose.home.HomeScreen
 import com.udeshcoffee.android.ui.compose.library.LibraryScreen
 import com.udeshcoffee.android.ui.compose.navigation.AlbumRoute
 import com.udeshcoffee.android.ui.compose.navigation.ArtistRoute
 import com.udeshcoffee.android.ui.compose.navigation.EditorRoute
 import com.udeshcoffee.android.ui.compose.navigation.FavoritesRoute
 import com.udeshcoffee.android.ui.compose.navigation.GenreRoute
+import com.udeshcoffee.android.ui.compose.navigation.HomeRoute
 import com.udeshcoffee.android.ui.compose.navigation.LibraryRoute
 import com.udeshcoffee.android.ui.compose.navigation.PlaylistAddSongsRoute
 import com.udeshcoffee.android.ui.compose.navigation.PlaylistRoute
-import com.udeshcoffee.android.ui.compose.navigation.PlaylistsRoute
 import com.udeshcoffee.android.ui.compose.navigation.SearchRoute
 import com.udeshcoffee.android.ui.compose.navigation.SettingsRoute
 import com.udeshcoffee.android.ui.compose.player.MiniPlayer
 import com.udeshcoffee.android.ui.compose.player.PlayerScreen
-import com.udeshcoffee.android.ui.compose.playlists.PlaylistsScreen
 import com.udeshcoffee.android.ui.compose.search.SearchScreen
 import com.udeshcoffee.android.ui.compose.settings.SettingsScreen
 import com.udeshcoffee.android.ui.compose.theme.CoffeeTheme
@@ -82,10 +83,10 @@ import org.koin.compose.koinInject
 private data class TopLevel(val label: String, val icon: ImageVector, val route: Any)
 
 private val topLevels = listOf(
-        TopLevel("Library", Icons.Default.LibraryMusic, LibraryRoute),
+        TopLevel("Home", Icons.Default.Home, HomeRoute),
         TopLevel("Favorites", Icons.Default.Favorite, FavoritesRoute),
-        TopLevel("Playlists", Icons.AutoMirrored.Filled.QueueMusic, PlaylistsRoute),
-        TopLevel("Settings", Icons.Default.Settings, SettingsRoute))
+        TopLevel("Library", Icons.Default.LibraryMusic, LibraryRoute),
+        TopLevel("Search", Icons.Default.Search, SearchRoute))
 
 /** Root of the Compose UI. [onDeleteSongs] asks the user to confirm deleting files (activity result). */
 @Composable
@@ -108,8 +109,15 @@ fun CoffeeApp(onDeleteSongs: (List<Song>) -> Unit, playerExpandedRequest: Boolea
                 playerExpanded = it
             }
         }
-        // Until a music source is set up, open on Settings (sign-in form) and keep the music screens empty.
+        // Until a music source is set up, open Settings (sign-in form) over Home and keep the music screens empty.
         val configured = remember { sourceStore.isConfigured }
+        var setupOpened by rememberSaveable { mutableStateOf(false) }
+        LaunchedEffect(Unit) {
+            if (!configured && !setupOpened) {
+                setupOpened = true
+                actions.openSettings()
+            }
+        }
         val navigateTop: (Any) -> Unit = { route ->
             navController.navigate(route) {
                 popUpTo(navController.graph.findStartDestination().id) { saveState = true }
@@ -118,7 +126,7 @@ fun CoffeeApp(onDeleteSongs: (List<Song>) -> Unit, playerExpandedRequest: Boolea
             }
         }
         val needsSetup: @Composable (@Composable () -> Unit) -> Unit = { screen ->
-            if (configured) screen() else SetupNeeded(onOpenSettings = { navigateTop(SettingsRoute) })
+            if (configured) screen() else SetupNeeded(onOpenSettings = actions::openSettings)
         }
         val backStack by navController.currentBackStackEntryAsState()
         val destination = backStack?.destination
@@ -140,12 +148,12 @@ fun CoffeeApp(onDeleteSongs: (List<Song>) -> Unit, playerExpandedRequest: Boolea
                 }) {
                     Column(Modifier.fillMaxSize()) {
                         Box(Modifier.weight(1f)) {
-                            NavHost(navController, startDestination = if (configured) LibraryRoute else SettingsRoute) {
-                                composable<LibraryRoute> { needsSetup { LibraryScreen() } }
+                            NavHost(navController, startDestination = HomeRoute) {
+                                composable<HomeRoute> { needsSetup { HomeScreen() } }
                                 composable<FavoritesRoute> { needsSetup { FavoritesScreen() } }
-                                composable<PlaylistsRoute> { needsSetup { PlaylistsScreen() } }
-                                composable<SettingsRoute> { SettingsScreen() }
+                                composable<LibraryRoute> { needsSetup { LibraryScreen() } }
                                 composable<SearchRoute> { needsSetup { SearchScreen() } }
+                                composable<SettingsRoute> { SettingsScreen() }
                                 composable<AlbumRoute> { val r = it.toRoute<AlbumRoute>(); AlbumDetailScreen(r.albumId, r.title, r.remoteId) }
                                 composable<ArtistRoute> { val r = it.toRoute<ArtistRoute>(); ArtistDetailScreen(r.artistId, r.name, r.remoteId) }
                                 composable<GenreRoute> { val r = it.toRoute<GenreRoute>(); GenreDetailScreen(r.genreId, r.name, r.remote) }

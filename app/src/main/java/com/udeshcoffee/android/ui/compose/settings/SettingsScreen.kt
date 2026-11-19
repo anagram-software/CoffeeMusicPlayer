@@ -30,7 +30,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.edit
 import androidx.preference.PreferenceManager
 import com.udeshcoffee.android.service.LyricsCollectionWorker
-import com.udeshcoffee.android.ui.compose.components.TopLevelScaffold
+import com.udeshcoffee.android.ui.compose.detail.DetailScaffold
 import com.udeshcoffee.android.utils.PreferenceUtil
 import com.udeshcoffee.android.data.source.MusicSourceStore
 import com.udeshcoffee.android.ui.compose.library.libraryTabs
@@ -47,7 +47,7 @@ fun SettingsScreen() {
     val version = remember { context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "" }
     val isServer = koinInject<MusicSourceStore>().isServer
 
-    TopLevelScaffold("Settings") { padding ->
+    DetailScaffold("Settings") { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())) {
             Header("Music source")
             MusicSourceSettings()

@@ -15,12 +15,19 @@ fun MacrobenchmarkScope.grantPermissions() {
     if (Build.VERSION.SDK_INT >= 33) device.executeShellCommand("pm grant $packageName android.permission.POST_NOTIFICATIONS")
 }
 
-/** Waits for the library to show. */
+/**
+ * Waits for the app to show (the navigation bar). A fresh install opens the music source setup
+ * in Settings: pick this device's music, which restarts the UI on Home.
+ */
 fun MacrobenchmarkScope.waitForLibrary() {
-    device.wait(Until.hasObject(By.text("Songs")), 10_000)
+    device.wait(Until.hasObject(By.text("Home")), 10_000)
+    device.findObject(By.text("Use music on this device only"))?.let {
+        it.click()
+        device.wait(Until.hasObject(By.text("Recently added")), 10_000)
+    }
 }
 
-/** The common path: scroll songs, visit the album and artist grids, open the player. Skips what isn't there. */
+/** The common path: Home, then the Library's album, artist and song tabs, then the player. Skips what isn't there. */
 fun MacrobenchmarkScope.browseLibrary() {
     waitForLibrary()
     device.findObject(By.scrollable(true))?.let { list ->
@@ -28,6 +35,8 @@ fun MacrobenchmarkScope.browseLibrary() {
         list.fling(Direction.DOWN)
         list.fling(Direction.UP)
     }
+    device.findObject(By.text("Library"))?.click()
+    device.wait(Until.hasObject(By.text("Playlists")), 5_000)
     for (tab in listOf("Albums", "Artists", "Songs")) {
         device.findObject(By.text(tab))?.click()
         device.waitForIdle()

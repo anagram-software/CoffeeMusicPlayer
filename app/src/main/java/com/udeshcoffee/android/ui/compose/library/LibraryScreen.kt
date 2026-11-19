@@ -1,6 +1,5 @@
 package com.udeshcoffee.android.ui.compose.library
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
@@ -16,18 +15,9 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
@@ -52,7 +42,6 @@ import com.udeshcoffee.android.ui.compose.components.AlbumSortOptions
 import com.udeshcoffee.android.ui.compose.components.ArtistCard
 import com.udeshcoffee.android.ui.compose.components.ArtistSortOptions
 import com.udeshcoffee.android.ui.compose.components.EmptyState
-import com.udeshcoffee.android.ui.compose.components.FolderSortOptions
 import com.udeshcoffee.android.ui.compose.components.GridPadding
 import com.udeshcoffee.android.ui.compose.components.ShuffleRow
 import com.udeshcoffee.android.ui.compose.components.SongRow
@@ -66,9 +55,16 @@ import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import com.udeshcoffee.android.data.source.MusicSourceStore
+import com.udeshcoffee.android.ui.compose.components.SettingsButton
+import com.udeshcoffee.android.ui.compose.playlists.PlaylistsTab
 
-/** Device library tabs; [PreferenceUtil.PREF_LIB_START] stores an index into this list. */
-val libraryTabs = listOf("Songs", "Albums", "Artists", "Folders", "Genres")
+/** Library tabs, the same for both music sources; [PreferenceUtil.PREF_LIB_START] stores an index into this list. */
+val libraryTabs = listOf("Playlists", "Albums", "Artists", "Songs", "Genres")
+
+private const val TAB_PLAYLISTS = 0
+private const val TAB_ALBUMS = 1
+private const val TAB_ARTISTS = 2
+private const val TAB_SONGS = 3
 
 /** The Library tab: this device's music or the server's, following the music source setting. */
 @Composable
@@ -77,45 +73,46 @@ fun LibraryScreen() {
     val context = LocalContext.current
     val startTab = remember {
         val index = PreferenceManager.getDefaultSharedPreferences(context).getString(PreferenceUtil.PREF_LIB_START, "0")?.toIntOrNull() ?: 0
-        libraryTabs.getOrElse(index) { libraryTabs[0] }
+        index.coerceIn(0, libraryTabs.lastIndex)
     }
     if (sourceStore.isServer) ServerLibraryScreen(startTab) else DeviceLibraryScreen(startTab)
 }
 
+/** Library scaffold shared by both sources: title, sort menu, settings, the tab row and the pages. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DeviceLibraryScreen(startTab: String, viewModel: LibraryViewModel = koinViewModel(), foldersViewModel: FoldersViewModel = koinViewModel()) {
-    val tabs = libraryTabs
-    val pager = rememberPagerState(initialPage = tabs.indexOf(startTab).coerceAtLeast(0)) { tabs.size }
+internal fun LibraryScaffold(startTab: Int, sortMenu: @Composable (page: Int) -> Unit, page: @Composable (page: Int) -> Unit) {
+    val pager = rememberPagerState(initialPage = startTab) { libraryTabs.size }
     val scope = rememberCoroutineScope()
-    val actions = LocalAppActions.current
-
     Scaffold(topBar = {
         TopAppBar(
                 title = { Text("Library") },
                 actions = {
-                    IconButton(onClick = actions::openSearch) { Icon(Icons.Default.Search, contentDescription = "Search") }
-                    LibrarySortMenu(pager.currentPage)
+                    sortMenu(pager.currentPage)
+                    SettingsButton()
                 })
     }) { padding ->
-        Box(Modifier.padding(padding)) {
-            androidx.compose.foundation.layout.Column {
-                PrimaryScrollableTabRow(selectedTabIndex = pager.currentPage, edgePadding = 8.dp) {
-                    tabs.forEachIndexed { index, title ->
-                        Tab(selected = pager.currentPage == index, onClick = { scope.launch { pager.animateScrollToPage(index) } },
-                                text = { Text(title) })
-                    }
-                }
-                HorizontalPager(pager, Modifier.fillMaxSize(), beyondViewportPageCount = 1) { page ->
-                    when (page) {
-                        0 -> SongsTab(viewModel)
-                        1 -> AlbumsTab(viewModel)
-                        2 -> ArtistsTab(viewModel)
-                        3 -> FoldersTab(foldersViewModel, isCurrentPage = pager.currentPage == 3)
-                        else -> GenresTab(viewModel)
-                    }
+        androidx.compose.foundation.layout.Column(Modifier.padding(padding)) {
+            PrimaryScrollableTabRow(selectedTabIndex = pager.currentPage, edgePadding = 8.dp) {
+                libraryTabs.forEachIndexed { index, title ->
+                    Tab(selected = pager.currentPage == index, onClick = { scope.launch { pager.animateScrollToPage(index) } },
+                            text = { Text(title) })
                 }
             }
+            HorizontalPager(pager, Modifier.fillMaxSize(), beyondViewportPageCount = 1) { page(it) }
+        }
+    }
+}
+
+@Composable
+private fun DeviceLibraryScreen(startTab: Int, viewModel: LibraryViewModel = koinViewModel()) {
+    LibraryScaffold(startTab, sortMenu = { LibrarySortMenu(it) }) { page ->
+        when (page) {
+            TAB_PLAYLISTS -> PlaylistsTab()
+            TAB_ALBUMS -> AlbumsTab(viewModel)
+            TAB_ARTISTS -> ArtistsTab(viewModel)
+            TAB_SONGS -> SongsTab(viewModel)
+            else -> GenresTab(viewModel)
         }
     }
 }
@@ -123,14 +120,9 @@ private fun DeviceLibraryScreen(startTab: String, viewModel: LibraryViewModel = 
 @Composable
 private fun LibrarySortMenu(page: Int) {
     when (page) {
-        0 -> { val s by SortSettings.songs.state.collectAsStateWithLifecycle(); SortMenu(SortSettings.songs.group(null, SongSortOptions, s)) }
-        1 -> { val s by SortSettings.albums.state.collectAsStateWithLifecycle(); SortMenu(SortSettings.albums.group(null, AlbumSortOptions, s)) }
-        2 -> { val s by SortSettings.artists.state.collectAsStateWithLifecycle(); SortMenu(SortSettings.artists.group(null, ArtistSortOptions, s)) }
-        3 -> {
-            val f by SortSettings.folders.state.collectAsStateWithLifecycle()
-            val s by SortSettings.folderSongs.state.collectAsStateWithLifecycle()
-            SortMenu(SortSettings.folders.group("Folders", FolderSortOptions, f), SortSettings.folderSongs.group("Songs", SongSortOptions, s))
-        }
+        TAB_ALBUMS -> { val s by SortSettings.albums.state.collectAsStateWithLifecycle(); SortMenu(SortSettings.albums.group(null, AlbumSortOptions, s)) }
+        TAB_ARTISTS -> { val s by SortSettings.artists.state.collectAsStateWithLifecycle(); SortMenu(SortSettings.artists.group(null, ArtistSortOptions, s)) }
+        TAB_SONGS -> { val s by SortSettings.songs.state.collectAsStateWithLifecycle(); SortMenu(SortSettings.songs.group(null, SongSortOptions, s)) }
     }
 }
 
@@ -224,52 +216,4 @@ private fun GenreRow(genre: Genre, onClick: () -> Unit, onLongClick: () -> Unit)
                     genre.arts.orEmpty().take(3).forEach { albumId -> AlbumArtwork(albumId, Modifier.padding(start = 4.dp).size(40.dp)) }
                 }
             })
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun FoldersTab(viewModel: FoldersViewModel, isCurrentPage: Boolean) {
-    val dir by viewModel.currentDir.collectAsStateWithLifecycle()
-    val folders by viewModel.folders.collectAsStateWithLifecycle()
-    val songs by viewModel.songs.collectAsStateWithLifecycle()
-    val actions = LocalAppActions.current
-    val currentId = rememberCurrentSongId()
-    val scope = rememberCoroutineScope()
-    BackHandler(enabled = isCurrentPage && dir != null) { viewModel.up() }
-
-    LazyColumn(Modifier.fillMaxSize()) {
-        item {
-            ListItem(
-                    leadingContent = {
-                        if (dir != null) IconButton(onClick = { viewModel.up() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Up") }
-                    },
-                    headlineContent = { Text(viewModel.pathLabel(dir), style = MaterialTheme.typography.titleSmall) },
-                    trailingContent = {
-                        if (songs.isNotEmpty()) IconButton(onClick = { actions.play(songs) }) {
-                            Icon(Icons.Default.PlayArrow, contentDescription = "Play folder")
-                        }
-                    })
-        }
-        when {
-            folders == null -> item { Loading() }
-            else -> items(folders!!, key = { "folder:" + it.file.path }) { folder ->
-                ListItem(
-                        modifier = Modifier.combinedClickable(onClick = { viewModel.open(folder) },
-                                onLongClick = { scope.launch { actions.collectionOptions(folder.title, viewModel.folderSongs(folder)) } }),
-                        leadingContent = { Icon(Icons.Default.Folder, contentDescription = null) },
-                        headlineContent = { Text(folder.title) },
-                        supportingContent = { Text(songCount(folder.songCount)) },
-                        trailingContent = {
-                            IconButton(onClick = { scope.launch { actions.collectionOptions(folder.title, viewModel.folderSongs(folder)) } }) {
-                                Icon(Icons.Default.MoreVert, contentDescription = "Folder options")
-                            }
-                        })
-            }
-        }
-        items(songs, key = { "song:" + it.id }) { song ->
-            SongRow(song, onClick = { actions.play(songs, songs.indexOf(song)) }, onMore = { actions.songOptions(song) },
-                    isCurrent = song.id == currentId)
-        }
-        if (folders?.isEmpty() == true && songs.isEmpty()) item { EmptyState("No music here") }
-    }
 }

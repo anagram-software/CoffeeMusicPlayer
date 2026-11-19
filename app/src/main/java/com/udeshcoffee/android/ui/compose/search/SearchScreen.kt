@@ -10,7 +10,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -22,12 +21,8 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -36,6 +31,7 @@ import com.udeshcoffee.android.ui.compose.components.AlbumCard
 import com.udeshcoffee.android.ui.compose.components.ArtistCard
 import com.udeshcoffee.android.ui.compose.components.EmptyState
 import com.udeshcoffee.android.ui.compose.components.SectionHeader
+import com.udeshcoffee.android.ui.compose.components.SettingsButton
 import com.udeshcoffee.android.ui.compose.components.SongRow
 import com.udeshcoffee.android.ui.compose.detail.SearchViewModel
 import com.udeshcoffee.android.ui.compose.rememberCurrentSongId
@@ -57,12 +53,10 @@ fun SearchScreen(viewModel: SearchViewModel = koinViewModel()) {
     val results by viewModel.results.collectAsStateWithLifecycle()
     val actions = LocalAppActions.current
     val currentId = rememberCurrentSongId()
-    val focus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { focus.requestFocus() }
 
     Scaffold(topBar = {
         TopAppBar(
-                navigationIcon = { IconButton(onClick = { actions.back() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") } },
+                actions = { SettingsButton() },
                 title = {
                     TextField(
                             value = query,
@@ -76,7 +70,7 @@ fun SearchScreen(viewModel: SearchViewModel = koinViewModel()) {
                             colors = TextFieldDefaults.colors(
                                     focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent,
                                     focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent),
-                            modifier = Modifier.fillMaxWidth().focusRequester(focus))
+                            modifier = Modifier.fillMaxWidth())
                 })
     }) { padding ->
         val r = results

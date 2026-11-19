@@ -5,7 +5,6 @@ import androidx.preference.PreferenceManager
 import com.udeshcoffee.android.App
 import com.udeshcoffee.android.model.Album
 import com.udeshcoffee.android.model.Artist
-import com.udeshcoffee.android.model.Folder
 import com.udeshcoffee.android.model.Song
 import java.util.*
 
@@ -49,22 +48,13 @@ object SortManager {
         const val NAME = 1
     }
 
-    // Folder sort typedef
-    object FolderSort {
-        const val DEFAULT = 0
-        const val NAME = 1
-        const val SONG_COUNT = 2
-    }
-
     object Key {
         const val ARTISTS = "key_artists_sort_order"
         const val ALBUMS = "key_albums_sort_order"
         const val SONGS = "key_songs_sort_order"
-        const val FOLDERS = "key_folders_sort_order"
         const val ARTISTS_ASC = "key_artists_sort_order_asc"
         const val ALBUMS_ASC = "key_albums_sort_order_asc"
         const val SONGS_ASC = "key_songs_sort_order_asc"
-        const val FOLDERS_ASC = "key_folders_sort_order_asc"
 
         const val ALBUM_SONGS= "key_album_songs_sort_order"
         const val ALBUM_SONGS_ASC= "key_album_songs_sort_order_asc"
@@ -78,9 +68,6 @@ object SortManager {
         const val GENRE_ALBUMS= "key_genre_albums_sort_order"
         const val GENRE_SONGS_ASC= "key_genre_songs_sort_order_asc"
         const val GENRE_ALBUMS_ASC= "key_genre_albums_sort_order_asc"
-
-        const val FOLDER_SONGS= "key_folder_songs_sort_order"
-        const val FOLDER_SONGS_ASC= "key_folder_songs_sort_order_asc"
 
         const val FAVORITES_SONGS= "key_fav_songs_sort_order"
         const val FAVORITES_SONGS_ASC= "key_fav_songs_sort_order_asc"
@@ -102,12 +89,6 @@ object SortManager {
         get() {return mPrefs.getInt(Key.ARTISTS, ArtistSort.NAME) }
         set(value) {
             mPrefs.edit().putInt(Key.ARTISTS, value).apply()
-        }
-
-    var folderSortOrder : Int
-        get() {return mPrefs.getInt(Key.FOLDERS, FolderSort.NAME) }
-        set(value) {
-            mPrefs.edit().putInt(Key.FOLDERS, value).apply()
         }
 
     var albumSongsSortOrder : Int
@@ -140,12 +121,6 @@ object SortManager {
             mPrefs.edit().putInt(Key.GENRE_ALBUMS, value).apply()
         }
 
-    var folderSongsSortOrder : Int
-        get() {return mPrefs.getInt(Key.FOLDER_SONGS, SongSort.NAME) }
-        set(value) {
-            mPrefs.edit().putInt(Key.FOLDER_SONGS, value).apply()
-        }
-
     var favoritesSongsSortOrder : Int
         get() {return mPrefs.getInt(Key.FAVORITES_SONGS, SongSort.NAME) }
         set(value) {
@@ -168,12 +143,6 @@ object SortManager {
         get() = mPrefs.getBoolean(Key.ARTISTS_ASC, true)
         set(value) {
             setAscending(Key.ARTISTS_ASC, value)
-        }
-
-    var foldersAscending : Boolean
-        get() = mPrefs.getBoolean(Key.FOLDERS_ASC, true)
-        set(value) {
-            setAscending(Key.FOLDERS_ASC, value)
         }
 
     var albumSongsAscending : Boolean
@@ -204,12 +173,6 @@ object SortManager {
         get() = mPrefs.getBoolean(Key.GENRE_ALBUMS_ASC, true)
         set(value) {
             setAscending(Key.GENRE_ALBUMS_ASC, value)
-        }
-
-    var folderSongsAscending : Boolean
-        get() = mPrefs.getBoolean(Key.FOLDER_SONGS_ASC, true)
-        set(value) {
-            setAscending(Key.FOLDER_SONGS_ASC, value)
         }
 
     var favoritesSongsAscending : Boolean
@@ -259,10 +222,6 @@ object SortManager {
         sortSongs(songs, genreSongsSortOrder)
     }
 
-    fun sortFolderSongs(songs: List<Song>) {
-        sortSongs(songs, folderSongsSortOrder)
-    }
-
     fun sortFavoritesSongs(songs: List<Song>) {
         sortSongs(songs, favoritesSongsSortOrder)
     }
@@ -310,16 +269,6 @@ object SortManager {
         when (key) {
             ArtistSort.DEFAULT -> Collections.sort(artists) { a, b -> a.compareTo(b) }
             ArtistSort.NAME -> Collections.sort(artists) { a, b -> compareString(a.name, b.name) }
-        }
-    }
-
-    fun sortFolders(folders: List<Folder>) = sortFolders(folders, folderSortOrder)
-
-    fun sortFolders(folders: List<Folder>, key: Int) {
-        when (key) {
-            FolderSort.DEFAULT -> Collections.sort(folders) { a, b -> compareString(a.title, b.title) }
-            FolderSort.NAME -> Collections.sort(folders) { a, b -> compareString(a.title, b.title) }
-            FolderSort.SONG_COUNT -> Collections.sort(folders) { a, b -> compareInt(a.songCount, b.songCount) }
         }
     }
 

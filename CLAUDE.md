@@ -46,7 +46,7 @@ lastfm.apiKey=...
 **Platform rules (targetSdk 37):**
 - Permissions are requested with the Activity Result API. Use `utils/Permissions` (`readAudio` is `READ_MEDIA_AUDIO` on 33+, `READ_EXTERNAL_STORAGE` below), never check `READ_EXTERNAL_STORAGE` directly.
 - Modifying or deleting songs goes through `utils/MediaAccess` (`createWriteRequest` / `createDeleteRequest` consent dialogs on API 30+, launched with `StartIntentSenderForResult`). Files are never written by path; the tag editor copies to cache, edits with jaudiotagger, and writes back via `ContentResolver.openOutputStream(uri, "wt")`.
-- Folders are derived from MediaStore paths (`MediaRepository.getChildFolders`), not by listing the file system. Storage roots come from `utils/Storage.getStorageRoots`.
+- The library is read from MediaStore only, never by listing the file system (there's no folder browser).
 - Activities are drawn edge to edge (`enableEdgeToEdge()`). Compose screens get insets from `Scaffold`/`safeDrawingPadding`; the View-based widget config screen uses `padForSystemBars()` (`extensions/InsetsExtensions.kt`).
 - Back handling uses `OnBackPressedCallback` (predictive back is enabled); call `onBackPressedDispatcher.onBackPressed()`, not `onBackPressed()`.
 - PendingIntents are `FLAG_IMMUTABLE`.
@@ -83,7 +83,8 @@ lastfm.apiKey=...
 
 **UI (`ui/`).**
 - Jetpack Compose + Material 3, all under `ui/compose/`. `MainActivity` (a `ComponentActivity`) only handles permissions, the player connection, launch intents and delete consent, then calls `setContent { CoffeeApp(...) }`.
-- `CoffeeApp`: `CoffeeTheme` (seeded from the current album art via materialkolor, else dynamic colour on 12+), a `NavigationSuiteScaffold` (Library, Favorites, Playlists, Settings; bar or rail by window size) around a navigation-compose `NavHost` with type-safe `@Serializable` routes (`navigation/Routes.kt`), the `MiniPlayer`, and the full `PlayerScreen` overlay (queue and lyrics inside; side-by-side when wider than tall).
+- `CoffeeApp`: `CoffeeTheme` (seeded from the current album art via materialkolor, else dynamic colour on 12+), a `NavigationSuiteScaffold` (Home, Favorites, Library, Search; bar or rail by window size) around a navigation-compose `NavHost` with type-safe `@Serializable` routes (`navigation/Routes.kt`), the `MiniPlayer`, and the full `PlayerScreen` overlay (queue and lyrics inside; side-by-side when wider than tall).
+- Screens: **Home** (`home/`, `HomeViewModel`): album rows for recently added, recently played and most played, plus the user's playlists. On the device these come from MediaStore dates and the app's play stats ("See all" opens the matching smart playlist); on a server, from `getAlbumList2` newest/recent/frequent. **Library** (`LibraryScaffold`, shared by `DeviceLibraryScreen` and `ServerLibraryScreen`): tabs Playlists, Albums, Artists, Songs, Genres (`libraryTabs`; the Playlists tab is `playlists/PlaylistsTab`). **Search** is a top-level tab. **Settings** isn't in the bar: every top-level top app bar ends with `SettingsButton` (`TopLevelScaffold` adds it), which pushes `SettingsRoute`; until a source is set up, `CoffeeApp` opens Settings over Home once.
 - `AppActions` (provided as `LocalAppActions`) is the shared entry point for playback, navigation, option sheets (`OptionsSheetHost`), dialogs (`AppDialogHost`) and snackbar messages; screens call it rather than wiring those themselves.
 - Reusable pieces are in `ui/compose/components/` (song rows, cards, artwork, sort menus backed by `SortSettings`/`SortManager` prefs, dialogs). Reorderable lists use `sh.calvin.reorderable`.
 - Settings are a Compose screen over the default `SharedPreferences` (keys in `utils/Config.kt`). Tag writing is in `utils/TagWriter.kt`.

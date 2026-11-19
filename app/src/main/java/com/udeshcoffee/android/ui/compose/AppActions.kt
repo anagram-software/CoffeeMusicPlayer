@@ -24,7 +24,7 @@ import com.udeshcoffee.android.ui.compose.navigation.EditorRoute
 import com.udeshcoffee.android.ui.compose.navigation.GenreRoute
 import com.udeshcoffee.android.ui.compose.navigation.PlaylistAddSongsRoute
 import com.udeshcoffee.android.ui.compose.navigation.PlaylistRoute
-import com.udeshcoffee.android.ui.compose.navigation.SearchRoute
+import com.udeshcoffee.android.ui.compose.navigation.SettingsRoute
 import com.udeshcoffee.android.utils.MediaAccess
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -86,10 +86,13 @@ class AppActions(
     fun genreOptions(genre: Genre) = launch {
         sheet = OptionsSheet.ForCollection(genre.name, if (genre.remote) subsonic.genreSongs(genre.name) else mediaRepository.loadGenreSongs(genre.id))
     }
+    fun playPlaylist(playlist: Playlist) = launch { play(playlistSongs(playlist)) }
     fun playlistOptions(playlist: Playlist) = launch {
-        val songs = playlist.remoteId?.let { subsonic.playlistSongs(it) } ?: mediaRepository.loadPlaylistSongs(playlist.id, playlist.type)
-        sheet = OptionsSheet.ForCollection(playlist.title, songs, playlist.takeIf { it.type == Playlist.USER })
+        sheet = OptionsSheet.ForCollection(playlist.title, playlistSongs(playlist), playlist.takeIf { it.type == Playlist.USER })
     }
+
+    private suspend fun playlistSongs(playlist: Playlist): List<Song> =
+            playlist.remoteId?.let { subsonic.playlistSongs(it) } ?: mediaRepository.loadPlaylistSongs(playlist.id, playlist.type)
 
     private suspend fun albumSongs(album: Album): List<Song> =
             album.remoteId?.let { subsonic.albumSongs(it) } ?: mediaRepository.loadAlbumSongs(album.id).sortedBy { it.track }
@@ -133,7 +136,7 @@ class AppActions(
     fun openGenre(genre: Genre) = open(GenreRoute(genre.id, genre.name, genre.remote))
     fun openPlaylist(playlist: Playlist) = open(PlaylistRoute(playlist.id, playlist.type, playlist.title, playlist.remoteId, playlist.readonly))
     fun openPlaylistAddSongs(playlist: Playlist) = open(PlaylistAddSongsRoute(playlist.id, playlist.title))
-    fun openSearch() = open(SearchRoute)
+    fun openSettings() = open(SettingsRoute)
     fun openEditor(song: Song) = open(EditorRoute(song.id))
     fun back() = navController.popBackStack()
 
