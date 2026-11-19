@@ -4,7 +4,12 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Button
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -101,8 +106,23 @@ fun CoffeeApp(onDeleteSongs: (List<Song>) -> Unit, playerExpandedRequest: Boolea
         val dataRepository: DataRepository = koinInject()
         val mediaRepository: MediaRepository = koinInject()
         val subsonic: com.udeshcoffee.android.data.subsonic.SubsonicRepository = koinInject()
+        val sourceStore: com.udeshcoffee.android.data.source.MusicSourceStore = koinInject()
         val actions = remember(navController) {
-            AppActions(context, navController, scope, dataRepository, mediaRepository, subsonic, snackbar, onDeleteSongs) { playerExpanded = it }
+            AppActions(context, sourceStore.isServer, navController, scope, dataRepository, mediaRepository, subsonic, snackbar, onDeleteSongs) {
+                playerExpanded = it
+            }
+        }
+        // Until a music source is set up, open on Settings (sign-in form) and keep the music screens empty.
+        val configured = remember { sourceStore.isConfigured }
+        val navigateTop: (Any) -> Unit = { route ->
+            navController.navigate(route) {
+                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                launchSingleTop = true
+                restoreState = true
+            }
+        }
+        val needsSetup: @Composable (@Composable () -> Unit) -> Unit = { screen ->
+            if (configured) screen() else SetupNeeded(onOpenSettings = { navigateTop(SettingsRoute) })
         }
         val backStack by navController.currentBackStackEntryAsState()
         val destination = backStack?.destination
@@ -117,26 +137,20 @@ fun CoffeeApp(onDeleteSongs: (List<Song>) -> Unit, playerExpandedRequest: Boolea
                     topLevels.forEachIndexed { index, top ->
                         item(
                                 selected = index == currentTop,
-                                onClick = {
-                                    navController.navigate(top.route) {
-                                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
-                                },
+                                onClick = { navigateTop(top.route) },
                                 icon = { Icon(top.icon, contentDescription = null) },
                                 label = { Text(top.label) })
                     }
                 }) {
                     Column(Modifier.fillMaxSize()) {
                         Box(Modifier.weight(1f)) {
-                            NavHost(navController, startDestination = LibraryRoute) {
-                                composable<LibraryRoute> { LibraryScreen() }
-                                composable<FavoritesRoute> { FavoritesScreen() }
-                                composable<PlaylistsRoute> { PlaylistsScreen() }
+                            NavHost(navController, startDestination = if (configured) LibraryRoute else SettingsRoute) {
+                                composable<LibraryRoute> { needsSetup { LibraryScreen() } }
+                                composable<FavoritesRoute> { needsSetup { FavoritesScreen() } }
+                                composable<PlaylistsRoute> { needsSetup { PlaylistsScreen() } }
                                 composable<EqualizerRoute> { EqualizerScreen() }
                                 composable<SettingsRoute> { SettingsScreen() }
-                                composable<SearchRoute> { SearchScreen() }
+                                composable<SearchRoute> { needsSetup { SearchScreen() } }
                                 composable<AlbumRoute> { val r = it.toRoute<AlbumRoute>(); AlbumDetailScreen(r.albumId, r.title, r.remoteId) }
                                 composable<ArtistRoute> { val r = it.toRoute<ArtistRoute>(); ArtistDetailScreen(r.artistId, r.name, r.remoteId) }
                                 composable<GenreRoute> { val r = it.toRoute<GenreRoute>(); GenreDetailScreen(r.genreId, r.name, r.remote) }
@@ -157,5 +171,19 @@ fun CoffeeApp(onDeleteSongs: (List<Song>) -> Unit, playerExpandedRequest: Boolea
                 AppDialogHost(actions)
             }
         }
+    }
+}
+
+/** Shown on the music screens until a music source is set up in Settings. */
+@Composable
+private fun SetupNeeded(onOpenSettings: () -> Unit) {
+    Column(Modifier.fillMaxSize().safeDrawingPadding().padding(32.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
+            horizontalAlignment = Alignment.CenterHorizontally) {
+        Icon(Icons.Default.LibraryMusic, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.primary)
+        Text("Choose where your music comes from", style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
+        Text("Connect to your music server, or use the music on this device.", textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Button(onClick = onOpenSettings) { Text("Open settings") }
     }
 }

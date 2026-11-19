@@ -24,6 +24,13 @@ object Permissions {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
     }.toTypedArray()
 
+    /** What to ask for when the music source is a server: no storage access, just notifications (optional). */
+    fun serverStartupPermissions(context: Context): Array<String> = buildList {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
+            add(Manifest.permission.POST_NOTIFICATIONS)
+    }.toTypedArray()
+
     fun hasReadAudio(context: Context): Boolean =
             ContextCompat.checkSelfPermission(context, readAudio) == PackageManager.PERMISSION_GRANTED
 }

@@ -38,9 +38,6 @@ data class SubsonicAccount(
     val isSecure: Boolean get() = credentials.url.startsWith("https://", ignoreCase = true)
 }
 
-/** Which catalog the Library screen browses. The queue, search, favorites and playlists use both. */
-enum class LibrarySource { DEVICE, SERVER }
-
 data class ArtistInfo(val biography: String?, val imageUrl: String?)
 
 data class ServerSearchResults(val songs: List<Song>, val albums: List<Album>, val artists: List<Artist>)
@@ -70,18 +67,6 @@ class SubsonicRepository(context: Context) {
     val account: StateFlow<SubsonicAccount?> = _account.asStateFlow()
 
     private var cachedClient: SubsonicClient? = null
-
-    private val _librarySource = MutableStateFlow(
-            if (prefs.getString(KEY_SOURCE, null) == LibrarySource.SERVER.name && _account.value != null) LibrarySource.SERVER
-            else LibrarySource.DEVICE)
-    /** The Library screen's catalog; always [LibrarySource.DEVICE] when signed out. */
-    val librarySource: StateFlow<LibrarySource> = _librarySource.asStateFlow()
-
-    fun setLibrarySource(source: LibrarySource) {
-        val effective = if (source == LibrarySource.SERVER && !isSignedIn) LibrarySource.DEVICE else source
-        prefs.edit { putString(KEY_SOURCE, effective.name) }
-        _librarySource.value = effective
-    }
 
     /** Bumped after playlist edits so playlist screens reload. */
     val playlistsVersion = MutableStateFlow(0)
@@ -118,15 +103,16 @@ class SubsonicRepository(context: Context) {
         cachedClient = client
         _account.value = account
         _starredIds.value = emptySet()
+        starredLoadedFor = null
         playlistsVersion.value++
-        setLibrarySource(LibrarySource.SERVER)
         return account
     }
 
+    /** Forgets the server. Use MusicSourceSwitcher.signOut, which also leaves the server source. */
     fun signOut() {
         prefs.edit { remove(KEY_ACCOUNT) }
-        setLibrarySource(LibrarySource.DEVICE)
         cachedClient = null
+        starredLoadedFor = null
         _account.value = null
         _starredIds.value = emptySet()
         playlistsVersion.value++
@@ -343,6 +329,5 @@ class SubsonicRepository(context: Context) {
         private const val KEY_MAX_BITRATE = "max_bitrate"
         private const val KEY_FORMAT = "stream_format"
         private const val KEY_SCROBBLE = "scrobble"
-        private const val KEY_SOURCE = "library_source"
     }
 }

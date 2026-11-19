@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.LibraryMusic
@@ -66,14 +65,7 @@ fun SongRow(
                 Text(song.title, maxLines = 1, overflow = TextOverflow.Ellipsis,
                         fontWeight = if (isCurrent) FontWeight.SemiBold else null)
             },
-            supportingContent = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    // Marks music server songs in lists that mix both sources.
-                    if (song.isRemote) Icon(Icons.Default.Cloud, contentDescription = "On the server",
-                            modifier = Modifier.padding(end = 4.dp).size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("${song.artistName} • ${song.albumName}", maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-            },
+            supportingContent = { Text("${song.artistName} • ${song.albumName}", maxLines = 1, overflow = TextOverflow.Ellipsis) },
             trailingContent = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (isCurrent) Icon(Icons.Default.GraphicEq, contentDescription = "Playing", tint = MaterialTheme.colorScheme.primary)

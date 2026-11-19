@@ -24,6 +24,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -160,28 +164,38 @@ class ServerLibraryViewModel(private val subsonic: SubsonicRepository) : ViewMod
     suspend fun randomSongs(): List<Song> = try { subsonic.randomSongs() } catch (e: SubsonicException) { emptyList() }
 }
 
+/** Server library tabs (no Folders: Subsonic browses by tags). */
 private val serverTabs = listOf("Songs", "Albums", "Artists", "Genres")
 
-/** The Library screen's tabs for the music server. */
+/** The Library tab when the music source is the server. [startTab] is a tab name from the device list. */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ServerLibrary(viewModel: ServerLibraryViewModel = koinViewModel()) {
-    val pager = rememberPagerState { serverTabs.size }
+fun ServerLibraryScreen(startTab: String, viewModel: ServerLibraryViewModel = koinViewModel()) {
+    val pager = rememberPagerState(initialPage = serverTabs.indexOf(startTab).coerceAtLeast(0)) { serverTabs.size }
     val scope = rememberCoroutineScope()
-    Column {
-        Box(Modifier.fillMaxWidth()) {
+    val actions = LocalAppActions.current
+    Scaffold(topBar = {
+        TopAppBar(
+                title = { Text("Library") },
+                actions = {
+                    IconButton(onClick = actions::openSearch) { Icon(Icons.Default.Search, contentDescription = "Search") }
+                    if (pager.currentPage == 1) ServerAlbumSortMenu(viewModel)
+                })
+    }) { padding ->
+        Column(Modifier.padding(padding)) {
             PrimaryScrollableTabRow(selectedTabIndex = pager.currentPage, edgePadding = 8.dp) {
                 serverTabs.forEachIndexed { index, title ->
                     Tab(selected = pager.currentPage == index, onClick = { scope.launch { pager.animateScrollToPage(index) } },
                             text = { Text(title) })
                 }
             }
-        }
-        HorizontalPager(pager, Modifier.fillMaxSize(), beyondViewportPageCount = 1) { page ->
-            when (page) {
-                0 -> ServerSongsTab(viewModel)
-                1 -> ServerAlbumsTab(viewModel)
-                2 -> ServerArtistsTab(viewModel)
-                else -> ServerGenresTab(viewModel)
+            HorizontalPager(pager, Modifier.fillMaxSize(), beyondViewportPageCount = 1) { page ->
+                when (page) {
+                    0 -> ServerSongsTab(viewModel)
+                    1 -> ServerAlbumsTab(viewModel)
+                    2 -> ServerArtistsTab(viewModel)
+                    else -> ServerGenresTab(viewModel)
+                }
             }
         }
     }
@@ -189,7 +203,7 @@ fun ServerLibrary(viewModel: ServerLibraryViewModel = koinViewModel()) {
 
 /** Album order for the server's album list (shown in the Library top bar). */
 @Composable
-fun ServerAlbumSortMenu(viewModel: ServerLibraryViewModel = koinViewModel()) {
+private fun ServerAlbumSortMenu(viewModel: ServerLibraryViewModel) {
     val sort by viewModel.albumSort.collectAsStateWithLifecycle()
     var expanded by remember { mutableStateOf(false) }
     Box {

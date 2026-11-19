@@ -40,8 +40,6 @@ import com.udeshcoffee.android.ui.compose.components.SongRow
 import com.udeshcoffee.android.ui.compose.detail.SearchViewModel
 import com.udeshcoffee.android.ui.compose.rememberCurrentSongId
 import org.koin.compose.viewmodel.koinViewModel
-import org.koin.compose.koinInject
-import com.udeshcoffee.android.data.subsonic.SubsonicRepository
 import com.udeshcoffee.android.model.Album
 import com.udeshcoffee.android.model.Artist
 import com.udeshcoffee.android.model.Song
@@ -59,9 +57,6 @@ fun SearchScreen(viewModel: SearchViewModel = koinViewModel()) {
     val results by viewModel.results.collectAsStateWithLifecycle()
     val actions = LocalAppActions.current
     val currentId = rememberCurrentSongId()
-    val subsonic: SubsonicRepository = koinInject()
-    val account by subsonic.account.collectAsStateWithLifecycle()
-    val signedIn = account != null
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { focus.requestFocus() }
 
@@ -85,32 +80,15 @@ fun SearchScreen(viewModel: SearchViewModel = koinViewModel()) {
                 })
     }) { padding ->
         val r = results
-        val server = r.server
-        val nothingLocal = r.songs.isEmpty() && r.albums.isEmpty() && r.artists.isEmpty()
-        val nothingServer = server == null || (server.songs.isEmpty() && server.albums.isEmpty() && server.artists.isEmpty())
-        if (query.isNotBlank() && nothingLocal && nothingServer && r.serverError == null && (server != null || !signedIn)) {
-            EmptyState("No results for \"$query\"", Modifier.padding(padding), Icons.Default.Search)
-            return@Scaffold
-        }
-        LazyColumn(Modifier.fillMaxSize(), contentPadding = padding) {
-            if (signedIn && !nothingLocal) item { SourceHeader("On this device") }
-            results(r.artists, r.albums, r.songs, currentId, actions)
-            if (signedIn && query.isNotBlank()) {
-                item { SourceHeader("On ${account?.name ?: "the server"}") }
-                when {
-                    r.serverError != null -> item { Text(r.serverError, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp)) }
-                    server == null -> item { Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() } }
-                    nothingServer -> item { Text("No results", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(16.dp)) }
-                    else -> results(server.artists, server.albums, server.songs, currentId, actions)
-                }
+        when {
+            r.searching -> Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+            r.error != null -> Text(r.error, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(padding).padding(16.dp))
+            query.isNotBlank() && r.isEmpty -> EmptyState("No results for \"$query\"", Modifier.padding(padding), Icons.Default.Search)
+            else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = padding) {
+                results(r.artists, r.albums, r.songs, currentId, actions)
             }
         }
     }
-}
-
-@Composable
-private fun SourceHeader(text: String) {
-    Text(text, style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(start = 16.dp, top = 20.dp, end = 16.dp))
 }
 
 private fun LazyListScope.results(artists: List<Artist>, albums: List<Album>, songs: List<Song>, currentId: Long?, actions: AppActions) {

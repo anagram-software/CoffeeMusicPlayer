@@ -1,6 +1,10 @@
+@file:OptIn(UnstableApi::class)
+
 package com.udeshcoffee.android.playback
 
 import android.content.ContentUris
+import androidx.annotation.OptIn
+import androidx.media3.common.util.UnstableApi
 import android.os.Bundle
 import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
@@ -49,6 +53,8 @@ fun Song.toMediaItem(): MediaItem {
     return MediaItem.Builder()
             .setMediaId(mediaId)
             .setUri(uri)
+            // Stream URLs carry the auth token and quality settings; cache server audio by song instead.
+            .setCustomCacheKey(if (remote != null) mediaId else null)
             .setMediaMetadata(MediaMetadata.Builder()
                     .setTitle(title)
                     .setArtist(artistName)
@@ -94,7 +100,7 @@ fun MediaItem.withPlaybackUri(): MediaItem {
     if (localConfiguration != null) return this
     if (mediaId.startsWith(SUBSONIC_MEDIA_PREFIX)) {
         val url = subsonic.streamUrl(mediaId.removePrefix(SUBSONIC_MEDIA_PREFIX)) ?: return this
-        return buildUpon().setUri(url).build()
+        return buildUpon().setUri(url).setCustomCacheKey(mediaId).build()
     }
     val id = mediaId.toLongOrNull() ?: return this
     return buildUpon().setUri(MediaAccess.songUri(id)).build()

@@ -328,9 +328,10 @@ fun FavoritesScreen(viewModel: FavoritesViewModel = koinViewModel()) {
     }) { padding ->
         when {
             songs == null -> Loading()
+            songs!!.isEmpty() && error != null -> Column(Modifier.padding(padding)) { ServerNotice("Couldn't load favorites: $error", viewModel::retry) }
             songs!!.isEmpty() -> EmptyState("Songs you favorite appear here", Modifier.padding(padding), Icons.Default.FavoriteBorder)
             else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = padding) {
-                error?.let { item { ServerNotice("Couldn't load server favorites: $it", viewModel::retry) } }
+                error?.let { item { ServerNotice("Couldn't load favorites: $it", viewModel::retry) } }
                 item { PlayButtons(songs!!) }
                 songItems(songs!!, currentId)
             }

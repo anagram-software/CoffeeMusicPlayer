@@ -19,6 +19,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.data.MediaRepository
+import com.udeshcoffee.android.data.source.MusicSourceStore
 import com.udeshcoffee.android.extensions.playbackEvents
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.playback.PlaybackEvents
@@ -41,6 +42,7 @@ class MainActivity : ComponentActivity() {
 
     private val playerConnection: PlayerConnection by inject()
     private val mediaRepository: MediaRepository by inject()
+    private val sourceStore: MusicSourceStore by inject()
     private var isPlayerConnected = false
     private var connectionJob: Job? = null
 
@@ -50,6 +52,7 @@ class MainActivity : ComponentActivity() {
     private var restoreQueueOnConnection = false
 
     private val permissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        if (sourceStore.isServer) return@registerForActivityResult
         if (Permissions.hasReadAudio(this)) {
             onAudioPermissionGranted()
         } else {
@@ -70,8 +73,15 @@ class MainActivity : ComponentActivity() {
         setContent { CoffeeApp(onDeleteSongs = ::deleteSongs) }
 
         handleIntent(intent)
-        if (Permissions.hasReadAudio(this)) onAudioPermissionGranted()
-        else permissionLauncher.launch(Permissions.startupPermissions())
+        when {
+            // Server music needs no storage access; only ask for notifications (optional).
+            sourceStore.isServer -> {
+                connectPlayer()
+                Permissions.serverStartupPermissions(this).takeIf { it.isNotEmpty() }?.let { permissionLauncher.launch(it) }
+            }
+            Permissions.hasReadAudio(this) -> onAudioPermissionGranted()
+            else -> permissionLauncher.launch(Permissions.startupPermissions())
+        }
     }
 
     override fun onNewIntent(intent: Intent) {

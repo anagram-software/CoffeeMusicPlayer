@@ -23,9 +23,9 @@ import org.koin.dsl.module
 val composeModule = module {
     viewModel { LibraryViewModel(get()) }
     viewModel { FoldersViewModel(get()) }
-    viewModel { FavoritesViewModel(get(), get()) }
-    viewModel { PlaylistsViewModel(get(), get()) }
-    viewModel { SearchViewModel(get(), get()) }
+    viewModel { FavoritesViewModel(get(), get(), get()) }
+    viewModel { PlaylistsViewModel(get(), get(), get()) }
+    viewModel { SearchViewModel(get(), get(), get()) }
     viewModel { (albumId: Long, remoteId: String?) -> AlbumDetailViewModel(albumId, remoteId, get(), get()) }
     viewModel { (artistId: Long, name: String, remoteId: String?) -> ArtistDetailViewModel(artistId, name, remoteId, get(), get(), get()) }
     viewModel { (genreId: Long, name: String, remote: Boolean) -> GenreDetailViewModel(genreId, name, remote, get(), get()) }

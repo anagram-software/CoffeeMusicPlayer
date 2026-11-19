@@ -3,6 +3,8 @@ package com.udeshcoffee.android.di
 import androidx.room.Room
 import com.udeshcoffee.android.data.DataRepository
 import com.udeshcoffee.android.data.MediaRepository
+import com.udeshcoffee.android.data.source.MusicSourceStore
+import com.udeshcoffee.android.ui.MusicSourceSwitcher
 import com.udeshcoffee.android.data.subsonic.SubsonicRepository
 import com.udeshcoffee.android.data.local.LocalDataSource
 import com.udeshcoffee.android.data.local.LocalDatabase
@@ -36,6 +38,10 @@ val repositoryModule = module {
     single { MediaRepository(get(), get()) }
 
     single { SubsonicRepository(get()) }
+
+    single { MusicSourceStore(get(), get()) }
+
+    single { MusicSourceSwitcher(get(), get(), get(), get(), get()) }
 
     single { QueueStore(get(), get(), get()) }
 

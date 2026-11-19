@@ -37,7 +37,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flow
-import com.udeshcoffee.android.data.subsonic.ServerSearchResults
+import com.udeshcoffee.android.data.source.MusicSource
+import com.udeshcoffee.android.data.source.MusicSourceStore
+import kotlinx.coroutines.flow.transformLatest
 import com.udeshcoffee.android.data.subsonic.SubsonicException
 import com.udeshcoffee.android.data.subsonic.SubsonicRepository
 
@@ -209,53 +211,55 @@ class PlaylistAddSongsViewModel(private val playlistId: Long, private val mediaR
     }
 }
 
-/** Favorites: device songs favorited in the app plus songs starred on the music server. */
-class FavoritesViewModel(mediaRepository: MediaRepository, subsonic: SubsonicRepository) : SourceAwareViewModel() {
-    private val serverFavorites: Flow<List<Song>> = subsonic.account.flatMapLatest { account ->
-        if (account == null) flowOf(emptyList())
+/** Favorites: device songs favorited in the app, or songs starred on the server (by [MusicSource]). */
+class FavoritesViewModel(sourceStore: MusicSourceStore, mediaRepository: MediaRepository, subsonic: SubsonicRepository) : SourceAwareViewModel() {
+    private val favorites: Flow<List<Song>> = if (sourceStore.isServer) {
         // Reload when stars change elsewhere (e.g. from the player).
-        else combine(reload, subsonic.starredIds.map { it.size }.distinctUntilChanged()) { _, _ -> }.mapLatest {
+        combine(reload, subsonic.starredIds.map { it.size }.distinctUntilChanged()) { _, _ -> }.mapLatest {
+            _error.value = null
             try { subsonic.loadStarred() } catch (e: SubsonicException) { _error.value = e.message; emptyList() }
         }.distinctUntilChanged()
-    }
+    } else mediaRepository.observeFavorites()
 
     val songs: StateFlow<List<Song>?> =
-            combine(mediaRepository.observeFavorites(), serverFavorites, SortSettings.favoriteSongs.state) { local, remote, sort ->
-                (local + remote).sortedSongs(sort)
-            }.stateIn(this, null)
+            combine(favorites, SortSettings.favoriteSongs.state) { songs, sort -> songs.sortedSongs(sort) }.stateIn(this, null)
 }
 
-/** Device playlists, and the music server's (null while loading or signed out). */
-class PlaylistsViewModel(mediaRepository: MediaRepository, private val subsonic: SubsonicRepository) : SourceAwareViewModel() {
-    val playlists: StateFlow<List<Playlist>?> = mediaRepository.observePlaylists().stateIn(this, null)
+/**
+ * Playlists of the current [MusicSource]: the app's own (including the automatic ones built from
+ * play stats) on the device, the server's when using a server. Null while loading.
+ */
+class PlaylistsViewModel(sourceStore: MusicSourceStore, mediaRepository: MediaRepository, subsonic: SubsonicRepository) : SourceAwareViewModel() {
+    val isServer = sourceStore.isServer
 
-    val account = subsonic.account
-
-    val serverPlaylists: StateFlow<List<Playlist>?> = subsonic.account.flatMapLatest { account ->
-        if (account == null) flowOf<List<Playlist>?>(null)
-        else combine(subsonic.playlistsVersion, reload) { a, b -> a to b }.flatMapLatest {
+    val playlists: StateFlow<List<Playlist>?> = (if (isServer) {
+        combine(subsonic.playlistsVersion, reload) { a, b -> a to b }.flatMapLatest {
             flow<List<Playlist>?> {
                 _error.value = null
                 emit(try { subsonic.playlists() } catch (e: SubsonicException) { _error.value = e.message; emptyList() })
             }
         }
-    }.stateIn(this, null)
+    } else mediaRepository.observePlaylists()).stateIn(this, null)
 }
 
 data class SearchResults(
         val songs: List<Song> = emptyList(),
         val albums: List<Album> = emptyList(),
         val artists: List<Artist> = emptyList(),
-        /** Music server results; null when signed out, or while searching. */
-        val server: ServerSearchResults? = null,
-        val serverError: String? = null
-)
+        /** A server search is in flight. */
+        val searching: Boolean = false,
+        /** The server search failed. */
+        val error: String? = null
+) {
+    val isEmpty: Boolean get() = songs.isEmpty() && albums.isEmpty() && artists.isEmpty()
+}
 
+/** Searches the current [MusicSource]: the device library in memory, or the server's search3. */
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
-class SearchViewModel(mediaRepository: MediaRepository, private val subsonic: SubsonicRepository) : ViewModel() {
+class SearchViewModel(sourceStore: MusicSourceStore, mediaRepository: MediaRepository, subsonic: SubsonicRepository) : ViewModel() {
     val query = MutableStateFlow("")
 
-    private val local: Flow<SearchResults> = query.debounce(200).flatMapLatest { q ->
+    private val device: Flow<SearchResults> = query.debounce(200).flatMapLatest { q ->
         if (q.isBlank()) flowOf(SearchResults())
         else mediaRepository.observeSongs().mapLatest { all ->
             SearchResults(
@@ -265,12 +269,18 @@ class SearchViewModel(mediaRepository: MediaRepository, private val subsonic: Su
         }
     }
 
-    private val remote: Flow<Pair<ServerSearchResults?, String?>> = combine(query.debounce(400), subsonic.account) { q, account -> q to account }
-            .mapLatest { (q, account) ->
-                if (q.isBlank() || account == null) null to null
-                else try { subsonic.search(q) to null } catch (e: SubsonicException) { null to e.message }
-            }
+    private val server: Flow<SearchResults> = query.debounce(400).transformLatest { q ->
+        if (q.isBlank()) {
+            emit(SearchResults())
+            return@transformLatest
+        }
+        emit(SearchResults(searching = true))
+        emit(try {
+            subsonic.search(q).let { SearchResults(it.songs, it.albums, it.artists) }
+        } catch (e: SubsonicException) {
+            SearchResults(error = e.message ?: "Couldn't reach the server")
+        })
+    }
 
-    val results: StateFlow<SearchResults> = combine(local, remote) { l, (server, error) -> l.copy(server = server, serverError = error) }
-            .stateIn(this, SearchResults())
+    val results: StateFlow<SearchResults> = (if (sourceStore.isServer) server else device).stateIn(this, SearchResults())
 }

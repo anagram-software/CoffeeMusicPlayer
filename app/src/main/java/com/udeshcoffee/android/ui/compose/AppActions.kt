@@ -39,7 +39,7 @@ sealed interface OptionsSheet {
 sealed interface AppDialog {
     data class AddToPlaylist(val songs: List<Song>, val excludePlaylistId: Long? = null) : AppDialog
     /** [onServer]: create it on the music server (the songs must be server songs). */
-    data class NewPlaylist(val songs: List<Song> = emptyList(), val onServer: Boolean = songs.isNotEmpty() && songs.all { it.isRemote }) : AppDialog
+    data class NewPlaylist(val songs: List<Song>, val onServer: Boolean) : AppDialog
     data class RenamePlaylist(val playlist: Playlist) : AppDialog
     data class DeletePlaylist(val playlist: Playlist, val goBack: Boolean) : AppDialog
 }
@@ -50,6 +50,8 @@ sealed interface AppDialog {
  */
 class AppActions(
         private val context: Context,
+        /** The music source is the server (see MusicSourceStore); new playlists go there. */
+        val isServer: Boolean,
         private val navController: NavController,
         private val scope: CoroutineScope,
         private val dataRepository: DataRepository,
@@ -108,8 +110,7 @@ class AppActions(
     fun songOptions(song: Song, playlist: Playlist? = null) { sheet = OptionsSheet.ForSong(song, playlist) }
     fun collectionOptions(title: String, songs: List<Song>) { sheet = OptionsSheet.ForCollection(title, songs) }
     fun addToPlaylist(songs: List<Song>, excludePlaylistId: Long? = null) { if (songs.isNotEmpty()) dialog = AppDialog.AddToPlaylist(songs, excludePlaylistId) }
-    fun newPlaylist(songs: List<Song> = emptyList()) { dialog = AppDialog.NewPlaylist(songs) }
-    fun newServerPlaylist() { dialog = AppDialog.NewPlaylist(onServer = true) }
+    fun newPlaylist(songs: List<Song> = emptyList()) { dialog = AppDialog.NewPlaylist(songs, onServer = isServer) }
     fun renamePlaylist(playlist: Playlist) { dialog = AppDialog.RenamePlaylist(playlist) }
     fun deletePlaylist(playlist: Playlist, goBack: Boolean = false) { dialog = AppDialog.DeletePlaylist(playlist, goBack) }
 
@@ -165,7 +166,8 @@ class AppActions(
         context.startActivity(Intent.createChooser(intent, "Share song").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }
 
-    // Playlist edits. Device playlists hold device songs, server playlists hold server songs.
+    // Playlist edits. Device playlists hold device songs, server playlists hold server songs
+    // (with one music source at a time, songs from the other kind only show up by accident).
     fun createPlaylist(name: String, songs: List<Song>, onServer: Boolean = false) = launch {
         val usable = songs.filter { it.isRemote == onServer }
         if (onServer) subsonic.createPlaylist(name, usable.mapNotNull { it.remoteId })
@@ -186,8 +188,8 @@ class AppActions(
 
     private fun skippedNote(text: String, skipped: Int) = when (skipped) {
         0 -> text
-        1 -> "$text (1 song from the other library skipped)"
-        else -> "$text ($skipped songs from the other library skipped)"
+        1 -> "$text (1 song skipped)"
+        else -> "$text ($skipped songs skipped)"
     }
 
     /** Removes one entry from a user playlist ([Song.playlistSongId]: the entry ID, or the position for server playlists). */

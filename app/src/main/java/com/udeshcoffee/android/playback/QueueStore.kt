@@ -4,8 +4,9 @@ import android.content.Context
 import androidx.core.content.edit
 import androidx.preference.PreferenceManager
 import com.udeshcoffee.android.data.MediaRepository
+import com.udeshcoffee.android.data.source.MusicSource
+import com.udeshcoffee.android.data.source.MusicSourceStore
 import com.udeshcoffee.android.data.subsonic.RemoteIds
-import com.udeshcoffee.android.data.subsonic.SubsonicRepository
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.utils.Permissions
 import com.udeshcoffee.android.utils.PreferenceUtil
@@ -16,19 +17,25 @@ import kotlinx.serialization.json.Json
 /**
  * Persists the play queue so it survives process death. Device songs are stored by MediaStore ID
  * and looked up again; music server songs are stored with their details, so restoring needs no
- * network. Queues saved by older releases (the reverse-hex [LAST_QUEUE] format) still restore.
+ * network (so they can later restore offline too). Only entries from the current [MusicSource]
+ * restore. Queues saved by older releases (the reverse-hex [LAST_QUEUE] format) still restore.
  */
 class QueueStore(
         private val context: Context,
         private val mediaRepository: MediaRepository,
-        private val subsonic: SubsonicRepository
+        private val sourceStore: MusicSourceStore
 ) {
 
     data class SavedQueue(val songs: List<Song>, val index: Int, val positionMs: Long)
 
     /** One queue entry: a device song ID or a server song. */
     @Serializable
-    data class Entry(val localId: Long? = null, val remote: RemoteSong? = null)
+    data class Entry(val localId: Long? = null, val remote: RemoteSong? = null) {
+        fun belongsTo(source: MusicSource): Boolean = when (source) {
+            MusicSource.DEVICE -> localId != null
+            MusicSource.SERVER -> remote != null
+        }
+    }
 
     @Serializable
     data class RemoteSong(
@@ -48,23 +55,34 @@ class QueueStore(
         }
     }
 
+    fun clear() {
+        prefs.edit {
+            remove(KEY_QUEUE)
+            remove(PreferenceUtil.LAST_QUEUE)
+            remove(PreferenceUtil.LAST_PLAYED_POS)
+            remove(PreferenceUtil.LAST_CURRENT_POS)
+        }
+    }
+
     /**
-     * Loads the saved queue. Device songs that are gone (or can't be read without the permission)
-     * and server songs while signed out are dropped; the current song stays current if it survives.
+     * Loads the saved queue. Entries from the other [MusicSource] and device songs that are gone (or
+     * can't be read without the permission) are dropped; the current song stays current if it survives.
      */
     suspend fun load(): SavedQueue? {
+        if (!sourceStore.isConfigured) return null
+        val source = sourceStore.current
         val entries = prefs.getString(KEY_QUEUE, null)?.let { decodeEntries(it) }
                 ?: decode(prefs.getString(PreferenceUtil.LAST_QUEUE, "") ?: "").map { Entry(localId = it) }
-        if (entries.isEmpty()) return null
-        val local = if (entries.any { it.localId != null } && Permissions.hasReadAudio(context))
+        if (entries.none { it.belongsTo(source) }) return null
+        val local = if (source == MusicSource.DEVICE && Permissions.hasReadAudio(context))
             mediaRepository.loadSongs().associateBy { it.id } else emptyMap()
         val savedIndex = prefs.getInt(PreferenceUtil.LAST_PLAYED_POS, 0)
         val songs = ArrayList<Song>(entries.size)
         var index = 0
         var currentSurvived = false
         entries.forEachIndexed { i, entry ->
-            val song = entry.localId?.let { local[it] } ?: entry.remote?.takeIf { subsonic.isSignedIn }?.toSong()
-                    ?: return@forEachIndexed
+            if (!entry.belongsTo(source)) return@forEachIndexed
+            val song = entry.localId?.let { local[it] } ?: entry.remote?.toSong() ?: return@forEachIndexed
             // The saved current song, or else the nearest one before it.
             if (i <= savedIndex) {
                 index = songs.size

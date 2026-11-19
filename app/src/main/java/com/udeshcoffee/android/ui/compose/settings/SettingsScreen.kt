@@ -32,8 +32,9 @@ import androidx.preference.PreferenceManager
 import com.udeshcoffee.android.service.LyricsCollectionWorker
 import com.udeshcoffee.android.ui.compose.components.TopLevelScaffold
 import com.udeshcoffee.android.utils.PreferenceUtil
-
-private val libraryTabs = listOf("Songs", "Albums", "Artists", "Folders", "Genres")
+import com.udeshcoffee.android.data.source.MusicSourceStore
+import com.udeshcoffee.android.ui.compose.library.libraryTabs
+import org.koin.compose.koinInject
 
 /** Settings, stored in the same SharedPreferences keys as earlier versions. */
 @Composable
@@ -44,29 +45,33 @@ fun SettingsScreen() {
     var libStart by remember { mutableIntStateOf(prefs.getString(PreferenceUtil.PREF_LIB_START, "0")?.toIntOrNull() ?: 0) }
     var collect by rememberPref(prefs, PreferenceUtil.PREF_COLLECT_CONTENT, true)
     val version = remember { context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "" }
+    val isServer = koinInject<MusicSourceStore>().isServer
 
     TopLevelScaffold("Settings") { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())) {
+            Header("Music source")
+            MusicSourceSettings()
+
             Header("Interface")
             ListItem(modifier = Modifier.clickable { dialog = "libstart" },
                     headlineContent = { Text("Start library with") }, supportingContent = { Text(libraryTabs.getOrElse(libStart) { "Songs" }) })
-
-            Header("Music server")
-            ServerSettings()
 
             Header("Playback")
             SwitchPref(prefs, PreferenceUtil.PREF_CALL, false, "Stay paused after interruptions",
                     "Don't resume after a call or another app's sound")
             SwitchPref(prefs, PreferenceUtil.PREF_FADE, true, "Fade on play/pause", "Smoothly fade audio in and out")
 
-            Header("Online content")
-            ListItem(modifier = Modifier.clickable { collect = !collect },
-                    headlineContent = { Text("Download artist info") },
-                    supportingContent = { Text("Artist images and bios from Last.fm") },
-                    trailingContent = { Switch(checked = collect, onCheckedChange = { collect = it }) })
-            SwitchPref(prefs, PreferenceUtil.PREF_WIFI_ONLY, true, "Wi-Fi only", "Download artist images only on Wi-Fi", enabled = collect)
-            ListItem(modifier = Modifier.clickable { LyricsCollectionWorker.start(context) },
-                    headlineContent = { Text("Collect lyrics") }, supportingContent = { Text("Find missing lyrics for your library in the background") })
+            // Device library only: server artists use the server's images and bios.
+            if (!isServer) {
+                Header("Online content")
+                ListItem(modifier = Modifier.clickable { collect = !collect },
+                        headlineContent = { Text("Download artist info") },
+                        supportingContent = { Text("Artist images and bios from Last.fm") },
+                        trailingContent = { Switch(checked = collect, onCheckedChange = { collect = it }) })
+                SwitchPref(prefs, PreferenceUtil.PREF_WIFI_ONLY, true, "Wi-Fi only", "Download artist images only on Wi-Fi", enabled = collect)
+                ListItem(modifier = Modifier.clickable { LyricsCollectionWorker.start(context) },
+                        headlineContent = { Text("Collect lyrics") }, supportingContent = { Text("Find missing lyrics for your library in the background") })
+            }
 
             Header("About")
             ListItem(modifier = Modifier.clickable { dialog = "whatsnew" }, headlineContent = { Text("What's new") })

@@ -65,65 +65,41 @@ import com.udeshcoffee.android.utils.PreferenceUtil
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
-import com.udeshcoffee.android.data.subsonic.LibrarySource
-import com.udeshcoffee.android.data.subsonic.SubsonicRepository
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material.icons.filled.Cloud
-import androidx.compose.material.icons.filled.PhoneAndroid
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import com.udeshcoffee.android.data.source.MusicSourceStore
 
-private val tabs = listOf("Songs", "Albums", "Artists", "Folders", "Genres")
+/** Device library tabs; [PreferenceUtil.PREF_LIB_START] stores an index into this list. */
+val libraryTabs = listOf("Songs", "Albums", "Artists", "Folders", "Genres")
+
+/** The Library tab: this device's music or the server's, following the music source setting. */
+@Composable
+fun LibraryScreen() {
+    val sourceStore: MusicSourceStore = koinInject()
+    val context = LocalContext.current
+    val startTab = remember {
+        val index = PreferenceManager.getDefaultSharedPreferences(context).getString(PreferenceUtil.PREF_LIB_START, "0")?.toIntOrNull() ?: 0
+        libraryTabs.getOrElse(index) { libraryTabs[0] }
+    }
+    if (sourceStore.isServer) ServerLibraryScreen(startTab) else DeviceLibraryScreen(startTab)
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LibraryScreen(viewModel: LibraryViewModel = koinViewModel(), foldersViewModel: FoldersViewModel = koinViewModel()) {
-    val context = LocalContext.current
-    val startTab = remember {
-        PreferenceManager.getDefaultSharedPreferences(context).getString(PreferenceUtil.PREF_LIB_START, "0")?.toIntOrNull() ?: 0
-    }
-    val pager = rememberPagerState(initialPage = startTab.coerceIn(0, tabs.lastIndex)) { tabs.size }
+private fun DeviceLibraryScreen(startTab: String, viewModel: LibraryViewModel = koinViewModel(), foldersViewModel: FoldersViewModel = koinViewModel()) {
+    val tabs = libraryTabs
+    val pager = rememberPagerState(initialPage = tabs.indexOf(startTab).coerceAtLeast(0)) { tabs.size }
     val scope = rememberCoroutineScope()
     val actions = LocalAppActions.current
-    val subsonic: SubsonicRepository = koinInject()
-    val account by subsonic.account.collectAsStateWithLifecycle()
-    val source by subsonic.librarySource.collectAsStateWithLifecycle()
-    val signedIn = account
-    val showServer = signedIn != null && source == LibrarySource.SERVER
-    // One server library state per account, so switching servers starts fresh.
-    val serverViewModel: ServerLibraryViewModel? = signedIn?.let {
-        koinViewModel(key = "server-library:${it.credentials.url}:${it.credentials.username}")
-    }
 
     Scaffold(topBar = {
         TopAppBar(
                 title = { Text("Library") },
                 actions = {
                     IconButton(onClick = actions::openSearch) { Icon(Icons.Default.Search, contentDescription = "Search") }
-                    if (showServer && serverViewModel != null) ServerAlbumSortMenu(serverViewModel) else LibrarySortMenu(pager.currentPage)
+                    LibrarySortMenu(pager.currentPage)
                 })
     }) { padding ->
         Box(Modifier.padding(padding)) {
             androidx.compose.foundation.layout.Column {
-                if (signedIn != null) {
-                    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
-                        SegmentedButton(selected = !showServer, onClick = { subsonic.setLibrarySource(LibrarySource.DEVICE) },
-                                shape = SegmentedButtonDefaults.itemShape(0, 2),
-                                icon = { SegmentedButtonDefaults.Icon(!showServer) { Icon(Icons.Default.PhoneAndroid, null, Modifier.size(18.dp)) } }) {
-                            Text("This device")
-                        }
-                        SegmentedButton(selected = showServer, onClick = { subsonic.setLibrarySource(LibrarySource.SERVER) },
-                                shape = SegmentedButtonDefaults.itemShape(1, 2),
-                                icon = { SegmentedButtonDefaults.Icon(showServer) { Icon(Icons.Default.Cloud, null, Modifier.size(18.dp)) } }) {
-                            Text(signedIn.name, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-                        }
-                    }
-                }
-                if (showServer && serverViewModel != null) {
-                    ServerLibrary(serverViewModel)
-                    return@Column
-                }
                 PrimaryScrollableTabRow(selectedTabIndex = pager.currentPage, edgePadding = 8.dp) {
                     tabs.forEachIndexed { index, title ->
                         Tab(selected = pager.currentPage == index, onClick = { scope.launch { pager.animateScrollToPage(index) } },
