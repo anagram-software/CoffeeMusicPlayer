@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12+. The music server sign-in (auth token) is never backed up or transferred. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="sharedpref" path="subsonic.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="sharedpref" path="subsonic.xml" />
+    </device-transfer>
+</data-extraction-rules>

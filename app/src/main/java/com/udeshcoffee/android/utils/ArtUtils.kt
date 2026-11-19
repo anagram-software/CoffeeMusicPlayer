@@ -1,218 +1,96 @@
 package com.udeshcoffee.android.utils
 
 import android.content.ContentResolver
-import android.content.ContentUris
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.Color
-import android.graphics.drawable.Drawable
 import android.net.Uri
-import android.os.Environment
 import android.util.Log
 import android.widget.ImageView
 import androidx.preference.PreferenceManager
-import com.bumptech.glide.Glide
-import com.bumptech.glide.RequestManager
-import com.bumptech.glide.load.DataSource
-import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.bumptech.glide.load.engine.GlideException
-import com.bumptech.glide.load.resource.bitmap.BitmapTransitionOptions
-import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
-import com.bumptech.glide.request.RequestListener
-import com.bumptech.glide.request.RequestOptions
-import com.bumptech.glide.request.target.Target
-import com.bumptech.glide.signature.ObjectKey
+import coil3.SingletonImageLoader
+import coil3.load
+import coil3.request.CachePolicy
+import coil3.request.ImageRequest
+import coil3.request.SuccessResult
+import coil3.request.allowHardware
+import coil3.request.crossfade
+import coil3.request.error
+import coil3.request.placeholder
+import coil3.toBitmap
 import com.udeshcoffee.android.App
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.data.remote.RemoteDataSource
 import com.udeshcoffee.android.extensions.toLastFMArtistQuery
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileNotFoundException
-import java.io.FileOutputStream
-import java.io.IOException
 
-/**
- * Created by Udathari on 9/23/2017.
- */
-fun loadAlbumArtwork(context: Context, id: Long, imageView: ImageView, animate: Boolean = true, isBlurred: Boolean = false,
-                     callback: ((success: Boolean) -> Unit)? = null){
-    val uri = ContentUris.withAppendedId(ArtworkURI, id)
-    val options = RequestOptions().error(R.drawable.ic_album_white_24dp)
-    val glide = Glide.with(context)
-            .load(uri)
-            .apply(options)
-    if (animate)
-        glide.transition(DrawableTransitionOptions.withCrossFade(250))
-    glide.listener(object : RequestListener<Drawable>{
-        override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<Drawable>?,
-                                  isFirstResource: Boolean): Boolean {
-            callback?.let { it(false) }
-            return false
-        }
 
-        override fun onResourceReady(resource: Drawable?, model: Any?, target: Target<Drawable>?,
-                                     dataSource: DataSource?, isFirstResource: Boolean): Boolean {
-            callback?.let { it(true) }
-            return false
-        }
-    })
-            .into(imageView)
-}
 
-fun <T> loadAlbumArtworkFromUri(context: Context, t: T, imageView: ImageView){
-    Glide.with(context)
-            .asBitmap()
-            .load(t)
-            .apply(RequestOptions().placeholder(R.drawable.ic_music_note_white_24dp)
-                    .diskCacheStrategy(DiskCacheStrategy.DATA).skipMemoryCache(true))
-            .into(imageView)
-}
-
-fun <T> loadAlbumArtworkFromUriSynchronous(t: T): Bitmap{
-    return Glide.with(App.instance)
-            .asBitmap()
-            .load(t)
-            .apply(RequestOptions().diskCacheStrategy(DiskCacheStrategy.DATA).skipMemoryCache(true))
-            .into(500, 500)
-            .get()
-}
-
-fun loadUnknownArtist(imageView: ImageView) {
-    imageView.setImageResource(R.drawable.ic_person_white_24dp)
-}
-
-fun loadArtistArtwork(context: Context,
-                      glide: RequestManager,
-                      id: Long,
-                      name: String,
-                      imageView: ImageView,
-                      shouldCollect: Boolean) {
-    if (name == "<unknown>") {
-        loadUnknownArtist(imageView)
-        return
-    }
-
-    val root = Environment.getExternalStorageDirectory().toString()
-    val myDir = File("$root/CoffeePlayer/ArtistImages/$id.jpg")
-    if (myDir.exists()) {
-        Log.d("loadArtwork", "file found")
-        loadFileArtistArtwork(glide, myDir, imageView)
-    } else {
-        loadUnknownArtist(imageView)
-        if (shouldCollect)
-            collectArtistArtwork(context, glide, id, name, imageView)
-    }
-}
-
-fun loadFileArtistArtwork(glide: RequestManager,
-                          dir: File,
-                          imageView: ImageView){
-
-    val colors = IntArray(2)
-    colors[1] = Color.TRANSPARENT
-
-    val options = RequestOptions()
-            .error(R.drawable.ic_person_white_24dp)
-            .signature(ObjectKey(dir.lastModified()))
-
-    glide.load(dir)
-            .apply(options)
-            .transition(DrawableTransitionOptions.withCrossFade())
-            .into(imageView)
-}
-
-fun collectArtistArtwork(context: Context,
-                         glide: RequestManager,
-                         id: Long,
-                         name: String,
-                         imageView: ImageView) {
-    Log.d("Art", "Collecting artwork")
-    val pref = PreferenceManager.getDefaultSharedPreferences(context)
-    if (!pref.getBoolean(PreferenceUtil.PREF_COLLECT_CONTENT, true))
-        return
-    if (!isNetworkAvailable(context, pref.getBoolean(PreferenceUtil.PREF_WIFI_ONLY, true)) )
-        return
-    var tempName = name
-    tempName = tempName.toLastFMArtistQuery()
-    Log.d("Art", "Making artwork request")
-    val disposable = RemoteDataSource.searchLastFMArtist(tempName)
-            .subscribe ({
-                Log.d("Art", "Got artwork response")
-                val image = it.image
-                glide.asBitmap().load(image)
-                        .apply(RequestOptions().placeholder(R.drawable.ic_person_white_24dp))
-                        .listener(object : RequestListener<Bitmap> {
-                            override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<Bitmap>?,
-                                                      isFirstResource: Boolean): Boolean = false
-
-                            override fun onResourceReady(resource: Bitmap?, model: Any?, target: Target<Bitmap>?,
-                                                         dataSource: DataSource?, isFirstResource: Boolean): Boolean {
-                                resource?.let { saveArtistArt(id, it) }
-                                return false
-                            }
-                        })
-                        .transition(BitmapTransitionOptions.withCrossFade(250))
-                        .into(imageView)
-            }, {
-                Log.d("Art", "Art collect error ${it.message}" )
-            })
+/** Decodes an image (content Uri, URL, [AlbumArt]...) into a software bitmap, or null on failure. */
+suspend fun loadBitmap(context: Context, data: Any?, size: Int = 500): Bitmap? {
+    val request = ImageRequest.Builder(context)
+            .data(data)
+            .size(size)
+            .allowHardware(false)
+            .memoryCachePolicy(CachePolicy.DISABLED)
+            .build()
+    return (SingletonImageLoader.get(context).execute(request) as? SuccessResult)?.image?.toBitmap()
 }
 
 
 fun saveArtistArt(contentResolver: ContentResolver, id: Long, uri: Uri) {
-    Log.d("saveArtistArt", "uri")
     try {
-        Log.d("saveArtistArt", "saving")
-        val imageStream = contentResolver.openInputStream(uri)
-        val selectedImage = BitmapFactory.decodeStream(imageStream)
-        saveArtistArt(id, selectedImage)
+        contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it) }?.let { saveArtistArt(id, it) }
     } catch (e: FileNotFoundException) {
+        Log.w("ArtUtils", "Couldn't read $uri", e)
     }
 }
 
-private fun saveArtistArt(id: Long?, bm: Bitmap) {
-    Log.d("saveArtistArt", "bitmap")
-    val root = Environment.getExternalStorageDirectory().toString()
-    val myDir = File("$root/CoffeePlayer/ArtistImages")
-
-    if (!myDir.exists()) {
-        myDir.mkdirs()
-    }
-
-    val noMediaFile = File(myDir, ".nomedia")
-    if (!noMediaFile.exists()) {
-        try {
-            noMediaFile.mkdirs()
-            noMediaFile.createNewFile()
-        } catch (e: IOException) {
-            Log.d("saveArtistArt", "noMediaFileError: $e")
-        }
-    }
-    val fName = id!!.toString() + ".jpg"
-    Log.d("saveArtistArt", "filename: $fName")
-    val file = File(myDir, fName)
-    if (file.exists()) {
-        Log.d("saveArtistArt", "file exists")
-        file.delete()
-    }
+private fun saveArtistArt(id: Long, bitmap: Bitmap) {
     try {
-        val out = FileOutputStream(file)
-        bm.compress(Bitmap.CompressFormat.JPEG, 90, out)
-        out.flush()
-        out.close()
-        Log.d("saveArtistArt", "saving")
+        artistImageFile(id).apply { parentFile?.mkdirs() }.outputStream().use { bitmap.compress(Bitmap.CompressFormat.JPEG, 90, it) }
     } catch (e: Exception) {
-        Log.d("saveArtistArt", "error $e")
+        Log.w("ArtUtils", "Couldn't save artist image", e)
     }
 }
 
 fun deleteArtistArt(id: Long) {
-    val root = Environment.getExternalStorageDirectory().toString()
-    val myDir = File("$root/CoffeePlayer/ArtistImages")
-    myDir.mkdirs()
-    val fName = "$id.jpg"
-    val file = File(myDir, fName)
-    if (file.exists()) file.delete()
+    File(artistImageDir(), "$id.jpg").delete()
+}
 
+/**
+ * Downloaded artist images. App-private storage needs no permission and isn't scanned into the
+ * user's gallery (images used to live in /sdcard/CoffeePlayer/ArtistImages).
+ */
+private fun artistImageDir(): File = File(App.instance.filesDir, "ArtistImages")
+
+/** Where the artist's downloaded or chosen image is stored. */
+fun artistImageFile(artistId: Long): File = File(artistImageDir(), "$artistId.jpg")
+
+/**
+ * Downloads the artist's image from Last.fm when settings allow it (collect content, Wi-Fi only).
+ * Returns true if an image was saved.
+ */
+suspend fun collectArtistImage(context: Context, id: Long, name: String): Boolean {
+    val allowed = withContext(Dispatchers.IO) {
+        val pref = PreferenceManager.getDefaultSharedPreferences(context)
+        pref.getBoolean(PreferenceUtil.PREF_COLLECT_CONTENT, true) &&
+                isNetworkAvailable(context, pref.getBoolean(PreferenceUtil.PREF_WIFI_ONLY, true))
+    }
+    if (!allowed) return false
+    val url = RemoteDataSource.searchLastFMArtist(name.toLastFMArtistQuery())?.image?.takeIf { it.isNotEmpty() } ?: return false
+    val bitmap = loadBitmap(context, url) ?: return false
+    withContext(Dispatchers.IO) { saveArtistArt(id, bitmap) }
+    return true
+}
+
+/** Saves an image the user picked as the artist's image. */
+suspend fun saveArtistImage(context: Context, id: Long, uri: Uri) = withContext(Dispatchers.IO) {
+    saveArtistArt(context.contentResolver, id, uri)
 }

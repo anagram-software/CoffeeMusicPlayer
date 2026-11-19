@@ -2,24 +2,13 @@
 <resources>
 
     <!-- Main Activity -->
-    <dimen name="mini_player_height">64dp</dimen>
 
-    <dimen name="lyrics_text_small">8sp</dimen>
-    <dimen name="lyrics_text_medium">10sp</dimen>
-    <dimen name="lyrics_text_large">12sp</dimen>
 
     <!-- Recycler View -->
-    <integer name="grid_columns">2</integer>
-    <dimen name="grid_spacing">4dp</dimen>
-    <dimen name="mini_grid_spacing">8dp</dimen>
     <dimen name="home_grid_spacing">8dp</dimen>
 
     <!-- Status Bar Height -->
-    <dimen name="status_bar_height">0dp</dimen>
-    <dimen name="activity_horizontal_margin">16dp</dimen>
     <dimen name="song_less_padding">8dp</dimen>
-    <dimen name="item_subtitle_size">12sp</dimen>
-    <dimen name="item_title_size">14sp</dimen>
 
     <!-- Notification template -->
     <dimen name="notification_big_icon_height">64.0dip</dimen>

@@ -1,45 +1,64 @@
 package com.udeshcoffee.android
 
-import android.content.pm.PackageManager
-import androidx.multidex.MultiDexApplication
-import androidx.core.content.ContextCompat
-import com.bumptech.glide.Glide
-import com.udeshcoffee.android.data.MediaRepository
-import com.udeshcoffee.android.data.local.LocalDataSource
+import android.app.Application
+import android.os.StrictMode
+import coil3.ImageLoader
+import coil3.PlatformContext
+import coil3.SingletonImageLoader
+import com.udeshcoffee.android.utils.AlbumArt
+import com.udeshcoffee.android.utils.AlbumArtFetcher
+import com.udeshcoffee.android.utils.CoverArt
+import com.udeshcoffee.android.utils.CoverArtMapper
+import com.udeshcoffee.android.data.subsonic.SubsonicRepository
+import coil3.key.Keyer
+import org.koin.core.context.GlobalContext
 import com.udeshcoffee.android.di.appModule
 import org.jaudiotagger.tag.TagOptionSingleton
-import org.koin.android.ext.android.inject
-import org.koin.android.ext.android.startKoin
+import org.koin.android.ext.koin.androidContext
+import org.koin.core.context.startKoin
 
-/**
-* Created by Udathari on 8/22/2017.
-*/
-class App : MultiDexApplication() {
-
-    val mediaRepository by inject<MediaRepository>()
+class App : Application(), SingletonImageLoader.Factory {
 
     override fun onCreate() {
+        if (BuildConfig.DEBUG) enableStrictMode()
         super.onCreate()
-        startKoin(this, appModule)
+        startKoin {
+            androidContext(this@App)
+            modules(appModule)
+        }
         instance = this
 
         TagOptionSingleton.getInstance().isAndroid = true
-
-        cleanGenres()
     }
 
-    override fun onLowMemory() {
-
-        super.onLowMemory()
-        Glide.get(this).clearMemory()
+    /** Debug builds log disk/network access on the main thread and leaked resources. */
+    private fun enableStrictMode() {
+        StrictMode.setThreadPolicy(StrictMode.ThreadPolicy.Builder()
+                .detectAll()
+                .penaltyLog()
+                .build())
+        StrictMode.setVmPolicy(StrictMode.VmPolicy.Builder()
+                .detectLeakedClosableObjects()
+                .detectLeakedSqlLiteObjects()
+                .detectLeakedRegistrationObjects()
+                .detectActivityLeaks()
+                .detectFileUriExposure()
+                .detectContentUriWithoutPermission()
+                .penaltyLog()
+                .build())
     }
 
-    private fun cleanGenres() {
-        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
-            return
-
-        mediaRepository.cleanGenres()
-    }
+    /** Coil's app-wide loader, with MediaStore album art support (see [AlbumArt]). */
+    override fun newImageLoader(context: PlatformContext): ImageLoader =
+            ImageLoader.Builder(context)
+                    .components {
+                        add(AlbumArtFetcher.Factory())
+                        add(AlbumArtFetcher.Key())
+                        // Server artwork: mapped to an authenticated URL, cached under the model (not the URL with its token).
+                        add(CoverArtMapper { GlobalContext.get().get<SubsonicRepository>() })
+                        add(Keyer<CoverArt> { data, _ -> "coverart:${data.id}:${data.size}" })
+                    }
+                    .build()
 
     companion object {
 

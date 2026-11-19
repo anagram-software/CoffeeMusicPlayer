@@ -1,0 +1,88 @@
+package com.udeshcoffee.android.ui.compose.playlists
+
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.NewReleases
+import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.udeshcoffee.android.model.Playlist
+import com.udeshcoffee.android.ui.compose.LocalAppActions
+import com.udeshcoffee.android.ui.compose.components.TopLevelScaffold
+import com.udeshcoffee.android.ui.compose.components.songCount
+import com.udeshcoffee.android.ui.compose.detail.PlaylistsViewModel
+import org.koin.compose.viewmodel.koinViewModel
+import androidx.compose.foundation.layout.PaddingValues
+import com.udeshcoffee.android.ui.compose.components.EmptyState
+import com.udeshcoffee.android.ui.compose.detail.ServerNotice
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun PlaylistsScreen(viewModel: PlaylistsViewModel = koinViewModel()) {
+    val playlists by viewModel.playlists.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
+    val actions = LocalAppActions.current
+    TopLevelScaffold("Playlists", floatingActionButton = {
+        ExtendedFloatingActionButton(onClick = { actions.newPlaylist() }, icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                text = { Text("New playlist") })
+    }) { padding ->
+        val list = playlists
+        if (list == null) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+            return@TopLevelScaffold
+        }
+        if (list.isEmpty() && error == null) {
+            EmptyState("No playlists yet", Modifier.padding(padding), Icons.AutoMirrored.Filled.PlaylistPlay)
+            return@TopLevelScaffold
+        }
+        LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(bottom = 88.dp)) {
+            error?.let { item { ServerNotice("Couldn't load playlists: $it", viewModel::retry) } }
+            items(list, key = { "${it.type}:${it.id}:${it.remoteId}" }) { playlist ->
+                // Separates the automatic playlists from the user's (server playlists are all user playlists).
+                if (playlist.type == Playlist.USER && playlist != list.first() && list.firstOrNull { it.type == Playlist.USER } == playlist) HorizontalDivider()
+                ListItem(
+                        modifier = Modifier.combinedClickable(onClick = { actions.openPlaylist(playlist) },
+                                onLongClick = { actions.playlistOptions(playlist) }),
+                        leadingContent = {
+                            Icon(when (playlist.type) {
+                                Playlist.MOST_PLAYED -> Icons.Default.TrendingUp
+                                Playlist.RECENTLY_PLAYED -> Icons.Default.History
+                                Playlist.RECENTLY_ADDED -> Icons.Default.NewReleases
+                                else -> Icons.AutoMirrored.Filled.PlaylistPlay
+                            }, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(40.dp).padding(6.dp))
+                        },
+                        headlineContent = { Text(playlist.title) },
+                        supportingContent = {
+                            val details = listOfNotNull(playlist.songCount?.let { songCount(it) }, "read-only".takeIf { playlist.readonly })
+                            if (details.isNotEmpty()) Text(details.joinToString(" · "))
+                        },
+                        trailingContent = {
+                            IconButton(onClick = { actions.playlistOptions(playlist) }) { Icon(Icons.Default.MoreVert, contentDescription = "Playlist options") }
+                        })
+            }
+        }
+    }
+}

@@ -140,7 +140,7 @@ class AudioFXHelper private constructor(private val dataRepository: DataReposito
             sharedPreferences.edit().putInt(EQUALIZER_PRESET_PREF, value).apply()
         }
 
-    lateinit var userPresets: ArrayList<EQPreset>
+    var userPresets: ArrayList<EQPreset> = ArrayList()
 
     // Strength properties
     var bassboostStrength : Short
@@ -193,11 +193,12 @@ class AudioFXHelper private constructor(private val dataRepository: DataReposito
             }
         }
 
-    constructor(context: Context, audioSessionId : Int, dataRepository: DataRepository) : this(dataRepository){
+    /** [savedUserPresets] are the user's presets from the database (loaded by the caller off the main thread). */
+    constructor(context: Context, audioSessionId : Int, dataRepository: DataRepository, savedUserPresets: List<EQPreset>) : this(dataRepository){
         Log.d(TAG, "Initializing")
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 
-        userPresets = dataRepository.getEQPresets() as ArrayList<EQPreset>
+        userPresets = ArrayList(savedUserPresets)
 
         // Initialize equalizer
         try {
@@ -250,7 +251,7 @@ class AudioFXHelper private constructor(private val dataRepository: DataReposito
         }
     }
 
-    fun saveUserPreset(name: String) {
+    suspend fun saveUserPreset(name: String) {
         equalizer?.apply {
             val id = dataRepository.addEQPreset(EQPreset(0, name))
             val editor = sharedPreferences.edit()
@@ -261,7 +262,7 @@ class AudioFXHelper private constructor(private val dataRepository: DataReposito
         }
     }
 
-    fun deleteUserPreset(userPreset: Int) {
+    suspend fun deleteUserPreset(userPreset: Int) {
         equalizer?.apply {
             val eqPreset = userPresets[userPreset]
             dataRepository.deleteEQPreset(eqPreset)

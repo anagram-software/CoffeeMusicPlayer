@@ -1,1 +1,23 @@
-.idea
+# Gradle
+.gradle/
+build/
+/release
+
+# Kotlin
+.kotlin/
+
+# IDE
+.idea/
+*.iml
+.project
+.settings/
+.classpath
+
+# Local, machine-specific (SDK path, API keys)
+local.properties
+
+# OS
+.DS_Store
+
+# Personal notes
+TODO.md

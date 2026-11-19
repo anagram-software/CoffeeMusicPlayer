@@ -2,15 +2,20 @@ package com.udeshcoffee.android.model
 
 import android.os.Parcelable
 import com.udeshcoffee.android.utils.compareString
-import kotlinx.android.parcel.IgnoredOnParcel
-import kotlinx.android.parcel.Parcelize
+import kotlinx.parcelize.IgnoredOnParcel
+import kotlinx.parcelize.Parcelize
 
 /**
 * Created by Udathari on 8/22/2017.
 */
 @Parcelize
 data class Album(val id:Long, val title:String,
-            val artist:String, val year:Int, val dateModified: Long): Parcelable {
+            val artist:String, val year:Int, val dateModified: Long,
+            /** Subsonic album ID for server albums; null for device albums. */
+            val remoteId: String? = null,
+            val coverArt: String? = null): Parcelable {
+
+    val isRemote: Boolean get() = remoteId != null
 
     @IgnoredOnParcel
     @Transient var songCount: Int = 0

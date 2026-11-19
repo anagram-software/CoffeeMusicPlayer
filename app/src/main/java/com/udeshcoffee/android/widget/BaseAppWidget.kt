@@ -1,5 +1,6 @@
 package com.udeshcoffee.android.widget
 
+import com.udeshcoffee.android.playback.PlaybackEvents
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
@@ -8,19 +9,23 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.util.Log
+import android.view.KeyEvent
 import android.widget.RemoteViews
+import androidx.annotation.OptIn
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.session.MediaButtonReceiver
 import androidx.preference.PreferenceManager
 
 import com.udeshcoffee.android.R
-import com.udeshcoffee.android.extensions.TAG
 import com.udeshcoffee.android.extensions.getColorWithAlpha
 import com.udeshcoffee.android.model.Song
-import com.udeshcoffee.android.service.MusicService
 import com.udeshcoffee.android.ui.MainActivity
 
 /**
  * Implementation of App Widget functionality.
  */
+internal const val TAG = "AppWidget"
+
 open class BaseAppWidget : AppWidgetProvider() {
 
     open val widgetTheme = ""
@@ -37,10 +42,10 @@ open class BaseAppWidget : AppWidgetProvider() {
             val views = RemoteViews(context.packageName, layoutId)
             for (id in instances) {
                 when (what) {
-                    MusicService.InternalIntents.METADATA_CHANGED -> {
+                    PlaybackEvents.METADATA_CHANGED -> {
                         song?.let { onMetadataChange(context, appWidgetManager, id, views, it) }
                     }
-                    MusicService.InternalIntents.PLAYBACK_STATE_CHANGED -> {
+                    PlaybackEvents.PLAYBACK_STATE_CHANGED -> {
                         Log.d(TAG, "Play Back State Changed: is Playing $isPlaying")
                         if (!isPlaying) {
                             views.setImageViewResource(R.id.play_button, R.drawable.ic_play)
@@ -64,21 +69,23 @@ open class BaseAppWidget : AppWidgetProvider() {
     open fun onMetadataChange(context: Context, appWidgetManager: AppWidgetManager, id: Int, views: RemoteViews, song: Song) {}
 
     private fun setupActions(context: Context, views: RemoteViews) {
-        var intent = Intent(context, MainActivity::class.java)
-        var pendingIntent = PendingIntent.getActivity(context, 0, intent, 0)
-        views.setOnClickPendingIntent(R.id.widget_layout_holder, pendingIntent)
+        val openApp = PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
+        views.setOnClickPendingIntent(R.id.widget_layout_holder, openApp)
 
-        intent = Intent(MusicService.WidgetIntents.PLAY_PAUSE)
-        pendingIntent = PendingIntent.getService(context, 0, intent, 0)
-        views.setOnClickPendingIntent(R.id.play_button, pendingIntent)
+        // Media key events through Media3's MediaButtonReceiver, which starts the playback
+        // service (and resumes the saved queue) even when the app isn't running.
+        views.setOnClickPendingIntent(R.id.play_button, mediaKey(context, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE))
+        views.setOnClickPendingIntent(R.id.next_button, mediaKey(context, KeyEvent.KEYCODE_MEDIA_NEXT))
+        views.setOnClickPendingIntent(R.id.prev_button, mediaKey(context, KeyEvent.KEYCODE_MEDIA_PREVIOUS))
+    }
 
-        intent = Intent(MusicService.WidgetIntents.NEXT)
-        pendingIntent = PendingIntent.getService(context, 0, intent, 0)
-        views.setOnClickPendingIntent(R.id.next_button, pendingIntent)
-
-        intent = Intent(MusicService.WidgetIntents.PREVIOUS)
-        pendingIntent = PendingIntent.getService(context, 0, intent, 0)
-        views.setOnClickPendingIntent(R.id.prev_button, pendingIntent)
+    @OptIn(UnstableApi::class)
+    private fun mediaKey(context: Context, keyCode: Int): PendingIntent {
+        val intent = Intent(Intent.ACTION_MEDIA_BUTTON)
+                .setComponent(ComponentName(context, MediaButtonReceiver::class.java))
+                .putExtra(Intent.EXTRA_KEY_EVENT, KeyEvent(KeyEvent.ACTION_DOWN, keyCode))
+        // Distinct request codes: the intents differ only in their extras.
+        return PendingIntent.getBroadcast(context, keyCode, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
     }
 
     internal fun setStyles(context: Context, views: RemoteViews, id: Int) {

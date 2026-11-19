@@ -9,6 +9,7 @@ val ArtworkURI = "content://media/external/audio/albumart".toUri()
 
 object PreferenceUtil {
     const val LAST_QUEUE = "queue"
+    const val PLAYLISTS_IMPORTED = "playlists_imported_to_room"
     const val LAST_PLAYED_POS = "lastplayed"
     const val LAST_CURRENT_POS = "lastpos"
 
@@ -20,7 +21,6 @@ object PreferenceUtil {
     const val DEFAULT_LYRICS = false
 
     const val  PREF_LIB_START = "pref_lib_start"
-    const val  PREF_NEW_PLAYER = "pref_new_player"
     const val  PREF_CALL = "pref_call"
     const val  PREF_FADE = "pref_fade"
     const val  PREF_COLLECT_CONTENT = "pref_collect_content"

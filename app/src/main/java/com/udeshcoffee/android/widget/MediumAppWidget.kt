@@ -8,9 +8,12 @@ import android.graphics.drawable.Drawable
 import android.os.Environment
 import android.view.View
 import android.widget.RemoteViews
-import com.bumptech.glide.Glide
-import com.bumptech.glide.request.target.SimpleTarget
-import com.bumptech.glide.request.transition.Transition
+import coil3.SingletonImageLoader
+import coil3.request.ImageRequest
+import coil3.request.allowHardware
+import coil3.request.target
+import coil3.toBitmap
+import com.udeshcoffee.android.utils.artworkData
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.utils.ArtworkURI
@@ -65,24 +68,23 @@ class MediumAppWidget : BaseAppWidget() {
 
         views.setImageViewResource(R.id.album_art, R.drawable.default_art)
 
-        val uri = ContentUris.withAppendedId(ArtworkURI, song.albumId)
-
-        Glide.with(context).asBitmap().load(uri)
-                .into(object : SimpleTarget<Bitmap>(180, 180) {
-                    override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
-                        views.setImageViewBitmap(R.id.album_art, resource)
-                        setStyles(context, views, id)
-                        appWidgetManager.updateAppWidget(id, views)
-                    }
-
-                    override fun onLoadFailed(errorDrawable: Drawable?) {
-                        super.onLoadFailed(errorDrawable)
-                        views.setImageViewResource(R.id.album_art, R.drawable.default_art)
-                        setStyles(context, views, id)
-                        appWidgetManager.updateAppWidget(id, views)
-                    }
-
-                })
+        val request = ImageRequest.Builder(context)
+                .data(song.artworkData())
+                .size(180) // Keep widget bitmaps small (RemoteViews memory limit).
+                .allowHardware(false)
+                .target(
+                        onSuccess = { image ->
+                            views.setImageViewBitmap(R.id.album_art, image.toBitmap())
+                            setStyles(context, views, id)
+                            appWidgetManager.updateAppWidget(id, views)
+                        },
+                        onError = {
+                            views.setImageViewResource(R.id.album_art, R.drawable.default_art)
+                            setStyles(context, views, id)
+                            appWidgetManager.updateAppWidget(id, views)
+                        })
+                .build()
+        SingletonImageLoader.get(context).enqueue(request)
     }
 
     companion object {

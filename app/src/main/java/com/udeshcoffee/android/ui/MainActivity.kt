@@ -1,369 +1,181 @@
 package com.udeshcoffee.android.ui
 
-import android.Manifest
-import android.content.*
+import android.app.Activity.RESULT_OK
+import android.app.SearchManager
+import android.content.Intent
 import android.media.AudioManager
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
-import android.os.IBinder
-import android.transition.Fade
+import android.provider.MediaStore
 import android.util.Log
-import android.view.MenuItem
-import android.view.View
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.GravityCompat
-import androidx.core.view.ViewCompat
-import androidx.drawerlayout.widget.DrawerLayout
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
-import androidx.navigation.*
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.edit
+import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
-import com.cantrowitz.rxbroadcast.RxBroadcast
-import com.google.android.material.navigation.NavigationView
-import com.greysonparrelli.permiso.Permiso
-import com.sothree.slidinguppanel.SlidingUpPanelLayout
 import com.udeshcoffee.android.R
-import com.udeshcoffee.android.extensions.*
-import com.udeshcoffee.android.service.MusicService
-import com.udeshcoffee.android.ui.miniplayer.MiniPlayerFragment
-import com.udeshcoffee.android.ui.player.player.PlayerFragment
-import com.udeshcoffee.android.ui.player.queue.QueueFragment
-import com.udeshcoffee.android.utils.ServiceConnectionUtil
-import com.udeshcoffee.android.views.FadableLayout
-import io.reactivex.Single
-import io.reactivex.disposables.Disposable
+import com.udeshcoffee.android.data.MediaRepository
+import com.udeshcoffee.android.data.source.MusicSourceStore
+import com.udeshcoffee.android.extensions.playbackEvents
+import com.udeshcoffee.android.model.Song
+import com.udeshcoffee.android.playback.PlaybackEvents
+import com.udeshcoffee.android.playback.PlayerConnection
+import com.udeshcoffee.android.ui.compose.CoffeeApp
+import com.udeshcoffee.android.utils.MediaAccess
+import com.udeshcoffee.android.utils.Permissions
+import com.udeshcoffee.android.utils.PreferenceUtil
+import com.udeshcoffee.android.utils.ProcessLifecycleScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
-import java.util.concurrent.TimeUnit
 
 /**
- * Created by Udathari on 8/25/2017.
+ * The single activity. Hosts the Compose UI ([CoffeeApp]) and handles what needs an activity:
+ * runtime permissions, the playback connection, launch intents and file deletion consent.
  */
+class MainActivity : ComponentActivity() {
 
-class MainActivity : AppCompatActivity(), ServiceConnection, NavController.OnDestinationChangedListener, NavigationView.OnNavigationItemSelectedListener {
+    private val playerConnection: PlayerConnection by inject()
+    private val mediaRepository: MediaRepository by inject()
+    private val sourceStore: MusicSourceStore by inject()
+    private var isPlayerConnected = false
+    private var connectionJob: Job? = null
 
-    private lateinit var sharedPreferences: SharedPreferences
-    private var serviceToken: ServiceConnectionUtil.ServiceConnectionToken? = null
-
-    private val miniPlayerFragment: MiniPlayerFragment by inject()
-    private val playerFragment: PlayerFragment by inject()
-    private val queueFragment: QueueFragment by inject()
-
-    private lateinit var controlBack: FadableLayout
-    private lateinit var slidingPanel: SlidingUpPanelLayout
-    private lateinit var drawer: NavigationView
-    private lateinit var drawerLayout: DrawerLayout
-
-    private var loadListOnConnection = false
+    // Launch actions that wait for the player connection.
     private var pendingUri: Uri? = null
+    private var pendingSearch: String? = null
+    private var restoreQueueOnConnection = false
 
-    private lateinit var navController: NavController
+    private val permissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        if (sourceStore.isServer) return@registerForActivityResult
+        if (Permissions.hasReadAudio(this)) {
+            onAudioPermissionGranted()
+        } else {
+            Toast.makeText(this, R.string.permission_audio_required, Toast.LENGTH_LONG).show()
+            finish()
+        }
+    }
 
-
-    // State
-    private var controlBackSongId: Long = -1
-    private var isQueueVisible = false
-
-    private lateinit var broadcastDisposable: Disposable
+    private val deleteLauncher = registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
+        if (result.resultCode == RESULT_OK) Toast.makeText(this, "Song deleted", Toast.LENGTH_SHORT).show()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-
         volumeControlStream = AudioManager.STREAM_MUSIC
 
-        Permiso.getInstance().setActivity(this)
-        Permiso.getInstance().requestPermissions(object : Permiso.IOnPermissionResult {
-            override fun onPermissionResult(resultSet: Permiso.ResultSet) {
-                if (resultSet.areAllPermissionsGranted()) {
-                    bindToService()
-                } else {
-                    Toast.makeText(this@MainActivity, "Permission check failed", Toast.LENGTH_LONG).show()
-                    finish()
-                }
+        setContent { CoffeeApp(onDeleteSongs = ::deleteSongs) }
+
+        handleIntent(intent)
+        when {
+            // Server music needs no storage access; only ask for notifications (optional).
+            sourceStore.isServer -> {
+                connectPlayer()
+                Permissions.serverStartupPermissions(this).takeIf { it.isNotEmpty() }?.let { permissionLauncher.launch(it) }
             }
-
-            override fun onRationaleRequested(callback: Permiso.IOnRationaleProvided, vararg permissions: String) {
-                callback.onRationaleProvided()
-            }
-        }, Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                Manifest.permission.WAKE_LOCK,
-                Manifest.permission.READ_EXTERNAL_STORAGE)
-
-        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
-
-        navController = findNavController(R.id.nav_host_fragment)
-
-        drawer = findViewById(R.id.navigation)
-        drawer.setNavigationItemSelectedListener(this)
-        drawerLayout = findViewById(R.id.drawer_layout)
-
-        slidingPanel = findViewById(R.id.slidingpanel)
-        slidingPanel.panelState = SlidingUpPanelLayout.PanelState.HIDDEN
-        slidingPanel.addPanelSlideListener(object : SlidingUpPanelLayout.PanelSlideListener {
-            override fun onPanelSlide(panel: View?, slideOffset: Float) {
-                if (slideOffset <= 0.2f) {
-                    miniPlayerFragment.setAlpha(1f)
-                } else if (slideOffset > 0.2f && slideOffset <= 0.6f) {
-                    miniPlayerFragment.setVisibility(View.VISIBLE)
-                    miniPlayerFragment.setAlpha(1 - (slideOffset - 0.2f) / 0.4f)
-                } else if (slideOffset > 0.6f) {
-                    miniPlayerFragment.setVisibility(View.INVISIBLE)
-                }
-            }
-
-            override fun onPanelStateChanged(panel: View?, previousState: SlidingUpPanelLayout.PanelState?, newState: SlidingUpPanelLayout.PanelState?) {
-                if (newState == SlidingUpPanelLayout.PanelState.COLLAPSED) {
-                    miniPlayerFragment.setVisibility(View.VISIBLE)
-                    miniPlayerFragment.setAlpha(1f)
-                }
-            }
-
-        })
-
-        // Control Back
-        controlBack = findViewById(R.id.controls_back)
-
-        // Mini Player Fragment
-        replaceFragmentToActivity(miniPlayerFragment, R.id.mini_player_container)
-
-        replaceFragmentToActivity(playerFragment, R.id.player_container)
-        ViewCompat.requestApplyInsets(findViewById(R.id.player_container))
-
-        //        try {
-//            //current version
-//            val packageInfo = packageManager.getPackageInfo(packageName, 0)
-//            val versionCode = packageInfo.versionCode
-//
-//            //version where changelog has been viewed
-//            val lastViewWhatsNew = sharedPreferences.getInt(PreferenceUtil.LAST_VIEWED_WHATS_NEW, 0)
-//            if (lastViewWhatsNew == 0) {
-//                sharedPreferences.edit { putInt(PreferenceUtil.LAST_VIEWED_WHATS_NEW, versionCode) }
-//            } else if (lastViewWhatsNew < versionCode) {
-//                sharedPreferences.edit { putInt(PreferenceUtil.LAST_VIEWED_WHATS_NEW, versionCode) }
-//                WhatsNewDialog.create().show(supportFragmentManager, "WhatsNewDialog")
-//            }
-//        } catch (e: PackageManager.NameNotFoundException) {
-//            Log.w(TAG,"Unable to get version code.")
-//        }
-
-        intent?.let {
-            handleIntent(it)
-            this.intent = Intent()
+            Permissions.hasReadAudio(this) -> onAudioPermissionGranted()
+            else -> permissionLauncher.launch(Permissions.startupPermissions())
         }
-
-        navController.addOnDestinationChangedListener(this)
     }
 
-    override fun onResume() {
-        super.onResume()
-        Permiso.getInstance().setActivity(this)
-
-        val filter = IntentFilter()
-        filter.addAction(MusicService.InternalIntents.METADATA_CHANGED)
-        filter.addAction(MusicService.InternalIntents.SERVICE_CONNECTED)
-
-        broadcastDisposable = RxBroadcast.fromLocalBroadcast(this, filter)
-                .subscribe {
-                    when (it.action) {
-                        MusicService.InternalIntents.METADATA_CHANGED -> {
-                            setControlBack()
-                        }
-                        MusicService.InternalIntents.SERVICE_CONNECTED -> {
-                            setControlBack()
-                        }
-                    }
-                }
-
-        setControlBack()
-    }
-
-    override fun onPause() {
-        super.onPause()
-        if (!broadcastDisposable.isDisposed)
-            broadcastDisposable.dispose()
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleIntent(intent)
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        navController.removeOnDestinationChangedListener(this)
-        serviceToken?.let { unbindFromService(it) }
+        connectionJob?.cancel()
+        if (isPlayerConnected) playerConnection.disconnect()
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        Permiso.getInstance().onRequestPermissionResult(requestCode, permissions, grantResults)
-    }
-
-    override fun onDestinationChanged(controller: NavController, destination: NavDestination, arguments: Bundle?) {
-        Log.d(TAG, "${drawer.checkedItem?.itemId} ${destination.id}")
-        if (drawer.checkedItem?.itemId != destination.id)
-            drawer.setCheckedItem(destination.id)
-    }
-
-    override fun onNavigationItemSelected(item: MenuItem): Boolean {
-        when (item.itemId) {
-            R.id.navigationNowPlay -> {
-                closeDrawerLayout()
-                openNowPlay()
-            }
-            else -> {
-                closeDrawerLayout()
-                if (navController.currentDestination != null && navController.currentDestination!!.id != item.itemId) {
-                    if (item.itemId == R.id.libraryFragment) {
-                        navController.popBackStack(R.id.libraryFragment, false)
-                    } else {
-                        navController.popBackStack(R.id.libraryFragment, false)
-                        navController.navigate(item.itemId)
+    /** Deletes songs from the device, asking for confirmation in a way that fits the API level. */
+    private fun deleteSongs(songs: List<Song>) {
+        if (songs.isEmpty()) return
+        val consent = MediaAccess.deleteRequest(contentResolver, songs.map { MediaAccess.songUri(it.id) })
+        if (consent != null) {
+            deleteLauncher.launch(IntentSenderRequest.Builder(consent).build())
+        } else {
+            // API < 30: legacy confirmation dialog and file deletion.
+            val song = songs.first()
+            android.app.AlertDialog.Builder(this)
+                    .setTitle("Delete")
+                    .setMessage("Permanently delete ${song.title} from storage?")
+                    .setPositiveButton("Delete") { _, _ ->
+                        val deleted = MediaAccess.deleteLegacy(this, song.id)
+                        Toast.makeText(this, if (deleted) "Song deleted" else "Couldn't delete the song", Toast.LENGTH_SHORT).show()
                     }
-                }
+                    .setNegativeButton("Cancel", null)
+                    .show()
+        }
+    }
+
+    /** Handles launch intents on the main thread; waits for the player connection when needed. */
+    private fun handleIntent(intent: Intent?) {
+        intent ?: return
+        val player = getPlayerConnected()
+        when (intent.action) {
+            Intent.ACTION_VIEW -> {
+                if (player == null) pendingUri = intent.data else intent.data?.let { player.playUri(it) }
+            }
+            MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH -> {
+                val query = intent.getStringExtra(SearchManager.QUERY) ?: ""
+                if (player == null) pendingSearch = query else player.playFromSearch(query)
+            }
+            Intent.ACTION_MAIN -> {
+                if (player == null) restoreQueueOnConnection = true else player.restoreQueueIfEmpty()
             }
         }
-        return true
+        setIntent(Intent())
     }
 
+    private fun getPlayerConnected(): PlayerConnection? = playerConnection.takeIf { it.isConnected }
 
-    override fun onNewIntent(intent: Intent?) {
-        super.onNewIntent(intent)
-        intent?.let {
-            handleIntent(it)
-            this.intent = Intent()
+    private fun onAudioPermissionGranted() {
+        connectPlayer()
+        importMediaStorePlaylistsOnce()
+    }
+
+    private fun connectPlayer() {
+        if (isPlayerConnected) return
+        connectionJob = lifecycleScope.launch {
+            playbackEvents().filter { it == PlaybackEvents.SERVICE_CONNECTED }.collect { onPlayerConnected() }
+        }
+        playerConnection.connect()
+        isPlayerConnected = true
+    }
+
+    private fun onPlayerConnected() {
+        pendingSearch?.let { playerConnection.playFromSearch(it); pendingSearch = null }
+        pendingUri?.let { playerConnection.playUri(it); pendingUri = null }
+        if (restoreQueueOnConnection) {
+            playerConnection.restoreQueueIfEmpty()
+            restoreQueueOnConnection = false
         }
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        when (item.itemId) {
-            R.id.action_search -> {
-                navController.navigate(R.id.searchFragment)
-            }
-        }
-        return super.onOptionsItemSelected(item)
-    }
-
-    private fun handleIntent(intent: Intent) {
-        Single.fromCallable {
-            when (intent.action) {
-                Intent.ACTION_VIEW -> {
-                    val service = getService()
-                    if (service == null)
-                        pendingUri = intent.data
-                    else
-                        intent.data?.let { service.initFile(it) }
-                }
-                Intent.ACTION_MAIN -> {
-                    val service = getService()
-                    if (service == null)
-                        loadListOnConnection = true
-                    else
-                        service.loadLastListAndInit()
-                }
-                else -> null
-            }
-        }
-                .delaySubscription(350, TimeUnit.MILLISECONDS)
-                .subscribe()
-    }
-
-    fun openDrawerLayout() {
-        drawerLayout.openDrawer(GravityCompat.START)
-    }
-
-    private fun closeDrawerLayout() {
-        drawerLayout.closeDrawer(GravityCompat.START)
-    }
-
-    fun openNowPlay() {
-        if (slidingPanel.panelState == SlidingUpPanelLayout.PanelState.COLLAPSED)
-            slidingPanel.panelState = SlidingUpPanelLayout.PanelState.EXPANDED
-    }
-
-    fun closeNowPlay() {
-        slidingPanel.panelState = SlidingUpPanelLayout.PanelState.COLLAPSED
-    }
-
-    fun hideNowPlay() {
-        slidingPanel.panelState = SlidingUpPanelLayout.PanelState.HIDDEN
-    }
-
-    fun initNowPlay() {
-        if (slidingPanel.panelState == SlidingUpPanelLayout.PanelState.HIDDEN)
-            closeNowPlay()
-    }
-
-    fun setSlidingView(view: View) {
-        slidingPanel.setScrollableView(view)
-    }
-
-    private fun setControlBack() {
-        val service = getService()
-        service?.let {it ->
-            it.currentSong()?.let {
-                if (controlBackSongId != it.id) {
-                    it.loadSongColor(this, controlBack)
-                    controlBackSongId = it.id
-                }
+    /** Playlists moved from MediaStore to the app database in DB version 7; copy existing ones once. */
+    private fun importMediaStorePlaylistsOnce() {
+        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+        if (prefs.getBoolean(PreferenceUtil.PLAYLISTS_IMPORTED, false)) return
+        // Application-wide scope: the import should finish even if this activity goes away.
+        ProcessLifecycleScope.launch {
+            try {
+                val count = mediaRepository.importMediaStorePlaylists()
+                prefs.edit { putBoolean(PreferenceUtil.PLAYLISTS_IMPORTED, true) }
+                if (count > 0)
+                    Toast.makeText(applicationContext, resources.getQuantityString(R.plurals.playlists_imported, count, count), Toast.LENGTH_LONG).show()
+            } catch (e: Exception) {
+                Log.w(TAG, "Playlist import failed", e)
             }
         }
     }
-
-    fun showQueue() {
-        isQueueVisible = true
-        val transaction = supportFragmentManager.beginTransaction()
-        transaction.replace(R.id.player_container, queueFragment)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            queueFragment.enterTransition = Fade()
-            playerFragment.exitTransition = Fade()
-        }
-        transaction.commit()
-        slidingPanel.isTouchEnabled = false
-        ViewCompat.requestApplyInsets(findViewById(R.id.player_container))
-    }
-
-    fun showPlayer() {
-        isQueueVisible = false
-        val transaction = supportFragmentManager.beginTransaction()
-        transaction.replace(R.id.player_container, playerFragment)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            playerFragment.enterTransition = Fade()
-            queueFragment.exitTransition = Fade()
-        }
-        transaction.commit()
-        slidingPanel.isTouchEnabled = true
-        ViewCompat.requestApplyInsets(findViewById(R.id.player_container))
-    }
-
-    override fun onBackPressed() {
-        Log.d(TAG, "onBackPressedSuper")
-        when {
-            isQueueVisible -> showPlayer()
-            slidingPanel.panelState == SlidingUpPanelLayout.PanelState.EXPANDED -> closeNowPlay()
-            drawerLayout.isDrawerOpen(drawer) -> closeDrawerLayout()
-            else -> {
-                super.onBackPressed()
-            }
-        }
-    }
-
-
-    fun bindToService() {
-        serviceToken = bindToService(this)
-        serviceToken?.let { Log.d(TAG, "serviceToken") }
-    }
-
-    override fun onServiceConnected(p0: ComponentName?, p1: IBinder?) {
-        Log.d(TAG, "connected")
-        LocalBroadcastManager.getInstance(this).sendBroadcast(Intent().setAction(MusicService.InternalIntents.SERVICE_CONNECTED))
-        pendingUri?.let {
-            getService()?.initFile(it)
-            pendingUri = null
-        }
-        if (loadListOnConnection) {
-            getService()?.loadLastListAndInit()
-            loadListOnConnection = false
-        }
-    }
-
-    override fun onServiceDisconnected(p0: ComponentName?) {}
 
     companion object {
         private const val TAG = "MainActivity"

@@ -8,13 +8,15 @@ import android.provider.MediaStore
  * Created by Udathari on 9/8/2017.
  */
 class Genre(var id: Long, var name: String) {
+    /** Server genres are identified by name. */
+    var remote: Boolean = false
 
     var no: Int? = null
     var arts: List<Long>? = null
 
     constructor(cursor: Cursor): this(
             cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Genres._ID))
-            ,cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Genres.NAME)))
+            ,cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Genres.NAME)) ?: "<unknown>")
 
     fun setArtsAndSongCount(contentResolver: ContentResolver){
         val cursor = contentResolver.query(
