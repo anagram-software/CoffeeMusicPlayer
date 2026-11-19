@@ -17,11 +17,17 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.channels.awaitClose
+import android.provider.MediaStore
+import com.udeshcoffee.android.data.lyrics.Lrclib
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.onStart
-import com.udeshcoffee.android.data.subsonic.SubsonicException
+import com.udeshcoffee.android.data.lyrics.Lyrics
 import com.udeshcoffee.android.data.subsonic.SubsonicRepository
 import android.util.Log
 import kotlinx.coroutines.CancellationException
@@ -46,6 +52,10 @@ class NowPlayingViewModel(
             }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
+    /** Whether lyrics can be looked up online, which makes them available for device songs too. */
+    val lrclibEnabled: StateFlow<Boolean> = prefs.booleanFlow(PreferenceUtil.PREF_LRCLIB, PreferenceUtil.DEFAULT_LRCLIB)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), prefs.getBoolean(PreferenceUtil.PREF_LRCLIB, PreferenceUtil.DEFAULT_LRCLIB))
+
     private val _showLyrics = MutableStateFlow(prefs.getBoolean(PreferenceUtil.LYRICS, PreferenceUtil.DEFAULT_LYRICS))
     /** Lyrics shown instead of the artwork. */
     val showLyrics: StateFlow<Boolean> = _showLyrics.asStateFlow()
@@ -68,16 +78,25 @@ class NowPlayingViewModel(
 sealed interface LyricsState {
     object NoSong : LyricsState
     object Loading : LyricsState
-    /** Plain text lines, as the server sends them. */
-    data class Found(val lines: List<String>) : LyricsState
+    /** Synced (timed lines) or plain lyrics; [fromLrclib] when they came from LRCLIB rather than the server. */
+    data class Found(val lyrics: Lyrics, val fromLrclib: Boolean = false) : LyricsState
     object NotFound : LyricsState
-    /** The server request failed (network, auth or an unexpected response); offers a retry. */
+    /** Every source that was tried failed (network, auth or an unexpected response); offers a retry. */
     object Failed : LyricsState
 }
 
+/** A boolean preference as a Flow: the current value, then every change. */
+internal fun SharedPreferences.booleanFlow(key: String, default: Boolean): Flow<Boolean> = callbackFlow {
+    val listener = SharedPreferences.OnSharedPreferenceChangeListener { p, k -> if (k == key) trySend(p.getBoolean(key, default)) }
+    registerOnSharedPreferenceChangeListener(listener)
+    trySend(getBoolean(key, default))
+    awaitClose { unregisterOnSharedPreferenceChangeListener(listener) }
+}.distinctUntilChanged()
+
 /**
- * Lyrics for the playing song, from the music server only (OpenSubsonic `getLyricsBySongId`, else
- * the classic `getLyrics`). Device songs have none.
+ * Lyrics for the playing song: the music server's (OpenSubsonic `getLyricsBySongId`, else the
+ * classic `getLyrics`), with LRCLIB as the fallback when enabled ([PreferenceUtil.PREF_LRCLIB]):
+ * used when the server has none or only unsynced lyrics, and the only source for device songs.
  */
 class LyricsViewModel(
         private val player: PlayerConnection,
@@ -93,53 +112,64 @@ class LyricsViewModel(
     val size: StateFlow<Int> = _size.asStateFlow()
 
     private var song: Song? = null
+    private var lrclib = prefs.getBoolean(PreferenceUtil.PREF_LRCLIB, PreferenceUtil.DEFAULT_LRCLIB)
     private var job: Job? = null
 
     init {
         viewModelScope.launch {
-            player.state.map { it.song }.distinctUntilChanged { a, b -> a?.id == b?.id }.collect { s ->
-                song = s
-                load(s)
-            }
-        }
-    }
-
-    /** Runs one lyrics request at a time; a failure shows [LyricsState.Failed] instead of crashing the app. */
-    private fun launch(block: suspend () -> Unit) {
-        job?.cancel()
-        job = viewModelScope.launch {
-            try {
-                block()
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Log.w(TAG, "Couldn't load lyrics", e)
-                _state.value = LyricsState.Failed
-            }
+            combine(player.state.map { it.song }.distinctUntilChanged { a, b -> a?.id == b?.id },
+                    prefs.booleanFlow(PreferenceUtil.PREF_LRCLIB, PreferenceUtil.DEFAULT_LRCLIB)) { s, online -> s to online }
+                    .collect { (s, online) ->
+                        song = s
+                        lrclib = online
+                        load(s)
+                    }
         }
     }
 
     private fun load(s: Song?) {
+        job?.cancel()
         if (s == null) {
-            job?.cancel()
             _state.value = LyricsState.NoSong
             return
         }
-        if (!s.isRemote) {
-            job?.cancel()
+        if (!s.isRemote && !lrclib) {
             _state.value = LyricsState.NotFound
             return
         }
-        launch {
+        job = viewModelScope.launch {
             _state.value = LyricsState.Loading
-            val lines = try {
-                subsonic.lyrics(s)
-            } catch (e: SubsonicException) {
-                Log.w(TAG, "Couldn't load lyrics from the server", e)
-                _state.value = LyricsState.Failed
-                return@launch
+            var failed = false
+            val server = if (s.isRemote) {
+                try {
+                    subsonic.lyrics(s)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Log.w(TAG, "Couldn't load lyrics from the server", e)
+                    failed = true
+                    null
+                }
+            } else null
+            // LRCLIB fills gaps, and upgrades plain server lyrics to synced ones when it can.
+            val online = if (lrclib && server?.synced != true) {
+                try {
+                    Lrclib.lyrics(s.title, s.artistName.takeUnless { it == MediaStore.UNKNOWN_STRING } ?: "",
+                            s.albumName.takeUnless { it == MediaStore.UNKNOWN_STRING }, s.duration)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Log.w(TAG, "Couldn't load lyrics from LRCLIB", e)
+                    failed = true
+                    null
+                }
+            } else null
+            _state.value = when {
+                online != null && (server == null || online.synced) -> LyricsState.Found(online, fromLrclib = true)
+                server != null -> LyricsState.Found(server)
+                failed -> LyricsState.Failed
+                else -> LyricsState.NotFound
             }
-            _state.value = if (lines != null) LyricsState.Found(lines) else LyricsState.NotFound
         }
     }
 

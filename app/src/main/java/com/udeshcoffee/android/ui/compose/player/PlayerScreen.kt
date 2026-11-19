@@ -28,8 +28,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.ClearAll
@@ -46,7 +44,6 @@ import androidx.compose.material.icons.filled.RepeatOne
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
-import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
@@ -76,10 +73,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.playback.PlayerConnection
@@ -110,9 +105,11 @@ fun PlayerScreen(onCollapse: () -> Unit, viewModel: NowPlayingViewModel = koinVi
     LaunchedEffect(state.connected, state.queue.isEmpty()) { if (state.connected && state.queue.isEmpty()) onCollapse() }
     song ?: return
 
-    // Lyrics come from the music server only, so device songs always show their artwork.
+    // Lyrics come from the music server, with LRCLIB as a fallback: without it, device songs have none.
     val lyricsPreferred by viewModel.showLyrics.collectAsStateWithLifecycle()
-    val showLyrics = lyricsPreferred && song.isRemote
+    val lrclibEnabled by viewModel.lrclibEnabled.collectAsStateWithLifecycle()
+    val lyricsAvailable = song.isRemote || lrclibEnabled
+    val showLyrics = lyricsPreferred && lyricsAvailable
     val actions = LocalAppActions.current
 
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceContainer).safeDrawingPadding()) {
@@ -147,12 +144,12 @@ fun PlayerScreen(onCollapse: () -> Unit, viewModel: NowPlayingViewModel = koinVi
             if (wide) {
                 Row(Modifier.fillMaxSize().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(24.dp), verticalAlignment = Alignment.CenterVertically) {
                     ArtOrLyrics(song, showLyrics, Modifier.fillMaxHeight().aspectRatio(1f, matchHeightConstraintsFirst = true))
-                    Column(Modifier.weight(1f)) { Controls(state, song, viewModel, showLyrics) { showQueue = true } }
+                    Column(Modifier.weight(1f)) { Controls(state, song, viewModel, showLyrics, lyricsAvailable) { showQueue = true } }
                 }
             } else {
                 Column(Modifier.fillMaxSize().padding(horizontal = 24.dp), verticalArrangement = Arrangement.SpaceEvenly) {
                     ArtOrLyrics(song, showLyrics, Modifier.fillMaxWidth().weight(1f, fill = false).aspectRatio(1f))
-                    Controls(state, song, viewModel, showLyrics) { showQueue = true }
+                    Controls(state, song, viewModel, showLyrics, lyricsAvailable) { showQueue = true }
                 }
             }
         }
@@ -168,7 +165,7 @@ private fun ArtOrLyrics(song: Song, showLyrics: Boolean, modifier: Modifier) {
 }
 
 @Composable
-private fun Controls(state: PlayerUiState, song: Song, viewModel: NowPlayingViewModel, showLyrics: Boolean, onQueue: () -> Unit) {
+private fun Controls(state: PlayerUiState, song: Song, viewModel: NowPlayingViewModel, showLyrics: Boolean, lyricsAvailable: Boolean, onQueue: () -> Unit) {
     val player: PlayerConnection = koinInject()
     val isFavorite by viewModel.isFavorite.collectAsStateWithLifecycle()
     val position by remember(song.id, state.isPlaying) { player.progress(250) }.collectAsState(initial = player.currentPosition)
@@ -240,7 +237,7 @@ private fun Controls(state: PlayerUiState, song: Song, viewModel: NowPlayingView
         }
         Spacer(Modifier.height(8.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            if (song.isRemote) TextButton(onClick = { viewModel.toggleLyrics() }) {
+            if (lyricsAvailable) TextButton(onClick = { viewModel.toggleLyrics() }) {
                 Icon(Icons.Default.Lyrics, contentDescription = null); Spacer(Modifier.size(8.dp))
                 Text(if (showLyrics) "Artwork" else "Lyrics")
             }
@@ -295,41 +292,6 @@ private fun QueueList(state: PlayerUiState, modifier: Modifier) {
                                             modifier = Modifier.padding(12.dp).draggableHandle())
                                 }
                             }) { Text(song.title, maxLines = 1, overflow = TextOverflow.Ellipsis) }
-                }
-            }
-        }
-    }
-}
-
-/** The music server's lyrics for the playing song, with a text size toggle. */
-@Composable
-fun LyricsPanel(modifier: Modifier = Modifier, viewModel: LyricsViewModel = koinViewModel()) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
-    val size by viewModel.size.collectAsStateWithLifecycle()
-
-    // One step above the player's background, so the lyrics read as a card on it.
-    androidx.compose.material3.Surface(modifier, shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainerHigh) {
-        Column(Modifier.fillMaxSize()) {
-            Row(Modifier.padding(start = 16.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("Lyrics", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-                IconButton(onClick = viewModel::cycleSize) { Icon(Icons.Default.TextFields, contentDescription = "Text size") }
-            }
-            Box(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 16.dp), contentAlignment = Alignment.Center) {
-                when (val s = state) {
-                    LyricsState.NoSong -> Text("Nothing playing")
-                    LyricsState.Loading -> Text("Loading…")
-                    LyricsState.NotFound -> Text("No lyrics on the server for this song", textAlign = TextAlign.Center)
-                    LyricsState.Failed -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Couldn't load lyrics")
-                        TextButton(onClick = viewModel::retry) { Text("Try again") }
-                    }
-                    is LyricsState.Found -> {
-                        val text = remember(s.lines) { s.lines.joinToString("\n") }
-                        Text(text, fontSize = when (size) { 3 -> 24.sp; 2 -> 20.sp; else -> 16.sp },
-                                lineHeight = when (size) { 3 -> 34.sp; 2 -> 28.sp; else -> 24.sp },
-                                textAlign = TextAlign.Start,
-                                modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 16.dp))
-                    }
                 }
             }
         }

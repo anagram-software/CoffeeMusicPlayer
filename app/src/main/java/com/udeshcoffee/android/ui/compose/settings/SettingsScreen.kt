@@ -58,6 +58,11 @@ fun SettingsScreen() {
                     "Don't resume after a call or another app's sound")
             SwitchPref(prefs, PreferenceUtil.PREF_FADE, true, "Fade on play/pause", "Smoothly fade audio in and out")
 
+            Header("Lyrics")
+            SwitchPref(prefs, PreferenceUtil.PREF_LRCLIB, PreferenceUtil.DEFAULT_LRCLIB, "Find missing lyrics online",
+                    "When ${if (isServer) "your server has no lyrics for a song" else "playing a song"}, look them up on lrclib.net. " +
+                            "This sends the song's title, artist and album to that service.")
+
             // Device library only: server artists use the server's images and bios.
             if (!isServer) {
                 Header("Online content")

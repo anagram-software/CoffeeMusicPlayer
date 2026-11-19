@@ -2,6 +2,9 @@ package com.udeshcoffee.android.data.subsonic
 
 import android.content.Context
 import androidx.core.content.edit
+import com.udeshcoffee.android.data.lyrics.Lyrics
+import com.udeshcoffee.android.data.lyrics.fromStructured
+import com.udeshcoffee.android.data.lyrics.parseLrc
 import com.udeshcoffee.android.data.remote.Http
 import com.udeshcoffee.android.model.Album
 import com.udeshcoffee.android.model.Artist
@@ -390,20 +393,21 @@ class SubsonicRepository(context: Context) {
     // ---- Lyrics and plays ----
 
     /**
-     * The server's lyrics for a song as plain text lines (OpenSubsonic songLyrics extension, else the
-     * classic getLyrics by artist and title), or null when it has none.
+     * The server's lyrics for a song (OpenSubsonic songLyrics extension, preferring synced main
+     * vocals, else the classic getLyrics by artist and title, parsed as LRC in case it has
+     * timestamps), or null when it has none.
      */
-    suspend fun lyrics(song: Song): List<String>? {
+    suspend fun lyrics(song: Song): Lyrics? {
         val account = _account.value ?: return null
         val remoteId = song.remoteId ?: return null
-        val lines = if ("songLyrics" in account.extensions) {
-            client().get("getLyricsBySongId", "lyricsList", SubLyricsList.serializer(), listOf("id" to remoteId))
-                    .structuredLyrics.firstOrNull { it.line.isNotEmpty() }?.line?.map { it.value }
+        val lyrics = if ("songLyrics" in account.extensions) {
+            fromStructured(client().get("getLyricsBySongId", "lyricsList", SubLyricsList.serializer(), listOf("id" to remoteId))
+                    .structuredLyrics)
         } else {
             client().get("getLyrics", "lyrics", SubLyrics.serializer(), listOf("artist" to song.artistName, "title" to song.title))
-                    .value?.lines()
+                    .value?.let(::parseLrc)
         }
-        return lines?.takeIf { l -> l.any { it.isNotBlank() } }
+        return lyrics?.takeIf { l -> l.lines.any { it.text.isNotBlank() } }
     }
 
     /** Reports a play: [submission] false for "now playing", true once it counts as played. Failures are ignored. */

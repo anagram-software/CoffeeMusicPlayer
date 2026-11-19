@@ -22,4 +22,7 @@ object PreferenceUtil {
     const val  PREF_FADE = "pref_fade"
     const val  PREF_COLLECT_CONTENT = "pref_collect_content"
     const val  PREF_WIFI_ONLY = "pref_wifi_only"
+    /** Look up lyrics the server doesn't have (and all device songs' lyrics) on LRCLIB. */
+    const val  PREF_LRCLIB = "pref_lrclib"
+    const val  DEFAULT_LRCLIB = true
 }

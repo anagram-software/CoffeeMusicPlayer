@@ -98,7 +98,12 @@ data class SubArtistInfo(
 
 /** OpenSubsonic `getLyricsBySongId` (songLyrics extension). `start` is in milliseconds when synced. */
 @Serializable data class SubLyricLine(val start: Long? = null, val value: String = "")
-@Serializable data class SubStructuredLyrics(val synced: Boolean = false, val line: List<SubLyricLine> = emptyList())
+/** `offset` is in milliseconds (positive = show sooner); `kind` is "main" or "translation" etc. (OpenSubsonic, optional). */
+@Serializable data class SubStructuredLyrics(
+        val synced: Boolean = false,
+        val line: List<SubLyricLine> = emptyList(),
+        val offset: Long = 0,
+        val kind: String? = null)
 @Serializable data class SubLyricsList(val structuredLyrics: List<SubStructuredLyrics> = emptyList())
 
 @Serializable data class SubExtension(val name: String = "")
