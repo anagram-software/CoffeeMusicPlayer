@@ -1,5 +1,6 @@
 package com.udeshcoffee.android.ui.compose.library
 
+import com.udeshcoffee.android.ui.compose.components.PageLoadingIndicator
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -196,7 +197,7 @@ fun ServerLibraryCategory(category: LibraryCategory, viewModel: ServerLibraryVie
 @Composable
 private fun ServerAlbumSortMenu(viewModel: ServerLibraryViewModel) {
     val sort by viewModel.albumSort.collectAsStateWithLifecycle()
-    SortMenu(SortGroup("Albums", ServerAlbumSort.entries.map { SortOption(it.ordinal, it.label) }, sort.ordinal, ascending = null,
+    SortMenu(SortGroup(ServerAlbumSort.entries.map { SortOption(it.ordinal, it.label) }, sort.ordinal, ascending = null,
             onSelect = { viewModel.setAlbumSort(ServerAlbumSort.entries[it]) }))
 }
 
@@ -209,7 +210,7 @@ fun ServerError(message: String?, onRetry: () -> Unit, modifier: Modifier = Modi
 }
 
 @Composable
-private fun Loading() = Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+private fun Loading() = Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { PageLoadingIndicator() }
 
 /** Asks for the next page when the list scrolls near its end. */
 @Composable
@@ -253,10 +254,11 @@ private fun ServerSongsTab(viewModel: ServerLibraryViewModel) {
 }
 
 private fun androidx.compose.foundation.lazy.LazyListScope.pagerFooter(state: PagedState<*>, retry: () -> Unit) {
-    if (state.loading) item { Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() } }
+    if (state.loading) item { Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) { PageLoadingIndicator() } }
     state.error?.let { error ->
         item {
-            ListItem(headlineContent = { Text(error) }, trailingContent = { androidx.compose.material3.TextButton(onClick = retry) { Text("Retry") } })
+            ListItem(
+                    trailingContent = { androidx.compose.material3.TextButton(onClick = retry) { Text("Retry") } }) { Text(error) }
         }
     }
 }
@@ -276,12 +278,12 @@ private fun ServerAlbumsTab(viewModel: ServerLibraryViewModel) {
                 horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             items(state.items, key = { it.id }) { album -> ServerAlbumCard(album) }
             if (state.loading) item(span = { GridItemSpan(maxLineSpan) }) {
-                Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) { PageLoadingIndicator() }
             }
             state.error?.let { error ->
                 item(span = { GridItemSpan(maxLineSpan) }) {
-                    ListItem(headlineContent = { Text(error) },
-                            trailingContent = { androidx.compose.material3.TextButton(onClick = viewModel.albums::loadMore) { Text("Retry") } })
+                    ListItem(
+                            trailingContent = { androidx.compose.material3.TextButton(onClick = viewModel.albums::loadMore) { Text("Retry") } }) { Text(error) }
                 }
             }
         }
@@ -328,9 +330,8 @@ private fun ServerGenresTab(viewModel: ServerLibraryViewModel) {
         else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = PageBottomPadding)) {
             items(genres, key = { it.id }) { genre ->
                 ListItem(
-                        modifier = Modifier.clickable { actions.openGenre(genre) },
-                        headlineContent = { Text(genre.name) },
-                        supportingContent = { Text("${genre.no ?: 0} songs", color = MaterialTheme.colorScheme.onSurfaceVariant) })
+                        onClick = { actions.openGenre(genre) },
+                        supportingContent = { Text("${genre.no ?: 0} songs", color = MaterialTheme.colorScheme.onSurfaceVariant) }) { Text(genre.name) }
             }
         }
     }

@@ -1,5 +1,6 @@
 package com.udeshcoffee.android.ui.compose.home
 
+import com.udeshcoffee.android.ui.compose.components.PageLoadingIndicator
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.clickable
@@ -58,16 +59,15 @@ fun HomeScreen(viewModel: HomeViewModel = koinViewModel()) {
     TopLevelScaffold("Home") { padding ->
         val c = content
         when {
-            c == null -> Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+            c == null -> Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { PageLoadingIndicator() }
             // Offline (or the server is down): downloaded songs still play.
             c.error != null -> androidx.compose.foundation.layout.Column(Modifier.padding(padding)) {
                 ServerNotice("Couldn't load: ${c.error}", viewModel::retry)
                 val downloads = Playlist(Playlist.DOWNLOADS)
                 androidx.compose.material3.ListItem(
-                        modifier = Modifier.clickable { actions.openPlaylist(downloads) },
+                        onClick = { actions.openPlaylist(downloads) },
                         leadingContent = { Icon(downloads.icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-                        headlineContent = { Text("Downloaded songs") },
-                        supportingContent = { Text("Play what's saved on this device") })
+                        supportingContent = { Text("Play what's saved on this device") }) { Text("Downloaded songs") }
             }
             c.isEmpty -> EmptyState("Your recently added and played music shows up here", Modifier.padding(padding), Icons.Default.Home)
             else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(top = padding.calculateTopPadding(), bottom = 16.dp)) {

@@ -34,8 +34,8 @@ class SortSetting(
     }
 
     /** With [naturalAscending], picking an order also sets its natural direction (A to Z, newest / most first...). */
-    fun group(title: String?, options: List<SortOption>, state: SortState, naturalAscending: ((Int) -> Boolean)? = null) =
-            SortGroup(title, options, state.order, state.ascending,
+    fun group(options: List<SortOption>, state: SortState, naturalAscending: ((Int) -> Boolean)? = null) =
+            SortGroup(options, state.order, state.ascending,
                     onSelect = { order -> setOrder(order); naturalAscending?.let { setAscending(it(order)) } },
                     onAscendingChange = ::setAscending)
 }

@@ -1,5 +1,6 @@
 package com.udeshcoffee.android.ui.compose.search
 
+import com.udeshcoffee.android.ui.compose.components.PageLoadingIndicator
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -75,7 +76,7 @@ fun SearchScreen(viewModel: SearchViewModel = koinViewModel()) {
     }) { padding ->
         val r = results
         when {
-            r.searching -> Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+            r.searching -> Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { PageLoadingIndicator() }
             r.error != null -> Text(r.error, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(padding).padding(16.dp))
             query.isNotBlank() && r.isEmpty -> EmptyState("No results for \"$query\"", Modifier.padding(padding), Icons.Default.Search)
             else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = padding) {

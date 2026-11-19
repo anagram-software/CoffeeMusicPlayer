@@ -1,45 +1,28 @@
 package com.udeshcoffee.android.ui.compose.components
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MenuItemShapes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.DropdownMenuGroup
+import androidx.compose.material3.SelectableDropdownMenuItem
+import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Surface
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Text
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import com.udeshcoffee.android.utils.SortManager
 
 /** A sort order choice for [SortMenu]. */
@@ -86,7 +69,6 @@ fun playlistNaturalAscending(order: Int) = order == SortManager.PlaylistSort.NAM
  * for lists the source orders itself (a server's album lists), which then show no direction control.
  */
 data class SortGroup(
-        val title: String?,
         val options: List<SortOption>,
         val selected: Int,
         val ascending: Boolean?,
@@ -94,14 +76,10 @@ data class SortGroup(
         val onAscendingChange: (Boolean) -> Unit = {}
 )
 
-private val MenuCardShape = RoundedCornerShape(16.dp)
-private val MenuItemShape = RoundedCornerShape(12.dp)
-
 /**
- * The sort button and menu used by every list, in the Material 3 Expressive style (built from
- * [DropdownMenu], as this Material 3 version has no expressive menu): each group is a rounded card
- * (cards separated by gaps), the chosen order is a filled rounded item with a check, and the
- * direction is a segmented Ascending / Descending control. Picking an order closes the menu;
+ * The sort button and menu used by every list: a Material 3 Expressive grouped menu. Each list
+ * is a group of selectable orders (no title), followed by a group with its direction
+ * (Ascending / Descending) unless the source orders it. Picking an order closes the menu;
  * changing the direction keeps it open.
  */
 @Composable
@@ -109,55 +87,54 @@ fun SortMenu(vararg groups: SortGroup) {
     var expanded by remember { mutableStateOf(false) }
     Box {
         IconButton(onClick = { expanded = true }) { Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = "Sort") }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false },
-                shape = MenuCardShape, containerColor = Color.Transparent, tonalElevation = 0.dp, shadowElevation = 0.dp) {
-            Column(Modifier.padding(horizontal = 4.dp).width(IntrinsicSize.Max), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                groups.forEach { group -> SortGroupCard(group, onPicked = { expanded = false }) }
+        DropdownMenuPopup(expanded = expanded, onDismissRequest = { expanded = false }) {
+            val total = groups.sumOf { if (it.ascending != null) 2 else 1 }
+            var index = 0
+            groups.forEach { group ->
+                if (index > 0) Spacer(Modifier.height(MenuDefaults.GroupSpacing))
+                DropdownMenuGroup(shapes = MenuDefaults.groupShape(index++, total)) {
+                    group.options.forEachIndexed { i, option ->
+                        SelectableDropdownMenuItem(
+                                selected = option.key == group.selected,
+                                onClick = { group.onSelect(option.key); expanded = false },
+                                text = { Text(option.label) },
+                                shapes = slotShape(i, group.options.size),
+                                // An empty slot the size of the check keeps every label aligned.
+                                leadingIcon = { Spacer(Modifier.size(MenuDefaults.LeadingIconSize)) },
+                                selectedLeadingIcon = {
+                                    Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(MenuDefaults.LeadingIconSize))
+                                })
+                    }
+                }
+                group.ascending?.let { ascending ->
+                    Spacer(Modifier.height(MenuDefaults.GroupSpacing))
+                    DropdownMenuGroup(shapes = MenuDefaults.groupShape(index++, total)) {
+                        SelectableDropdownMenuItem(
+                                selected = ascending,
+                                onClick = { group.onAscendingChange(true) },
+                                text = { Text("Ascending") },
+                                shapes = slotShape(0, 2),
+                                leadingIcon = { Icon(Icons.Default.ArrowUpward, contentDescription = null, modifier = Modifier.size(MenuDefaults.LeadingIconSize)) })
+                        SelectableDropdownMenuItem(
+                                selected = !ascending,
+                                onClick = { group.onAscendingChange(false) },
+                                text = { Text("Descending") },
+                                shapes = slotShape(1, 2),
+                                leadingIcon = { Icon(Icons.Default.ArrowDownward, contentDescription = null, modifier = Modifier.size(MenuDefaults.LeadingIconSize)) })
+                    }
+                }
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * The item's segmented shape for its position in the group, kept when selected: Material's default
+ * morphs the selected item into a separate rounded pill, which looks out of place in a list of
+ * options where one is always selected. Selection shows as the tint and check instead.
+ */
 @Composable
-private fun SortGroupCard(group: SortGroup, onPicked: () -> Unit) {
-    Surface(shape = MenuCardShape, color = MaterialTheme.colorScheme.surfaceContainer, shadowElevation = 3.dp,
-            modifier = Modifier.widthIn(min = 220.dp).fillMaxWidth()) {
-        Column(Modifier.padding(4.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            group.title?.let {
-                Text(it, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 4.dp))
-            }
-            group.options.forEach { option ->
-                val selected = option.key == group.selected
-                Row(Modifier.fillMaxWidth().heightIn(min = 44.dp).clip(MenuItemShape)
-                        .background(if (selected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent)
-                        .clickable { group.onSelect(option.key); onPicked() }
-                        .padding(horizontal = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically) {
-                    Text(option.label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f),
-                            color = if (selected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface)
-                    if (selected) {
-                        Spacer(Modifier.width(12.dp))
-                        Icon(Icons.Default.Check, contentDescription = "Selected", modifier = Modifier.size(20.dp),
-                                tint = MaterialTheme.colorScheme.onSecondaryContainer)
-                    }
-                }
-            }
-            group.ascending?.let { ascending ->
-                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(start = 4.dp, end = 4.dp, top = 6.dp, bottom = 4.dp)) {
-                    SegmentedButton(selected = ascending, onClick = { group.onAscendingChange(true) },
-                            shape = SegmentedButtonDefaults.itemShape(0, 2),
-                            icon = { Icon(Icons.Default.ArrowUpward, contentDescription = null, modifier = Modifier.size(18.dp)) }) {
-                        Text("Ascending", maxLines = 1)
-                    }
-                    SegmentedButton(selected = !ascending, onClick = { group.onAscendingChange(false) },
-                            shape = SegmentedButtonDefaults.itemShape(1, 2),
-                            icon = { Icon(Icons.Default.ArrowDownward, contentDescription = null, modifier = Modifier.size(18.dp)) }) {
-                        Text("Descending", maxLines = 1)
-                    }
-                }
-            }
-        }
-    }
+private fun slotShape(index: Int, count: Int): MenuItemShapes {
+    val slot = MenuDefaults.itemShape(index, count).shape
+    return MenuDefaults.itemShapes(shape = slot, selectedShape = slot)
 }

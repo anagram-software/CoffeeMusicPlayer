@@ -4,7 +4,8 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialExpressiveTheme
+import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -51,7 +52,7 @@ fun SectionTheme(section: Section, darkTheme: Boolean = isSystemInDarkTheme(), c
     val accent by animateColorAsState(section.accent, spec, label = "sectionAccent")
     val scheme = if (darkTheme) darkSectionScheme(primary, onPrimary, accent) else lightSectionScheme(primary, onPrimary, accent)
     CompositionLocalProvider(LocalSection provides section) {
-        MaterialTheme(colorScheme = scheme, typography = AppTypography, content = content)
+        MaterialExpressiveTheme(colorScheme = scheme, motionScheme = MotionScheme.expressive(), typography = AppTypography, content = content)
     }
 }
 

@@ -46,10 +46,9 @@ import com.udeshcoffee.android.ui.compose.OptionsSheet
 @Composable
 private fun SheetAction(icon: ImageVector, label: String, onClick: () -> Unit) {
     ListItem(
-            modifier = Modifier.clickable(onClick = onClick),
+            onClick = onClick,
             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-            leadingContent = { Icon(icon, contentDescription = null) },
-            headlineContent = { Text(label) })
+            leadingContent = { Icon(icon, contentDescription = null) }) { Text(label) }
 }
 
 /** Song or collection options, replacing the old long-press dialogs. */
@@ -69,8 +68,7 @@ fun OptionsSheetHost(actions: AppActions) {
                     ListItem(
                             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                             leadingContent = { SongArtwork(song, Modifier.size(48.dp)) },
-                            headlineContent = { Text(song.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                            supportingContent = { Text("${song.artistName} • ${song.albumName}", maxLines = 1, overflow = TextOverflow.Ellipsis) })
+                            supportingContent = { Text("${song.artistName} • ${song.albumName}", maxLines = 1, overflow = TextOverflow.Ellipsis) }) { Text(song.title, maxLines = 1, overflow = TextOverflow.Ellipsis) }
                     HorizontalDivider()
                     SheetAction(Icons.Default.PlayArrow, "Play", run { actions.play(listOf(song)) })
                     SheetAction(Icons.Default.SkipNext, "Play next", run { actions.queue(listOf(song), next = true) })
@@ -102,8 +100,7 @@ fun OptionsSheetHost(actions: AppActions) {
                 is OptionsSheet.ForCollection -> {
                     ListItem(
                             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                            headlineContent = { Text(sheet.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                            supportingContent = { Text(songCount(sheet.songs.size)) })
+                            supportingContent = { Text(songCount(sheet.songs.size)) }) { Text(sheet.title, maxLines = 1, overflow = TextOverflow.Ellipsis) }
                     HorizontalDivider()
                     SheetAction(Icons.Default.PlayArrow, "Play", run { actions.play(sheet.songs) })
                     SheetAction(Icons.Default.SkipNext, "Play next", run { actions.queue(sheet.songs, next = true) })

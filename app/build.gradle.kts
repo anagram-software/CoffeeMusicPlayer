@@ -19,7 +19,9 @@ fun secret(name: String): String = "\"${localProperties.getProperty(name, "")}\"
 
 android {
     namespace = "com.udeshcoffee.android"
-    compileSdk = 37
+    compileSdk {
+        version = release(37) { minorApiLevel = 1 }
+    }
 
     defaultConfig {
         applicationId = "com.udeshcoffee.android"

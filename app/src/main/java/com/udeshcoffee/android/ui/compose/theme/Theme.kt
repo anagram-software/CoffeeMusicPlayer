@@ -23,7 +23,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.palette.graphics.Palette
-import com.materialkolor.DynamicMaterialTheme
+import com.materialkolor.DynamicMaterialExpressiveTheme
+import com.materialkolor.PaletteStyle
+import com.materialkolor.dynamiccolor.ColorSpec
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialExpressiveTheme
+import androidx.compose.material3.MotionScheme
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.utils.artworkData
 import com.udeshcoffee.android.utils.loadBitmap
@@ -39,10 +44,14 @@ private val FallbackLight = lightColorScheme(primary = CoffeeBrown, secondary = 
  * App theme. With a [seedColor] (taken from the playing song's artwork) the whole colour scheme
  * is generated from it; otherwise Material You wallpaper colours (Android 12+) or the app palette.
  */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class) // materialkolor's DynamicMaterialExpressiveTheme
 @Composable
 fun CoffeeTheme(seedColor: Color? = null, darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
     if (seedColor != null) {
-        DynamicMaterialTheme(seedColor = seedColor, isDark = darkTheme, animate = true, typography = AppTypography, content = content)
+        // TonalSpot keeps the artwork's hue (materialkolor's expressive default shifts it).
+        DynamicMaterialExpressiveTheme(seedColor = seedColor, motionScheme = MotionScheme.expressive(), isDark = darkTheme,
+                style = PaletteStyle.TonalSpot, specVersion = ColorSpec.SpecVersion.Default, animate = true,
+                typography = AppTypography, content = content)
         return
     }
     val context = LocalContext.current
@@ -52,7 +61,7 @@ fun CoffeeTheme(seedColor: Color? = null, darkTheme: Boolean = isSystemInDarkThe
         darkTheme -> FallbackDark
         else -> FallbackLight
     }
-    MaterialTheme(colorScheme = scheme, typography = AppTypography, content = content)
+    MaterialExpressiveTheme(colorScheme = scheme, motionScheme = MotionScheme.expressive(), typography = AppTypography, content = content)
 }
 
 /** A seed colour extracted from [song]'s artwork, or null while loading / without artwork. */
@@ -92,7 +101,7 @@ fun rememberArtworkSeed(data: Any?, key: Any? = null): Color? {
 fun ArtworkTint(seed: Color?, darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
     val base = MaterialTheme.colorScheme
     val target = remember(seed, darkTheme) { seed?.let { artworkColorScheme(it, darkTheme) } } ?: base
-    MaterialTheme(colorScheme = animateColorScheme(target), typography = AppTypography, content = content)
+    MaterialExpressiveTheme(colorScheme = animateColorScheme(target), motionScheme = MotionScheme.expressive(), typography = AppTypography, content = content)
 }
 
 /**

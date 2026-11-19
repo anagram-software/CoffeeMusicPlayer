@@ -67,16 +67,14 @@ fun SongRow(
         trailing: (@Composable () -> Unit)? = null
 ) {
     ListItem(
-            modifier = modifier.combinedClickable(onClick = onClick, onLongClick = onMore),
+            onClick = onClick,
+            onLongClick = onMore,
+            modifier = modifier,
             colors = if (isCurrent) ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
             else ListItemDefaults.colors(),
             leadingContent = leading ?: if (showArtwork) {
                 { SongArtwork(song, Modifier.size(48.dp)) }
             } else null,
-            headlineContent = {
-                Text(song.title, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                        fontWeight = if (isCurrent) FontWeight.SemiBold else null)
-            },
             supportingContent = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     // Saved for offline listening.
@@ -93,17 +91,19 @@ fun SongRow(
                     trailing?.invoke()
                     IconButton(onClick = onMore) { Icon(Icons.Default.MoreVert, contentDescription = "Song options") }
                 }
-            })
+            }) {
+                Text(song.title, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        fontWeight = if (isCurrent) FontWeight.SemiBold else null)
+            }
 }
 
 /** "Shuffle all" row shown at the top of song lists. */
 @Composable
 fun ShuffleRow(count: Int, subtitle: String = songCount(count), onClick: () -> Unit) {
     ListItem(
-            modifier = Modifier.combinedClickableCompat(onClick),
+            onClick = onClick,
             leadingContent = { Icon(Icons.Default.Shuffle, contentDescription = null, modifier = Modifier.size(48.dp).padding(10.dp)) },
-            headlineContent = { Text("Shuffle all") },
-            supportingContent = { Text(subtitle) })
+            supportingContent = { Text(subtitle) }) { Text("Shuffle all") }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -221,3 +221,8 @@ fun formatDuration(ms: Long): String {
     return if (h > 0) String.format(java.util.Locale.ROOT, "%d:%02d:%02d", h, m, s)
     else String.format(java.util.Locale.ROOT, "%d:%02d", m, s)
 }
+
+/** The loading indicator for pages and lists while their content loads (Material 3 Expressive's shape-morphing indicator). */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun PageLoadingIndicator(modifier: Modifier = Modifier) = androidx.compose.material3.LoadingIndicator(modifier)

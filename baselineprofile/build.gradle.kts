@@ -8,7 +8,9 @@ plugins {
 //   ./gradlew :baselineprofile:connectedBenchmarkReleaseAndroidTest
 android {
     namespace = "com.udeshcoffee.android.baselineprofile"
-    compileSdk = 37
+    compileSdk {
+        version = release(37) { minorApiLevel = 1 }
+    }
 
     defaultConfig {
         minSdk = 28

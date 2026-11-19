@@ -16,7 +16,7 @@ media3 = "1.11.1"
 room = "2.8.5"
 
 # Compose
-compose-bom = "2026.09.00"
+compose-bom = "2026.11.01"
 activity-compose = "1.13.0"
 navigation-compose = "2.10.2"
 material-icons = "1.7.8"

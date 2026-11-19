@@ -1,5 +1,6 @@
 package com.udeshcoffee.android.ui.compose.detail
 
+import com.udeshcoffee.android.ui.compose.components.PageLoadingIndicator
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -57,6 +58,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -239,10 +241,10 @@ private fun DetailHeader(
 /** The header's Play and Shuffle buttons (pill-shaped, as in the web player). */
 @Composable
 private fun RowScope.HeaderPlayButtons(enabled: Boolean, onPlay: () -> Unit, onShuffle: () -> Unit) {
-    Button(onClick = onPlay, enabled = enabled, shape = CircleShape) {
+    Button(onClick = onPlay, enabled = enabled, shapes = ButtonDefaults.shapes()) {
         Icon(Icons.Default.PlayArrow, contentDescription = null); Spacer(Modifier.width(6.dp)); Text("PLAY", letterSpacing = 1.sp)
     }
-    OutlinedButton(onClick = onShuffle, enabled = enabled, shape = CircleShape) {
+    OutlinedButton(onClick = onShuffle, enabled = enabled, shapes = ButtonDefaults.shapes()) {
         Icon(Icons.Default.Shuffle, contentDescription = null); Spacer(Modifier.width(6.dp)); Text("SHUFFLE", letterSpacing = 1.sp)
     }
 }
@@ -258,7 +260,7 @@ private fun HeaderHeart(starred: Boolean, onToggle: () -> Unit) {
 }
 
 @Composable
-private fun Loading() = Box(Modifier.fillMaxWidth().padding(48.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+private fun Loading() = Box(Modifier.fillMaxWidth().padding(48.dp), contentAlignment = Alignment.Center) { PageLoadingIndicator() }
 
 /** Songs, or a spinner while loading, or the music server error with a retry button. */
 private fun LazyListScope.songsOrState(songs: List<Song>?, error: String?, onRetry: () -> Unit, content: LazyListScope.(List<Song>) -> Unit) {
@@ -343,7 +345,7 @@ private fun AlbumDetailContent(albumId: Long, title: String, remoteId: String?) 
     val listState = rememberLazyListState()
     HeaderScaffold(title, listState, actions = {
         if (remoteId != null) DownloadButton(songs.orEmpty())
-        SortMenu(SortSettings.albumSongs.group("Songs", SongSortOptions, sort))
+        SortMenu(SortSettings.albumSongs.group(SongSortOptions, sort))
         CollectionMenuButton(title, songs.orEmpty())
     }) { padding ->
         LazyColumn(Modifier.fillMaxSize(), state = listState, contentPadding = padding) {
@@ -445,9 +447,9 @@ private fun ArtistDetailContent(viewModel: ArtistDetailViewModel, artistId: Long
 
     HeaderScaffold(name, listState, actions = {
         // Server artists' songs are their top songs, in rank order.
-        if (viewModel.isRemote) SortMenu(SortSettings.artistAlbums.group("Albums", AlbumSortOptions, albumSort))
-        else SortMenu(SortSettings.artistAlbums.group("Albums", AlbumSortOptions, albumSort),
-                SortSettings.artistSongs.group("Songs", SongSortOptions, songSort))
+        if (viewModel.isRemote) SortMenu(SortSettings.artistAlbums.group(AlbumSortOptions, albumSort))
+        else SortMenu(SortSettings.artistAlbums.group(AlbumSortOptions, albumSort),
+                SortSettings.artistSongs.group(SongSortOptions, songSort))
         Box {
             IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, contentDescription = "More options") }
             DropdownMenu(menu, onDismissRequest = { menu = false }) {
@@ -583,8 +585,8 @@ fun GenreDetailScreen(genreId: Long, name: String, remote: Boolean = false) {
     val currentId = rememberCurrentSongId()
     val actions = LocalAppActions.current
     HeaderScaffold(name, listState = null, actions = {
-        SortMenu(SortSettings.genreAlbums.group("Albums", AlbumSortOptions, albumSort),
-                SortSettings.genreSongs.group("Songs", SongSortOptions, songSort))
+        SortMenu(SortSettings.genreAlbums.group(AlbumSortOptions, albumSort),
+                SortSettings.genreSongs.group(SongSortOptions, songSort))
         CollectionMenuButton(name, songs.orEmpty())
     }) { padding ->
         LazyColumn(Modifier.fillMaxSize(), contentPadding = padding) {
@@ -614,7 +616,7 @@ fun FavoritesScreen(viewModel: FavoritesViewModel = koinViewModel()) {
     val sort by SortSettings.favoriteSongs.state.collectAsStateWithLifecycle()
     val currentId = rememberCurrentSongId()
     TopLevelScaffold("Favorites", actions = {
-        SortMenu(SortSettings.favoriteSongs.group("Songs", SongSortOptions, sort))
+        SortMenu(SortSettings.favoriteSongs.group(SongSortOptions, sort))
         CollectionMenuButton("Favorites", songs.orEmpty())
     }) { padding ->
         when {
@@ -761,11 +763,10 @@ fun PlaylistAddSongsScreen(playlistId: Long, title: String) {
         LazyColumn(Modifier.fillMaxSize(), contentPadding = padding) {
             items(songs, key = { it.id }) { song ->
                 ListItem(
-                        modifier = Modifier.clickable { viewModel.toggle(song) },
+                        onClick = { viewModel.toggle(song) },
                         leadingContent = { com.udeshcoffee.android.ui.compose.components.SongArtwork(song, Modifier.size(48.dp)) },
-                        headlineContent = { Text(song.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                         supportingContent = { Text(song.artistName, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                        trailingContent = { Checkbox(checked = song.id in selected, onCheckedChange = { viewModel.toggle(song) }) })
+                        trailingContent = { Checkbox(checked = song.id in selected, onCheckedChange = { viewModel.toggle(song) }) }) { Text(song.title, maxLines = 1, overflow = TextOverflow.Ellipsis) }
             }
         }
     }
@@ -776,6 +777,5 @@ fun PlaylistAddSongsScreen(playlistId: Long, title: String) {
 fun ServerNotice(message: String, onRetry: () -> Unit) {
     ListItem(
             leadingContent = { Icon(Icons.Default.CloudOff, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
-            headlineContent = { Text(message, style = MaterialTheme.typography.bodyMedium) },
-            trailingContent = { androidx.compose.material3.TextButton(onClick = onRetry) { Text("Retry") } })
+            trailingContent = { androidx.compose.material3.TextButton(onClick = onRetry) { Text("Retry") } }) { Text(message, style = MaterialTheme.typography.bodyMedium) }
 }

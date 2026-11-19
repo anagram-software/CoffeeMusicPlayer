@@ -1,5 +1,6 @@
 package com.udeshcoffee.android.ui.compose.playlists
 
+import com.udeshcoffee.android.ui.compose.components.PageLoadingIndicator
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -45,47 +46,45 @@ fun PlaylistsTab(viewModel: PlaylistsViewModel = koinViewModel()) {
     val actions = LocalAppActions.current
     val list = playlists
     if (list == null) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { PageLoadingIndicator() }
         return
     }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = PageBottomPadding)) {
         item {
             ListItem(
-                    modifier = Modifier.clickable { actions.newPlaylist() },
+                    onClick = { actions.newPlaylist() },
                     leadingContent = {
                         Icon(Icons.Default.Add, contentDescription = null, tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(40.dp).padding(6.dp))
-                    },
-                    headlineContent = { Text("New playlist") })
+                    }) { Text("New playlist") }
         }
         error?.let { item { ServerNotice("Couldn't load playlists: $it", viewModel::retry) } }
         if (list.isEmpty() && error == null) {
             item {
-                ListItem(headlineContent = {
+                ListItem {
                     Text("No playlists yet", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                })
+                }
             }
         }
         items(list, key = { "${it.type}:${it.id}:${it.remoteId}" }) { playlist ->
             // Separates the smart playlists from the user's (server playlists are all user playlists).
             if (playlist.type == Playlist.USER && playlist != list.first() && list.firstOrNull { it.type == Playlist.USER } == playlist) HorizontalDivider()
             ListItem(
-                    modifier = Modifier.combinedClickable(onClick = { actions.openPlaylist(playlist) },
-                            onLongClick = { actions.playlistOptions(playlist) }),
+                    onClick = { actions.openPlaylist(playlist) },
+                    onLongClick = { actions.playlistOptions(playlist) },
                     leadingContent = {
                         PlaylistArtwork(playlist, Modifier.size(40.dp)) { modifier ->
                             Icon(playlist.icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary,
                                     modifier = modifier.padding(6.dp))
                         }
                     },
-                    headlineContent = { Text(playlist.title) },
                     supportingContent = {
                         val details = listOfNotNull(playlist.songCount?.let { songCount(it) }, "read-only".takeIf { playlist.readonly })
                         if (details.isNotEmpty()) Text(details.joinToString(" · "))
                     },
                     trailingContent = {
                         IconButton(onClick = { actions.playlistOptions(playlist) }) { Icon(Icons.Default.MoreVert, contentDescription = "Playlist options") }
-                    })
+                    }) { Text(playlist.title) }
         }
     }
 }

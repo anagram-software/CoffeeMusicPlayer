@@ -101,21 +101,19 @@ private fun AddToPlaylistDialog(dialog: AppDialog.AddToPlaylist, actions: AppAct
                 LazyColumn(Modifier.heightIn(max = 360.dp)) {
                     item {
                         ListItem(
-                                modifier = Modifier.clickable { dismiss(); actions.newPlaylist(dialog.songs) },
+                                onClick = { dismiss(); actions.newPlaylist(dialog.songs) },
                                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                                leadingContent = { Icon(Icons.Default.Add, contentDescription = null) },
-                                headlineContent = { Text("New playlist") })
+                                leadingContent = { Icon(Icons.Default.Add, contentDescription = null) }) { Text("New playlist") }
                     }
                     items(playlists.orEmpty(), key = { it.id }) { playlist ->
                         ListItem(
-                                modifier = Modifier.clickable { dismiss(); actions.addSongsToPlaylist(playlist, dialog.songs) },
+                                onClick = { dismiss(); actions.addSongsToPlaylist(playlist, dialog.songs) },
                                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                                 leadingContent = {
                                     PlaylistArtwork(playlist, Modifier.size(40.dp)) { m ->
                                         Icon(Icons.AutoMirrored.Filled.PlaylistPlay, contentDescription = null, modifier = m.padding(8.dp))
                                     }
-                                },
-                                headlineContent = { Text(playlist.title) })
+                                }) { Text(playlist.title) }
                     }
                 }
             },

@@ -1,5 +1,6 @@
 package com.udeshcoffee.android.ui.compose.editor
 
+import com.udeshcoffee.android.ui.compose.components.PageLoadingIndicator
 import android.app.Application
 import android.media.MediaScannerConnection
 import android.net.Uri
@@ -206,7 +207,7 @@ fun EditorScreen(songId: Long) {
     }) { padding ->
         val song = state.song
         if (song == null) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { PageLoadingIndicator() }
             return@Scaffold
         }
         Column(Modifier.fillMaxSize().padding(padding).imePadding().verticalScroll(rememberScrollState()).padding(16.dp),

@@ -1,5 +1,6 @@
 package com.udeshcoffee.android.ui.compose.library
 
+import com.udeshcoffee.android.ui.compose.components.PageLoadingIndicator
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,6 +18,7 @@ import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.draw.clip
@@ -155,7 +157,7 @@ fun LibraryScreen(viewModel: LibraryOverviewViewModel = koinViewModel()) {
                     ServerNotice("Couldn't load: ${recent.error}", viewModel::retry)
                 }
                 albums == null -> item(key = "recent-loading", span = { GridItemSpan(maxLineSpan) }) {
-                    Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                    Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) { PageLoadingIndicator() }
                 }
                 albums.isEmpty() -> item(key = "recent-empty", span = { GridItemSpan(maxLineSpan) }) {
                     Text("Albums you play show up here", style = MaterialTheme.typography.bodyMedium,
@@ -172,33 +174,26 @@ fun LibraryScreen(viewModel: LibraryOverviewViewModel = koinViewModel()) {
     }
 }
 
-/**
- * The categories as a segmented list (Material 3 Expressive style): one rounded group of tonal
- * rows with small gaps, the outer corners rounder than the inner ones.
- */
+/** The categories as a Material 3 Expressive segmented list, with a hint of the section's accent. */
 @Composable
 private fun CategoryList(onOpen: (LibraryCategory) -> Unit) {
     val categories = LibraryCategory.entries
-    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+    val container = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f).compositeOver(MaterialTheme.colorScheme.surfaceContainer)
+    Column(verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)) {
         categories.forEachIndexed { index, category ->
-            val outer = 20.dp
-            val inner = 4.dp
-            val shape = RoundedCornerShape(
-                    topStart = if (index == 0) outer else inner, topEnd = if (index == 0) outer else inner,
-                    bottomEnd = if (index == categories.lastIndex) outer else inner, bottomStart = if (index == categories.lastIndex) outer else inner)
-            ListItem(
-                    modifier = Modifier.clip(shape).clickable { onOpen(category) },
-                    // A hint of the section's accent over the tonal surface.
-                    colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
-                            .compositeOver(MaterialTheme.colorScheme.surfaceContainer)),
+            SegmentedListItem(
+                    onClick = { onOpen(category) },
+                    shapes = ListItemDefaults.segmentedShapes(index, categories.size),
+                    colors = ListItemDefaults.segmentedColors(containerColor = container),
                     leadingContent = {
                         Box(Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)),
                                 contentAlignment = Alignment.Center) {
                             Icon(category.icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                         }
                     },
-                    headlineContent = { Text(category.label, style = MaterialTheme.typography.titleMedium) },
-                    trailingContent = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null) })
+                    trailingContent = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null) }) {
+                Text(category.label, style = MaterialTheme.typography.titleMedium)
+            }
         }
     }
 }
@@ -234,9 +229,9 @@ private fun DeviceLibraryCategory(category: LibraryCategory, viewModel: LibraryV
 @Composable
 private fun LibrarySortMenu(category: LibraryCategory) {
     when (category) {
-        LibraryCategory.ALBUMS -> { val s by SortSettings.albums.state.collectAsStateWithLifecycle(); SortMenu(SortSettings.albums.group("Albums", AlbumSortOptions, s)) }
-        LibraryCategory.ARTISTS -> { val s by SortSettings.artists.state.collectAsStateWithLifecycle(); SortMenu(SortSettings.artists.group("Artists", DeviceArtistSortOptions, s, ::artistNaturalAscending)) }
-        LibraryCategory.SONGS -> { val s by SortSettings.songs.state.collectAsStateWithLifecycle(); SortMenu(SortSettings.songs.group("Songs", SongSortOptions, s)) }
+        LibraryCategory.ALBUMS -> { val s by SortSettings.albums.state.collectAsStateWithLifecycle(); SortMenu(SortSettings.albums.group(AlbumSortOptions, s)) }
+        LibraryCategory.ARTISTS -> { val s by SortSettings.artists.state.collectAsStateWithLifecycle(); SortMenu(SortSettings.artists.group(DeviceArtistSortOptions, s, ::artistNaturalAscending)) }
+        LibraryCategory.SONGS -> { val s by SortSettings.songs.state.collectAsStateWithLifecycle(); SortMenu(SortSettings.songs.group(SongSortOptions, s)) }
         LibraryCategory.PLAYLISTS -> PlaylistSortMenu()
         else -> {}
     }
@@ -246,18 +241,18 @@ private fun LibrarySortMenu(category: LibraryCategory) {
 @Composable
 internal fun PlaylistSortMenu() {
     val s by SortSettings.playlists.state.collectAsStateWithLifecycle()
-    SortMenu(SortSettings.playlists.group("Playlists", PlaylistSortOptions, s, ::playlistNaturalAscending))
+    SortMenu(SortSettings.playlists.group(PlaylistSortOptions, s, ::playlistNaturalAscending))
 }
 
 /** Server artists: alphabetical (default) or most albums. */
 @Composable
 internal fun ServerArtistSortMenu() {
     val s by SortSettings.artists.state.collectAsStateWithLifecycle()
-    SortMenu(SortSettings.artists.group("Artists", ServerArtistSortOptions, s, ::artistNaturalAscending))
+    SortMenu(SortSettings.artists.group(ServerArtistSortOptions, s, ::artistNaturalAscending))
 }
 
 @Composable
-private fun Loading() = Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+private fun Loading() = Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { PageLoadingIndicator() }
 
 @Composable
 fun SongList(songs: List<Song>, modifier: Modifier = Modifier, header: (@Composable () -> Unit)? = null, showShuffle: Boolean = true) {
@@ -337,13 +332,13 @@ private fun GenresTab(viewModel: LibraryViewModel) {
 @Composable
 private fun GenreRow(genre: Genre, onClick: () -> Unit, onLongClick: () -> Unit) {
     ListItem(
-            modifier = Modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick),
-            headlineContent = { Text(genre.name) },
+            onClick = onClick,
+            onLongClick = onLongClick,
             supportingContent = { Text(songCount(genre.no ?: 0)) },
             trailingContent = {
                 // Up to three album covers from the genre.
                 Row {
                     genre.arts.orEmpty().take(3).forEach { albumId -> AlbumArtwork(albumId, Modifier.padding(start = 4.dp).size(40.dp)) }
                 }
-            })
+            }) { Text(genre.name) }
 }

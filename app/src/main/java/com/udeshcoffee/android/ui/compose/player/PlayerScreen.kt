@@ -1,5 +1,7 @@
 package com.udeshcoffee.android.ui.compose.player
 
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
@@ -50,6 +52,7 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderState
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -172,13 +175,15 @@ private fun Controls(state: PlayerUiState, song: Song, viewModel: NowPlayingView
                 Text("${song.artistName} • ${song.albumName}", style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
-            IconToggleButton(checked = isFavorite, onCheckedChange = { viewModel.toggleFavorite() }) {
+            IconToggleButton(checked = isFavorite, onCheckedChange = { viewModel.toggleFavorite() }, shapes = IconButtonDefaults.toggleableShapes()) {
                 Icon(if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                         contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites")
             }
         }
+        val slider = remember { SliderState() }
+        slider.value = if (seeking) seekValue else (position.toFloat() / duration).coerceIn(0f, 1f)
         Slider(
-                value = if (seeking) seekValue else (position.toFloat() / duration).coerceIn(0f, 1f),
+                state = slider,
                 onValueChange = { seeking = true; seekValue = it },
                 onValueChangeFinished = { player.currentPosition = (seekValue * duration).toLong(); seeking = false })
         Row {
@@ -188,19 +193,22 @@ private fun Controls(state: PlayerUiState, song: Song, viewModel: NowPlayingView
         }
         Spacer(Modifier.height(8.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            IconToggleButton(checked = state.shuffle, onCheckedChange = { player.shuffleEnabled = it }) {
+            IconToggleButton(checked = state.shuffle, onCheckedChange = { player.shuffleEnabled = it }, shapes = IconButtonDefaults.toggleableShapes()) {
                 Icon(Icons.Default.Shuffle, contentDescription = if (state.shuffle) "Shuffle on" else "Shuffle off",
                         tint = if (state.shuffle) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            IconButton(onClick = { player.previous() }, modifier = Modifier.size(56.dp)) {
+            IconButton(onClick = { player.previous() }, modifier = Modifier.size(56.dp), shapes = IconButtonDefaults.shapes()) {
                 Icon(Icons.Default.SkipPrevious, contentDescription = "Previous", modifier = Modifier.size(36.dp))
             }
+            // Expressive player: round while paused, a rounded square while playing; squeezes when pressed.
             FilledIconButton(onClick = { if (state.isPlaying) player.pause() else player.play() }, modifier = Modifier.size(72.dp),
+                    shapes = IconButtonDefaults.shapes(shape = if (state.isPlaying) RoundedCornerShape(24.dp) else CircleShape,
+                            pressedShape = RoundedCornerShape(16.dp)),
                     colors = IconButtonDefaults.filledIconButtonColors()) {
                 Icon(if (state.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                         contentDescription = if (state.isPlaying) "Pause" else "Play", modifier = Modifier.size(40.dp))
             }
-            IconButton(onClick = { player.next() }, modifier = Modifier.size(56.dp)) {
+            IconButton(onClick = { player.next() }, modifier = Modifier.size(56.dp), shapes = IconButtonDefaults.shapes()) {
                 Icon(Icons.Default.SkipNext, contentDescription = "Next", modifier = Modifier.size(36.dp))
             }
             val repeat = state.repeatMode
@@ -210,7 +218,7 @@ private fun Controls(state: PlayerUiState, song: Song, viewModel: NowPlayingView
                     RepeatModes.PREF_ALL -> RepeatModes.PREF_ONE
                     else -> RepeatModes.PREF_NONE
                 }
-            }) {
+            }, shapes = IconButtonDefaults.shapes()) {
                 Icon(if (repeat == RepeatModes.PREF_ONE) Icons.Default.RepeatOne else Icons.Default.Repeat,
                         contentDescription = when (repeat) {
                             RepeatModes.PREF_ONE -> "Repeat one"
@@ -264,12 +272,11 @@ private fun QueueList(state: PlayerUiState, modifier: Modifier) {
                 }
                 SwipeToDismissBox(dismiss, backgroundContent = { Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.errorContainer)) }) {
                     ListItem(
-                            modifier = Modifier.clickable { player.playAt(index) },
+                            onClick = { player.playAt(index) },
                             colors = if (index == state.index) ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
                             // Opaque (the swipe-to-remove background is behind it), in the player's colour.
                             else ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
                             leadingContent = { SongArtwork(song, Modifier.size(44.dp)) },
-                            headlineContent = { Text(song.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                             supportingContent = { Text(song.artistName, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                             trailingContent = {
                                 Row {
@@ -277,7 +284,7 @@ private fun QueueList(state: PlayerUiState, modifier: Modifier) {
                                     Icon(Icons.Default.DragHandle, contentDescription = "Reorder",
                                             modifier = Modifier.padding(12.dp).draggableHandle())
                                 }
-                            })
+                            }) { Text(song.title, maxLines = 1, overflow = TextOverflow.Ellipsis) }
                 }
             }
         }

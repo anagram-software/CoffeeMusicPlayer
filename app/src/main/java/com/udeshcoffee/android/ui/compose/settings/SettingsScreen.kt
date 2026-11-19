@@ -61,17 +61,17 @@ fun SettingsScreen() {
             // Device library only: server artists use the server's images and bios.
             if (!isServer) {
                 Header("Online content")
-                ListItem(modifier = Modifier.clickable { collect = !collect },
-                        headlineContent = { Text("Download artist info") },
+                ListItem(
+                        onClick = { collect = !collect },
                         supportingContent = { Text("Artist images and bios from Last.fm") },
-                        trailingContent = { Switch(checked = collect, onCheckedChange = { collect = it }) })
+                        trailingContent = { Switch(checked = collect, onCheckedChange = { collect = it }) }) { Text("Download artist info") }
                 SwitchPref(prefs, PreferenceUtil.PREF_WIFI_ONLY, true, "Wi-Fi only", "Download artist images only on Wi-Fi", enabled = collect)
             }
 
             Header("About")
-            ListItem(modifier = Modifier.clickable { dialog = "whatsnew" }, headlineContent = { Text("What's new") })
-            ListItem(modifier = Modifier.clickable { dialog = "licences" }, headlineContent = { Text("Open source licences") })
-            ListItem(headlineContent = { Text("Version") }, supportingContent = { Text(version) })
+            ListItem(onClick = { dialog = "whatsnew" }) { Text("What's new") }
+            ListItem(onClick = { dialog = "licences" }) { Text("Open source licences") }
+            ListItem(supportingContent = { Text(version) }) { Text("Version") }
             Spacer(Modifier.height(PageBottomPadding))
         }
     }
@@ -117,8 +117,8 @@ private fun rememberPref(prefs: SharedPreferences, key: String, default: Boolean
 private fun SwitchPref(prefs: SharedPreferences, key: String, default: Boolean, title: String, summary: String, enabled: Boolean = true) {
     var value by rememberPref(prefs, key, default)
     ListItem(
-            modifier = Modifier.clickable(enabled = enabled) { value = !value },
-            headlineContent = { Text(title) },
+            onClick = { value = !value },
+            enabled = enabled,
             supportingContent = { Text(summary) },
-            trailingContent = { Switch(checked = value, onCheckedChange = { value = it }, enabled = enabled) })
+            trailingContent = { Switch(checked = value, onCheckedChange = { value = it }, enabled = enabled) }) { Text(title) }
 }
