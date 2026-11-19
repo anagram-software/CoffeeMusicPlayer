@@ -32,6 +32,15 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.udeshcoffee.android.ui.compose.AppActions
+import com.udeshcoffee.android.data.download.DownloadRepository
+import com.udeshcoffee.android.data.download.DownloadStatus
+import com.udeshcoffee.android.data.download.downloadSummary
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.DownloadDone
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import org.koin.compose.koinInject
 import com.udeshcoffee.android.ui.compose.OptionsSheet
 
 @Composable
@@ -49,6 +58,8 @@ private fun SheetAction(icon: ImageVector, label: String, onClick: () -> Unit) {
 fun OptionsSheetHost(actions: AppActions) {
     val sheet = actions.sheet ?: return
     val dismiss = { actions.sheet = null }
+    val downloadRepository: DownloadRepository = koinInject()
+    val downloads by downloadRepository.downloads.collectAsStateWithLifecycle()
     fun run(block: () -> Unit) = { dismiss(); block() }
     ModalBottomSheet(onDismissRequest = dismiss) {
         Column(Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = 8.dp)) {
@@ -70,6 +81,13 @@ fun OptionsSheetHost(actions: AppActions) {
                                 run { actions.removeFromPlaylist(playlist, song) })
                     }
                     SheetAction(Icons.Default.Favorite, "Favorite / unfavorite", run { actions.toggleFavorite(song) })
+                    // Offline listening, for server songs.
+                    if (song.isRemote) when (downloads[song.remoteId]?.status) {
+                        DownloadStatus.DONE -> SheetAction(Icons.Default.DownloadDone, "Remove download", run { actions.removeDownloads(listOf(song)) })
+                        DownloadStatus.QUEUED, DownloadStatus.DOWNLOADING ->
+                            SheetAction(Icons.Default.Close, "Stop download", run { actions.removeDownloads(listOf(song)) })
+                        else -> SheetAction(Icons.Default.Download, "Download", run { actions.download(listOf(song)) })
+                    }
                     if (!song.isRemote || song.albumRemoteId != null)
                         SheetAction(Icons.Default.Album, "Go to album", run { actions.openAlbum(song) })
                     if (!song.isRemote || song.artistRemoteId != null)
@@ -93,6 +111,11 @@ fun OptionsSheetHost(actions: AppActions) {
                     SheetAction(Icons.AutoMirrored.Filled.PlaylistAdd, "Add to playlist",
                             run { actions.addToPlaylist(sheet.songs, sheet.playlist?.id) })
                     SheetAction(Icons.Default.Favorite, "Add to favorites", run { actions.addToFavorites(sheet.songs) })
+                    val summary = downloadSummary(sheet.songs, downloads)
+                    if (summary.total > 0 && summary.done + summary.active < summary.total)
+                        SheetAction(Icons.Default.Download, "Download", run { actions.download(sheet.songs) })
+                    if (summary.done + summary.active > 0)
+                        SheetAction(Icons.Default.DownloadDone, "Remove downloads", run { actions.removeDownloads(sheet.songs) })
                     sheet.playlist?.takeIf { !it.readonly }?.let { playlist ->
                         SheetAction(Icons.Default.Edit, "Rename playlist", run { actions.renamePlaylist(playlist) })
                         SheetAction(Icons.Default.Delete, "Delete playlist", run { actions.deletePlaylist(playlist) })

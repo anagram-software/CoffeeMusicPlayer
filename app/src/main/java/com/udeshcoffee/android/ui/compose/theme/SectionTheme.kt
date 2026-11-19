@@ -25,7 +25,7 @@ enum class Section(val accent: Color, val onAccent: Color, ink: Color? = null) {
     FAVORITES(Color(0xFFFF4081), Color.White),
     LIBRARY(Color(0xFF448AFF), Color.White),
     SEARCH(Color(0xFF448AFF), Color.White),
-    PLAYLISTS(Color(0xFFFFC400), Color(0xFF1A1A1A), ink = Color(0xFFA87600)),
+    PLAYLISTS(Color(0xFF448AFF), Color.White),
     SETTINGS(Color(0xFFFF6E40), Color.White),
     EDIT(Color(0xFF1DE9B6), Color(0xFF1A1A1A), ink = Color(0xFF00897B));
 

@@ -2,6 +2,7 @@ package com.udeshcoffee.android.ui.compose.home
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
@@ -56,7 +57,16 @@ fun HomeScreen(viewModel: HomeViewModel = koinViewModel()) {
         val c = content
         when {
             c == null -> Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-            c.error != null -> Box(Modifier.padding(padding)) { ServerNotice("Couldn't load: ${c.error}", viewModel::retry) }
+            // Offline (or the server is down): downloaded songs still play.
+            c.error != null -> androidx.compose.foundation.layout.Column(Modifier.padding(padding)) {
+                ServerNotice("Couldn't load: ${c.error}", viewModel::retry)
+                val downloads = Playlist(Playlist.DOWNLOADS)
+                androidx.compose.material3.ListItem(
+                        modifier = Modifier.clickable { actions.openPlaylist(downloads) },
+                        leadingContent = { Icon(downloads.icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                        headlineContent = { Text("Downloaded songs") },
+                        supportingContent = { Text("Play what's saved on this device") })
+            }
             c.isEmpty -> EmptyState("Your recently added and played music shows up here", Modifier.padding(padding), Icons.Default.Home)
             else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(top = padding.calculateTopPadding(), bottom = 16.dp)) {
                 albumSection("Recently added", c.recentlyAdded, actions, seeAll(Playlist.RECENTLY_ADDED))

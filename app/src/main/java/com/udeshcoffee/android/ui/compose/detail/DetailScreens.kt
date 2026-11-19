@@ -87,6 +87,7 @@ import com.udeshcoffee.android.ui.compose.rememberCurrentSongId
 import com.udeshcoffee.android.ui.compose.components.TopLevelScaffold
 import org.koin.compose.viewmodel.koinViewModel
 import com.udeshcoffee.android.ui.compose.components.ArtworkImage
+import com.udeshcoffee.android.ui.compose.components.DownloadButton
 import com.udeshcoffee.android.utils.CoverArt
 import org.koin.core.parameter.parametersOf
 import sh.calvin.reorderable.ReorderableItem
@@ -182,6 +183,7 @@ fun AlbumDetailScreen(albumId: Long, title: String, remoteId: String? = null) {
     val sort by SortSettings.albumSongs.state.collectAsStateWithLifecycle()
     val currentId = rememberCurrentSongId()
     DetailScaffold(title, actions = {
+        if (remoteId != null) DownloadButton(songs.orEmpty())
         SortMenu(SortSettings.albumSongs.group(null, SongSortOptions, sort))
         CollectionMenuButton(title, songs.orEmpty())
     }) { padding ->
@@ -356,6 +358,8 @@ fun PlaylistDetailScreen(playlistId: Long, type: Int, title: String, remoteId: S
     DetailScaffold(title, actions = {
         // Picking from the device library only fits device playlists; server playlists get songs via "Add to playlist".
         if (isUser && remoteId == null) IconButton(onClick = { actions.openPlaylistAddSongs(playlist) }) { Icon(Icons.Default.Add, contentDescription = "Add songs") }
+        // Server playlists download for offline listening; the Downloads list offers removing them all.
+        if (remoteId != null || type == Playlist.DOWNLOADS) DownloadButton(songs.orEmpty())
         Box {
             IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, contentDescription = "More options") }
             DropdownMenu(menu, onDismissRequest = { menu = false }) {
@@ -376,6 +380,7 @@ fun PlaylistDetailScreen(playlistId: Long, type: Int, title: String, remoteId: S
             }
             list == null -> Loading()
             list.isEmpty() -> EmptyState(when {
+                type == Playlist.DOWNLOADS -> "Downloaded songs appear here. Download songs, albums and playlists from their options."
                 remoteId != null -> "Add songs with \"Add to playlist\" in a song's options"
                 isUser -> "Add songs with the + button"
                 else -> "Nothing here yet"

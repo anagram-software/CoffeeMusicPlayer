@@ -23,12 +23,12 @@ val composeModule = module {
     viewModel { LibraryViewModel(get()) }
     viewModel { HomeViewModel(get(), get(), get()) }
     viewModel { FavoritesViewModel(get(), get(), get()) }
-    viewModel { PlaylistsViewModel(get(), get(), get()) }
+    viewModel { PlaylistsViewModel(get(), get(), get(), get()) }
     viewModel { SearchViewModel(get(), get(), get()) }
     viewModel { (albumId: Long, remoteId: String?) -> AlbumDetailViewModel(albumId, remoteId, get(), get()) }
     viewModel { (artistId: Long, name: String, remoteId: String?) -> ArtistDetailViewModel(artistId, name, remoteId, get(), get(), get()) }
     viewModel { (genreId: Long, name: String, remote: Boolean) -> GenreDetailViewModel(genreId, name, remote, get(), get()) }
-    viewModel { (playlistId: Long, type: Int, remoteId: String?) -> PlaylistDetailViewModel(playlistId, type, remoteId, get(), get()) }
+    viewModel { (playlistId: Long, type: Int, remoteId: String?) -> PlaylistDetailViewModel(playlistId, type, remoteId, get(), get(), get()) }
     viewModel { (playlistId: Long) -> PlaylistAddSongsViewModel(playlistId, get()) }
     viewModel { (songId: Long) -> EditorScreenViewModel(songId, androidApplication(), get(), get()) }
     viewModel { NowPlayingViewModel(get(), get(), get(), get()) }

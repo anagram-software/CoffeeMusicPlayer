@@ -49,8 +49,11 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.udeshcoffee.android.data.DataRepository
 import com.udeshcoffee.android.data.MediaRepository
+import com.udeshcoffee.android.data.download.DownloadRepository
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.ui.compose.components.AppDialogHost
+import com.udeshcoffee.android.ui.compose.components.LocalDownloadedIds
 import com.udeshcoffee.android.ui.compose.components.OptionsSheetHost
 import com.udeshcoffee.android.ui.compose.detail.AlbumDetailScreen
 import com.udeshcoffee.android.ui.compose.detail.ArtistDetailScreen
@@ -116,8 +119,10 @@ fun CoffeeApp(onDeleteSongs: (List<Song>) -> Unit, playerExpandedRequest: Boolea
         val mediaRepository: MediaRepository = koinInject()
         val subsonic: com.udeshcoffee.android.data.subsonic.SubsonicRepository = koinInject()
         val sourceStore: com.udeshcoffee.android.data.source.MusicSourceStore = koinInject()
+        val downloads: DownloadRepository = koinInject()
+        val downloadedIds by downloads.downloadedIds.collectAsStateWithLifecycle()
         val actions = remember(navController) {
-            AppActions(context, sourceStore.isServer, navController, scope, dataRepository, mediaRepository, subsonic, snackbar, onDeleteSongs) { expand ->
+            AppActions(context, sourceStore.isServer, navController, scope, dataRepository, mediaRepository, subsonic, downloads, snackbar, onDeleteSongs) { expand ->
                 scope.launch { if (expand) playerSheet.expand() else playerSheet.collapse() }
             }
         }
@@ -183,7 +188,7 @@ fun CoffeeApp(onDeleteSongs: (List<Song>) -> Unit, playerExpandedRequest: Boolea
         LaunchedEffect(playerState.song == null) { if (playerState.song == null && playerState.connected) playerSheet.snapCollapsed() }
         val sheetFling = rememberPlayerSheetFling(playerSheet)
 
-        SectionTheme(section) { CompositionLocalProvider(LocalAppActions provides actions) {
+        SectionTheme(section) { CompositionLocalProvider(LocalAppActions provides actions, LocalDownloadedIds provides downloadedIds) {
             Box(Modifier.fillMaxSize().onSizeChanged { playerSheet.updateHeight(it.height.toFloat()) }) {
                 // The navigation bar (down through the system navigation area) and the mini player share the
                 // artwork's colours and one container colour, so they read as one surface; pages keep their section.

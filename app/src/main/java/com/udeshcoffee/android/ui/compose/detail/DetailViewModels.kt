@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.udeshcoffee.android.data.DataRepository
 import com.udeshcoffee.android.data.MediaRepository
+import com.udeshcoffee.android.data.download.DownloadRepository
 import com.udeshcoffee.android.data.media.songsToAlbums
 import com.udeshcoffee.android.data.media.songsToArtists
 import com.udeshcoffee.android.model.Album
@@ -148,15 +149,19 @@ class PlaylistDetailViewModel(
         val type: Int,
         private val remoteId: String?,
         private val mediaRepository: MediaRepository,
-        private val subsonic: SubsonicRepository
+        private val subsonic: SubsonicRepository,
+        downloads: DownloadRepository
 ) : SourceAwareViewModel() {
 
     /** Server playlists reload after edits. Their entries carry their position as [Song.playlistSongId]. */
     private val remoteSongs = MutableStateFlow<List<Song>?>(null)
 
-    /** Playlists keep their own order. */
-    val songs: StateFlow<List<Song>?> = (if (remoteId != null) remoteSongs else mediaRepository.observePlaylistSongs(playlistId, type))
-            .stateIn(this, null)
+    /** Playlists keep their own order; Downloads (stored on the device, so it works offline) is newest first. */
+    val songs: StateFlow<List<Song>?> = when {
+        type == Playlist.DOWNLOADS -> downloads.downloadedSongs
+        remoteId != null -> remoteSongs
+        else -> mediaRepository.observePlaylistSongs(playlistId, type)
+    }.stateIn(this, null)
 
     init {
         if (remoteId != null) viewModelScope.launch {
@@ -227,17 +232,27 @@ class FavoritesViewModel(sourceStore: MusicSourceStore, mediaRepository: MediaRe
 
 /**
  * Playlists of the current [MusicSource]: the app's own (including the automatic ones built from
- * play stats) on the device, the server's when using a server. Null while loading.
+ * play stats) on the device; on a server, Downloads (offline songs, shown even when the server
+ * can't be reached) followed by the server's. Null while loading.
  */
-class PlaylistsViewModel(sourceStore: MusicSourceStore, mediaRepository: MediaRepository, subsonic: SubsonicRepository) : SourceAwareViewModel() {
+class PlaylistsViewModel(
+        sourceStore: MusicSourceStore,
+        mediaRepository: MediaRepository,
+        subsonic: SubsonicRepository,
+        downloads: DownloadRepository
+) : SourceAwareViewModel() {
     val isServer = sourceStore.isServer
 
+    private val serverPlaylists = combine(subsonic.playlistsVersion, reload) { a, b -> a to b }.flatMapLatest {
+        flow {
+            _error.value = null
+            emit(try { subsonic.playlists() } catch (e: SubsonicException) { _error.value = e.message; emptyList() })
+        }
+    }
+
     val playlists: StateFlow<List<Playlist>?> = (if (isServer) {
-        combine(subsonic.playlistsVersion, reload) { a, b -> a to b }.flatMapLatest {
-            flow<List<Playlist>?> {
-                _error.value = null
-                emit(try { subsonic.playlists() } catch (e: SubsonicException) { _error.value = e.message; emptyList() })
-            }
+        combine(serverPlaylists, downloads.downloadedIds) { server, downloaded ->
+            listOf(Playlist(Playlist.DOWNLOADS).also { it.songCount = downloaded.size }) + server
         }
     } else mediaRepository.observePlaylists()).stateIn(this, null)
 }

@@ -26,7 +26,7 @@ class QueueStoreTest {
     @Test
     fun `entries restore only for their music source`() {
         val device = QueueStore.Entry(localId = 26)
-        val server = QueueStore.Entry(remote = QueueStore.RemoteSong(id = "s1", title = "Butch", album = "Imagine Us", artist = "Back On Earth"))
+        val server = QueueStore.Entry(remote = com.udeshcoffee.android.data.subsonic.ServerSong(id = "s1", title = "Butch", album = "Imagine Us", artist = "Back On Earth"))
         assertEquals(true, device.belongsTo(com.udeshcoffee.android.data.source.MusicSource.DEVICE))
         assertEquals(false, device.belongsTo(com.udeshcoffee.android.data.source.MusicSource.SERVER))
         assertEquals(true, server.belongsTo(com.udeshcoffee.android.data.source.MusicSource.SERVER))

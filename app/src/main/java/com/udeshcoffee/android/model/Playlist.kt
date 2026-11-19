@@ -38,6 +38,10 @@ class Playlist(val type: Int, var id: Long = 0, var title: String = "",
                 id = 1998
                 title = "Recently Played"
             }
+            DOWNLOADS -> {
+                id = 2000
+                title = "Downloads"
+            }
         }
     }
 
@@ -47,5 +51,7 @@ class Playlist(val type: Int, var id: Long = 0, var title: String = "",
         const val RECENTLY_ADDED = 1
         const val RECENTLY_PLAYED = 2
         const val USER = 3
+        /** Music server songs downloaded for offline listening (server source only). */
+        const val DOWNLOADS = 4
     }
 }

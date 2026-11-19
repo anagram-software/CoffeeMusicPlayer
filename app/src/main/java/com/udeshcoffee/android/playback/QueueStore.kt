@@ -6,7 +6,9 @@ import androidx.preference.PreferenceManager
 import com.udeshcoffee.android.data.MediaRepository
 import com.udeshcoffee.android.data.source.MusicSource
 import com.udeshcoffee.android.data.source.MusicSourceStore
-import com.udeshcoffee.android.data.subsonic.RemoteIds
+import com.udeshcoffee.android.data.subsonic.ServerSong
+import com.udeshcoffee.android.data.subsonic.toServerSong
+import com.udeshcoffee.android.data.subsonic.toSong
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.utils.Permissions
 import com.udeshcoffee.android.utils.PreferenceUtil
@@ -30,19 +32,12 @@ class QueueStore(
 
     /** One queue entry: a device song ID or a server song. */
     @Serializable
-    data class Entry(val localId: Long? = null, val remote: RemoteSong? = null) {
+    data class Entry(val localId: Long? = null, val remote: ServerSong? = null) {
         fun belongsTo(source: MusicSource): Boolean = when (source) {
             MusicSource.DEVICE -> localId != null
             MusicSource.SERVER -> remote != null
         }
     }
-
-    @Serializable
-    data class RemoteSong(
-            val id: String, val title: String, val album: String, val albumId: String? = null,
-            val artist: String, val artistId: String? = null, val coverArt: String? = null,
-            val durationMs: Long = 0, val track: Int = 0, val disc: Int = 0, val year: Int = 0
-    )
 
     private val prefs = PreferenceManager.getDefaultSharedPreferences(context)
 
@@ -98,17 +93,10 @@ class QueueStore(
         private val json = Json { ignoreUnknownKeys = true }
 
         fun encodeEntries(songs: List<Song>): String = json.encodeToString(ListSerializer(Entry.serializer()), songs.map { song ->
-            val remote = song.remoteId
-            if (remote == null) Entry(localId = song.id)
-            else Entry(remote = RemoteSong(remote, song.title, song.albumName, song.albumRemoteId, song.artistName,
-                    song.artistRemoteId, song.coverArt, song.duration, song.track, song.discNumber, song.year))
+            song.toServerSong()?.let { Entry(remote = it) } ?: Entry(localId = song.id)
         })
 
         fun decodeEntries(text: String): List<Entry> =
                 runCatching { json.decodeFromString(ListSerializer(Entry.serializer()), text) }.getOrDefault(emptyList())
-
-        private fun RemoteSong.toSong() = Song(RemoteIds.song(id), title, albumId?.let { RemoteIds.album(it) } ?: 0, album,
-                artistId?.let { RemoteIds.artist(it) } ?: 0, artist, durationMs, year, 0, 0, disc * 1000 + track,
-                remoteId = id, coverArt = coverArt, albumRemoteId = albumId, artistRemoteId = artistId)
     }
 }

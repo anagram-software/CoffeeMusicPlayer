@@ -39,6 +39,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.udeshcoffee.android.data.source.MusicSourceStore
+import com.udeshcoffee.android.data.download.DownloadRepository
 import com.udeshcoffee.android.data.subsonic.SubsonicException
 import com.udeshcoffee.android.data.subsonic.SubsonicRepository
 import com.udeshcoffee.android.ui.MusicSourceSwitcher
@@ -64,6 +65,8 @@ fun MusicSourceSettings() {
     var bitRate by remember { mutableIntStateOf(subsonic.maxBitRate) }
     var format by remember { mutableStateOf(subsonic.streamFormat) }
     var scrobble by remember { mutableStateOf(subsonic.scrobbleEnabled) }
+    val downloads: DownloadRepository = koinInject()
+    var downloadWifiOnly by remember { mutableStateOf(downloads.wifiOnly) }
 
     val current = account
     when {
@@ -104,6 +107,10 @@ fun MusicSourceSettings() {
                     headlineContent = { Text("Report plays") },
                     supportingContent = { Text("Play counts on the server (and Last.fm / ListenBrainz if set up there)") },
                     trailingContent = { Switch(checked = scrobble, onCheckedChange = { scrobble = it; subsonic.scrobbleEnabled = it }) })
+            ListItem(modifier = Modifier.clickable { downloadWifiOnly = !downloadWifiOnly; downloads.wifiOnly = downloadWifiOnly },
+                    headlineContent = { Text("Download on Wi-Fi only") },
+                    supportingContent = { Text("Downloads for offline listening wait for an unmetered network. They use the streaming quality and format above.") },
+                    trailingContent = { Switch(checked = downloadWifiOnly, onCheckedChange = { downloadWifiOnly = it; downloads.wifiOnly = it }) })
         }
     }
 
@@ -115,7 +122,7 @@ fun MusicSourceSettings() {
                     Text(buildString {
                         if (current != null && sourceStore.isServer) append("You'll be signed out of ${current.name}. ")
                         append("The queue will be cleared, and you can then connect to a music server or use the music on this device.")
-                        if (sourceStore.isServer) append(" Server playlists and favorites stay on the server.")
+                        if (sourceStore.isServer) append(" Downloaded songs are deleted from this device. Server playlists and favorites stay on the server.")
                         else append(" Your playlists and favorites on this device are kept.")
                     })
                 },

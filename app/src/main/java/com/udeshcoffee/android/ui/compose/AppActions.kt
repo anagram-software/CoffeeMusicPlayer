@@ -10,6 +10,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.navigation.NavController
 import com.udeshcoffee.android.data.DataRepository
 import com.udeshcoffee.android.data.MediaRepository
+import com.udeshcoffee.android.data.download.DownloadRepository
 import com.udeshcoffee.android.data.subsonic.SubsonicException
 import com.udeshcoffee.android.data.subsonic.SubsonicRepository
 import com.udeshcoffee.android.extensions.connectedPlayer
@@ -42,6 +43,8 @@ sealed interface AppDialog {
     data class NewPlaylist(val songs: List<Song>, val onServer: Boolean) : AppDialog
     data class RenamePlaylist(val playlist: Playlist) : AppDialog
     data class DeletePlaylist(val playlist: Playlist, val goBack: Boolean) : AppDialog
+    /** Confirms removing the downloaded (or downloading) copies of [songs]. */
+    data class RemoveDownloads(val songs: List<Song>) : AppDialog
 }
 
 /**
@@ -57,6 +60,7 @@ class AppActions(
         private val dataRepository: DataRepository,
         private val mediaRepository: MediaRepository,
         private val subsonic: SubsonicRepository,
+        private val downloads: DownloadRepository,
         val snackbar: SnackbarHostState,
         /** Deletes songs from the device (asks for consent; implemented by the activity). */
         private val onDeleteSongs: (List<Song>) -> Unit,
@@ -72,6 +76,30 @@ class AppActions(
     }
 
     fun shuffle(songs: List<Song>) = play(songs.shuffled())
+
+    // Offline downloads (music server songs only)
+    fun download(songs: List<Song>) {
+        val server = songs.filter { it.isRemote }
+        if (server.isEmpty()) return
+        downloads.download(server)
+        message(if (server.size == 1) "Downloading ${server[0].title}" else "Downloading ${server.size} songs")
+    }
+
+    /** Asks first when finished downloads would be deleted; stopping unfinished ones needs no confirmation. */
+    fun removeDownloads(songs: List<Song>) {
+        val done = downloads.downloadedIds.value
+        if (songs.any { it.remoteId in done }) {
+            dialog = AppDialog.RemoveDownloads(songs)
+        } else {
+            downloads.remove(songs)
+            message("Stopped downloading")
+        }
+    }
+
+    fun applyRemoveDownloads(songs: List<Song>) {
+        downloads.remove(songs)
+        message(if (songs.size == 1) "Removed download" else "Removed downloads")
+    }
 
     fun queue(songs: List<Song>, next: Boolean) {
         if (songs.isEmpty()) return

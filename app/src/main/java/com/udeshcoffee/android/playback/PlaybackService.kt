@@ -25,6 +25,7 @@ import com.udeshcoffee.android.R
 import com.udeshcoffee.android.data.DataRepository
 import com.udeshcoffee.android.data.MediaRepository
 import com.udeshcoffee.android.data.source.MusicSourceStore
+import com.udeshcoffee.android.data.download.DownloadRepository
 import com.udeshcoffee.android.data.subsonic.SubsonicRepository
 import com.udeshcoffee.android.ui.MainActivity
 import com.udeshcoffee.android.utils.PreferenceUtil
@@ -53,6 +54,7 @@ class PlaybackService : MediaLibraryService() {
     private val subsonic: SubsonicRepository by inject()
     private val queueStore: QueueStore by inject()
     private val sourceStore: MusicSourceStore by inject()
+    private val downloads: DownloadRepository by inject()
 
     private lateinit var player: ExoPlayer
     private lateinit var prefs: SharedPreferences
@@ -69,7 +71,7 @@ class PlaybackService : MediaLibraryService() {
         browser = LibraryBrowser(mediaRepository, subsonic, sourceStore)
 
         player = ExoPlayer.Builder(this)
-                .setMediaSourceFactory(playbackMediaSourceFactory(this))
+                .setMediaSourceFactory(playbackMediaSourceFactory(this, downloads.cache))
                 .setAudioAttributes(AudioAttributes.Builder()
                         .setUsage(C.USAGE_MEDIA)
                         .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)

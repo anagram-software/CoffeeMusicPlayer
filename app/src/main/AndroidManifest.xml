@@ -20,6 +20,8 @@
 
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <!-- Offline downloads of music server songs (Media3 DownloadService). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
     <application
         android:name=".App"
@@ -82,6 +84,17 @@
             <intent-filter>
                 <action android:name="androidx.media3.session.MediaLibraryService" />
                 <action android:name="android.media.browse.MediaBrowserService" />
+            </intent-filter>
+        </service>
+
+        <!-- Offline downloads of music server songs. -->
+        <service
+            android:name=".playback.DownloadsService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync">
+            <intent-filter>
+                <action android:name="androidx.media3.exoplayer.downloadService.action.RESTART" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </service>
 

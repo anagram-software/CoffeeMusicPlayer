@@ -3,6 +3,7 @@ package com.udeshcoffee.android.ui
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import com.udeshcoffee.android.data.download.DownloadRepository
 import com.udeshcoffee.android.data.source.MusicSource
 import com.udeshcoffee.android.data.source.MusicSourceStore
 import com.udeshcoffee.android.data.subsonic.SubsonicRepository
@@ -19,7 +20,8 @@ class MusicSourceSwitcher(
         private val store: MusicSourceStore,
         private val subsonic: SubsonicRepository,
         private val player: PlayerConnection,
-        private val queueStore: QueueStore
+        private val queueStore: QueueStore,
+        private val downloads: DownloadRepository
 ) {
 
     /** After signing in with SubsonicRepository.signIn: use that server. */
@@ -30,7 +32,7 @@ class MusicSourceSwitcher(
 
     /** Use the music on this device (signing out of any server). */
     fun useDevice() {
-        if (subsonic.isSignedIn) subsonic.signOut()
+        leaveServer()
         apply(MusicSource.DEVICE)
     }
 
@@ -39,8 +41,14 @@ class MusicSourceSwitcher(
      * but not configured, so Settings offers the sign-in form and the device option again.
      */
     fun change() {
-        if (subsonic.isSignedIn) subsonic.signOut()
+        leaveServer()
         apply(MusicSource.SERVER)
+    }
+
+    /** Signs out; the server's downloads go too (they're its songs, and IDs could clash with another server's). */
+    private fun leaveServer() {
+        downloads.removeAll()
+        if (subsonic.isSignedIn) subsonic.signOut()
     }
 
     private fun apply(source: MusicSource) {

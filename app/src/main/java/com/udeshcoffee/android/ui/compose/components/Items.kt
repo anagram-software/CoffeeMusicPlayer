@@ -37,6 +37,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.filled.DownloadDone
 import com.udeshcoffee.android.model.Album
 import com.udeshcoffee.android.model.Artist
 import com.udeshcoffee.android.model.Song
@@ -65,7 +66,16 @@ fun SongRow(
                 Text(song.title, maxLines = 1, overflow = TextOverflow.Ellipsis,
                         fontWeight = if (isCurrent) FontWeight.SemiBold else null)
             },
-            supportingContent = { Text("${song.artistName} • ${song.albumName}", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+            supportingContent = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Saved for offline listening.
+                    if (song.remoteId != null && song.remoteId in LocalDownloadedIds.current) {
+                        Icon(Icons.Default.DownloadDone, contentDescription = "Downloaded", tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(end = 4.dp).size(14.dp))
+                    }
+                    Text("${song.artistName} • ${song.albumName}", maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            },
             trailingContent = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (isCurrent) Icon(Icons.Default.GraphicEq, contentDescription = "Playing", tint = MaterialTheme.colorScheme.primary)

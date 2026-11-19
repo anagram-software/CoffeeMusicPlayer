@@ -34,6 +34,7 @@ import com.udeshcoffee.android.model.Playlist
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.DownloadDone
 import androidx.compose.material.icons.filled.NewReleases
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.utils.AlbumArt
@@ -67,6 +68,7 @@ val Playlist.icon: ImageVector
         Playlist.MOST_PLAYED -> Icons.AutoMirrored.Filled.TrendingUp
         Playlist.RECENTLY_PLAYED -> Icons.Default.History
         Playlist.RECENTLY_ADDED -> Icons.Default.NewReleases
+        Playlist.DOWNLOADS -> Icons.Default.DownloadDone
         else -> Icons.AutoMirrored.Filled.PlaylistPlay
     }
 

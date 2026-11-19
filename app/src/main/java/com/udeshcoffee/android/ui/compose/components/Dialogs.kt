@@ -74,6 +74,12 @@ fun AppDialogHost(actions: AppActions) {
         is AppDialog.DeletePlaylist -> ConfirmDialog("Delete playlist", "Delete ${dialog.playlist.title}?", "Delete", dismiss) {
             actions.applyDelete(dialog.playlist, dialog.goBack)
         }
+        is AppDialog.RemoveDownloads -> ConfirmDialog("Remove downloads",
+                if (dialog.songs.size == 1) "Remove ${dialog.songs[0].title} from this device? You can still stream it."
+                else "Remove these ${dialog.songs.size} songs from this device? You can still stream them.",
+                "Remove", dismiss) {
+            actions.applyRemoveDownloads(dialog.songs)
+        }
     }
 }
 
