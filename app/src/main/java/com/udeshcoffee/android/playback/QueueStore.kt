@@ -18,7 +18,7 @@ import kotlinx.serialization.json.Json
  * Persists the play queue so it survives process death. Device songs are stored by MediaStore ID
  * and looked up again; music server songs are stored with their details, so restoring needs no
  * network (so they can later restore offline too). Only entries from the current [MusicSource]
- * restore. Queues saved by older releases (the reverse-hex [LAST_QUEUE] format) still restore.
+ * restore.
  */
 class QueueStore(
         private val context: Context,
@@ -49,7 +49,6 @@ class QueueStore(
     fun save(songs: List<Song>, index: Int, positionMs: Long) {
         prefs.edit {
             putString(KEY_QUEUE, encodeEntries(songs))
-            remove(PreferenceUtil.LAST_QUEUE)
             putInt(PreferenceUtil.LAST_PLAYED_POS, index)
             putInt(PreferenceUtil.LAST_CURRENT_POS, positionMs.coerceIn(0, Int.MAX_VALUE.toLong()).toInt())
         }
@@ -58,7 +57,6 @@ class QueueStore(
     fun clear() {
         prefs.edit {
             remove(KEY_QUEUE)
-            remove(PreferenceUtil.LAST_QUEUE)
             remove(PreferenceUtil.LAST_PLAYED_POS)
             remove(PreferenceUtil.LAST_CURRENT_POS)
         }
@@ -71,8 +69,7 @@ class QueueStore(
     suspend fun load(): SavedQueue? {
         if (!sourceStore.isConfigured) return null
         val source = sourceStore.current
-        val entries = prefs.getString(KEY_QUEUE, null)?.let { decodeEntries(it) }
-                ?: decode(prefs.getString(PreferenceUtil.LAST_QUEUE, "") ?: "").map { Entry(localId = it) }
+        val entries = prefs.getString(KEY_QUEUE, null)?.let { decodeEntries(it) } ?: return null
         if (entries.none { it.belongsTo(source) }) return null
         val local = if (source == MusicSource.DEVICE && Permissions.hasReadAudio(context))
             mediaRepository.loadSongs().associateBy { it.id } else emptyMap()
@@ -96,22 +93,7 @@ class QueueStore(
     }
 
     companion object {
-        private const val KEY_QUEUE = "queue_v2"
-        private const val HEX = "0123456789abcdef"
-
-        /** "Reverse hexadecimal": least significant digit first, each ID terminated by ';'. */
-        fun encode(ids: List<Long>): String = buildString {
-            for (id in ids) {
-                if (id < 0) continue
-                var n = id
-                if (n == 0L) append('0')
-                while (n != 0L) {
-                    append(HEX[(n and 0xf).toInt()])
-                    n = n ushr 4
-                }
-                append(';')
-            }
-        }
+        private const val KEY_QUEUE = "queue"
 
         private val json = Json { ignoreUnknownKeys = true }
 
@@ -128,19 +110,5 @@ class QueueStore(
         private fun RemoteSong.toSong() = Song(RemoteIds.song(id), title, albumId?.let { RemoteIds.album(it) } ?: 0, album,
                 artistId?.let { RemoteIds.artist(it) } ?: 0, artist, durationMs, year, 0, 0, disc * 1000 + track,
                 remoteId = id, coverArt = coverArt, albumRemoteId = albumId, artistRemoteId = artistId)
-
-        fun decode(q: String): List<Long> {
-            val ids = ArrayList<Long>()
-            var n = 0L
-            var shift = 0
-            for (c in q) {
-                when (c) {
-                    ';' -> { ids.add(n); n = 0; shift = 0 }
-                    in '0'..'9' -> { n += (c - '0').toLong() shl shift; shift += 4 }
-                    in 'a'..'f' -> { n += (10 + (c - 'a')).toLong() shl shift; shift += 4 }
-                }
-            }
-            return ids
-        }
     }
 }

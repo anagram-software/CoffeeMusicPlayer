@@ -44,8 +44,4 @@
     <string name="action_dismiss">Dismiss</string>
 
     <string name="permission_audio_required">Coffee Player needs access to your music to work.</string>
-    <plurals name="playlists_imported">
-        <item quantity="one">Imported %d playlist</item>
-        <item quantity="other">Imported %d playlists</item>
-    </plurals>
 </resources>

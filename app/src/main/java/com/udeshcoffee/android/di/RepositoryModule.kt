@@ -21,7 +21,6 @@ val repositoryModule = module {
     // One database instance for the whole app. All queries run off the main thread (suspend/Flow DAOs).
     single {
         Room.databaseBuilder(get(), LocalDatabase::class.java, "CoffeePlayer.db")
-            .addMigrations(LocalDatabase.Migration_5_6, LocalDatabase.Migration_6_7)
             .build()
     }
 

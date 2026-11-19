@@ -16,7 +16,7 @@ import com.google.common.util.concurrent.SettableFuture
  * The player the media session exposes. Wraps ExoPlayer to add two app behaviours:
  *
  * - **Fade** on play/pause (the "Fade on play/pause" setting).
- * - **Visible shuffle**: like earlier versions, shuffling reorders the queue itself (current
+ * - **Visible shuffle**: shuffling reorders the queue itself (current
  *   song first, the rest random) instead of using ExoPlayer's hidden shuffle order, so the
  *   queue screen shows the real play order and its index-based edits keep working. Turning
  *   shuffle off restores the original order.

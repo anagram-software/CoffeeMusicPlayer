@@ -36,7 +36,7 @@ import com.udeshcoffee.android.data.source.MusicSourceStore
 import com.udeshcoffee.android.ui.compose.library.libraryTabs
 import org.koin.compose.koinInject
 
-/** Settings, stored in the same SharedPreferences keys as earlier versions. */
+/** Settings, stored in the default SharedPreferences (keys in [PreferenceUtil]). */
 @Composable
 fun SettingsScreen() {
     val context = LocalContext.current

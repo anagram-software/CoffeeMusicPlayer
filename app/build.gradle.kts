@@ -52,11 +52,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    sourceSets {
-        // Room schemas for MigrationTestHelper (androidTest/assets adds the hand-made pre-export v6 schema).
-        getByName("androidTest").assets.directories.add("$projectDir/schemas")
-    }
-
     testOptions {
         // android.jar stubs (e.g. Log) return defaults instead of throwing in JVM tests.
         unitTests.isReturnDefaultValues = true
@@ -137,7 +132,6 @@ dependencies {
 
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)
-    androidTestImplementation(libs.androidx.room.testing)
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.compose.ui.test.junit4)
     debugImplementation(libs.compose.ui.test.manifest)

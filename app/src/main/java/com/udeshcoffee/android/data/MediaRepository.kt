@@ -225,24 +225,6 @@ class MediaRepository(
         return observeQuery(query) { Song(it) }
     }
 
-    /**
-     * One-time import of the device's MediaStore playlists into the app database.
-     * Returns the number of playlists imported.
-     */
-    @Suppress("DEPRECATION")
-    suspend fun importMediaStorePlaylists(): Int = withContext(Dispatchers.IO) {
-        val playlists = queryList(Query(MediaStore.Audio.Playlists.EXTERNAL_CONTENT_URI,
-                arrayOf(MediaStore.Audio.Playlists._ID, MediaStore.Audio.Playlists.NAME),
-                null, null, MediaStore.Audio.Playlists.NAME)) { it.getLong(0) to (it.getString(1) ?: "") }
-        for ((id, name) in playlists) {
-            val songIds = queryList(Query(MediaStore.Audio.Playlists.Members.getContentUri("external", id),
-                    arrayOf(MediaStore.Audio.Playlists.Members.AUDIO_ID),
-                    null, null, MediaStore.Audio.Playlists.Members.PLAY_ORDER)) { it.getLong(0) }
-            playlistDao.createWithSongs(name, songIds)
-        }
-        playlists.size
-    }
-
     // ---- Favorites ----
 
     fun observeFavorites(): Flow<List<Song>> =

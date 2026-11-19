@@ -83,13 +83,6 @@ abstract class PlaylistDao {
         renumber(items)
     }
 
-    @Transaction
-    open suspend fun createWithSongs(name: String, songIds: List<Long>): Long {
-        val id = insertPlaylist(UserPlaylist(name = name))
-        appendSongs(id, songIds)
-        return id
-    }
-
     private suspend fun renumber(items: List<PlaylistItem>) {
         items.forEachIndexed { index, item -> if (item.position != index) setPosition(item.id, index) }
     }

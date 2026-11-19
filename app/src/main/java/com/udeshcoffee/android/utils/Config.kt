@@ -8,8 +8,6 @@ import androidx.core.net.toUri
 val ArtworkURI = "content://media/external/audio/albumart".toUri()
 
 object PreferenceUtil {
-    const val LAST_QUEUE = "queue"
-    const val PLAYLISTS_IMPORTED = "playlists_imported_to_room"
     const val LAST_PLAYED_POS = "lastplayed"
     const val LAST_CURRENT_POS = "lastpos"
 
@@ -25,8 +23,4 @@ object PreferenceUtil {
     const val  PREF_FADE = "pref_fade"
     const val  PREF_COLLECT_CONTENT = "pref_collect_content"
     const val  PREF_WIFI_ONLY = "pref_wifi_only"
-    const val  PREF_COLLECT_LYRICS = "pref_collect_lyrics"
-    const val  PREF_OPEN = "pref_open_source"
-    const val  PREF_WHATS_NEW = "pref_whats_new"
-    const val  PREF_VERSION = "pref_version"
 }

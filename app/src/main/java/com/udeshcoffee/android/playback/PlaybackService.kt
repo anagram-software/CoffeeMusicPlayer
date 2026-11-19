@@ -251,7 +251,7 @@ class PlaybackService : MediaLibraryService() {
     }
 }
 
-/** Maps the stored repeat preference (1 = one, 2 = all, 3 = none; kept from older releases) to Player modes. */
+/** Maps the stored repeat preference (1 = one, 2 = all, 3 = none) to Player modes. */
 object RepeatModes {
     const val PREF_ONE = 1
     const val PREF_ALL = 2

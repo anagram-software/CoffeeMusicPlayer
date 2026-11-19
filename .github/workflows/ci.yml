@@ -68,7 +68,7 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - name: Room migration and Compose UI tests
+      - name: Compose UI tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35

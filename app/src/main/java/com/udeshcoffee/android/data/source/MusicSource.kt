@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.core.content.edit
 import androidx.preference.PreferenceManager
 import com.udeshcoffee.android.data.subsonic.SubsonicRepository
-import com.udeshcoffee.android.utils.PreferenceUtil
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -51,14 +50,8 @@ class MusicSourceStore(context: Context, private val subsonic: SubsonicRepositor
         _source.value = source
     }
 
-    private fun load(): MusicSource {
-        prefs.getString(KEY, null)?.let { stored -> MusicSource.entries.firstOrNull { it.name == stored }?.let { return it } }
-        // Installs from before the setting existed played device music: keep them on it.
-        val existingInstall = prefs.contains(PreferenceUtil.PLAYLISTS_IMPORTED) || prefs.contains(PreferenceUtil.LAST_PLAYED_POS)
-        val source = if (existingInstall && !subsonic.isSignedIn) MusicSource.DEVICE else MusicSource.SERVER
-        prefs.edit { putString(KEY, source.name) }
-        return source
-    }
+    private fun load(): MusicSource =
+            prefs.getString(KEY, null)?.let { stored -> MusicSource.entries.firstOrNull { it.name == stored } } ?: MusicSource.SERVER
 
     companion object {
         private const val KEY = "music_source"

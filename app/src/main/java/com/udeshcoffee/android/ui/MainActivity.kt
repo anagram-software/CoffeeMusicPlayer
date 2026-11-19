@@ -7,18 +7,14 @@ import android.media.AudioManager
 import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.content.edit
 import androidx.lifecycle.lifecycleScope
-import androidx.preference.PreferenceManager
 import com.udeshcoffee.android.R
-import com.udeshcoffee.android.data.MediaRepository
 import com.udeshcoffee.android.data.source.MusicSourceStore
 import com.udeshcoffee.android.extensions.playbackEvents
 import com.udeshcoffee.android.model.Song
@@ -27,8 +23,6 @@ import com.udeshcoffee.android.playback.PlayerConnection
 import com.udeshcoffee.android.ui.compose.CoffeeApp
 import com.udeshcoffee.android.utils.MediaAccess
 import com.udeshcoffee.android.utils.Permissions
-import com.udeshcoffee.android.utils.PreferenceUtil
-import com.udeshcoffee.android.utils.ProcessLifecycleScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
@@ -41,7 +35,6 @@ import org.koin.android.ext.android.inject
 class MainActivity : ComponentActivity() {
 
     private val playerConnection: PlayerConnection by inject()
-    private val mediaRepository: MediaRepository by inject()
     private val sourceStore: MusicSourceStore by inject()
     private var isPlayerConnected = false
     private var connectionJob: Job? = null
@@ -137,10 +130,7 @@ class MainActivity : ComponentActivity() {
 
     private fun getPlayerConnected(): PlayerConnection? = playerConnection.takeIf { it.isConnected }
 
-    private fun onAudioPermissionGranted() {
-        connectPlayer()
-        importMediaStorePlaylistsOnce()
-    }
+    private fun onAudioPermissionGranted() = connectPlayer()
 
     private fun connectPlayer() {
         if (isPlayerConnected) return
@@ -160,24 +150,4 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    /** Playlists moved from MediaStore to the app database in DB version 7; copy existing ones once. */
-    private fun importMediaStorePlaylistsOnce() {
-        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
-        if (prefs.getBoolean(PreferenceUtil.PLAYLISTS_IMPORTED, false)) return
-        // Application-wide scope: the import should finish even if this activity goes away.
-        ProcessLifecycleScope.launch {
-            try {
-                val count = mediaRepository.importMediaStorePlaylists()
-                prefs.edit { putBoolean(PreferenceUtil.PLAYLISTS_IMPORTED, true) }
-                if (count > 0)
-                    Toast.makeText(applicationContext, resources.getQuantityString(R.plurals.playlists_imported, count, count), Toast.LENGTH_LONG).show()
-            } catch (e: Exception) {
-                Log.w(TAG, "Playlist import failed", e)
-            }
-        }
-    }
-
-    companion object {
-        private const val TAG = "MainActivity"
-    }
 }

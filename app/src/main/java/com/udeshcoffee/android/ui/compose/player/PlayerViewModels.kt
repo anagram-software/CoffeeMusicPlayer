@@ -89,7 +89,7 @@ class LyricsViewModel(
     private val _state = MutableStateFlow<LyricsState>(LyricsState.NoSong)
     val state: StateFlow<LyricsState> = _state.asStateFlow()
 
-    /** 1 = small, 2 = medium, 3 = large (same values as earlier versions). */
+    /** 1 = small, 2 = medium, 3 = large. */
     private val _size = MutableStateFlow(prefs.getInt(PreferenceUtil.LYRICS_SIZE, 1))
     val size: StateFlow<Int> = _size.asStateFlow()
 
