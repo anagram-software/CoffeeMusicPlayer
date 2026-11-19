@@ -96,20 +96,44 @@ import org.koin.compose.viewmodel.koinViewModel
 import com.udeshcoffee.android.ui.compose.components.ArtworkImage
 import com.udeshcoffee.android.ui.compose.components.DownloadButton
 import com.udeshcoffee.android.utils.CoverArt
+import com.udeshcoffee.android.utils.AlbumArt
+import com.udeshcoffee.android.utils.artistImageFile
+import com.udeshcoffee.android.ui.compose.theme.ArtworkTint
+import com.udeshcoffee.android.ui.compose.theme.LocalArtworkWash
+import com.udeshcoffee.android.ui.compose.theme.rememberArtworkSeed
+import androidx.compose.runtime.produceState
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.koin.core.parameter.parametersOf
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
-/** Collapsing top bar with back navigation; [content] gets the inner padding. */
+/**
+ * Collapsing top bar with back navigation; [content] gets the inner padding. Inside an
+ * [ArtworkTint], the artwork's colour washes down from behind the top bar and header.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailScaffold(title: String, actions: @Composable () -> Unit = {}, content: @Composable (PaddingValues) -> Unit) {
     val appActions = LocalAppActions.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val wash = LocalArtworkWash.current
+    val background = MaterialTheme.colorScheme.background
     Scaffold(
-            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            modifier = Modifier
+                    .nestedScroll(scrollBehavior.nestedScrollConnection)
+                    .drawBehind {
+                        drawRect(background)
+                        if (wash.alpha > 0f) drawRect(Brush.verticalGradient(listOf(wash, Color.Transparent), endY = WASH_HEIGHT.toPx()))
+                    },
+            containerColor = Color.Transparent,
             topBar = {
                 LargeTopAppBar(
+                        // Transparent until content scrolls under it, so the wash shows through.
+                        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
                         title = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                         navigationIcon = {
                             IconButton(onClick = { appActions.back() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
@@ -119,6 +143,9 @@ fun DetailScaffold(title: String, actions: @Composable () -> Unit = {}, content:
             },
             content = content)
 }
+
+/** How far down the page the artwork wash reaches. */
+private val WASH_HEIGHT = 360.dp
 
 @Composable
 private fun Loading() = Box(Modifier.fillMaxWidth().padding(48.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
@@ -184,6 +211,12 @@ private fun AlbumsRow(albums: List<Album>) {
 
 @Composable
 fun AlbumDetailScreen(albumId: Long, title: String, remoteId: String? = null) {
+    val seed = rememberArtworkSeed(remember(albumId, remoteId) { if (remoteId != null) CoverArt(remoteId) else AlbumArt(albumId) })
+    ArtworkTint(seed) { AlbumDetailContent(albumId, title, remoteId) }
+}
+
+@Composable
+private fun AlbumDetailContent(albumId: Long, title: String, remoteId: String?) {
     val viewModel: AlbumDetailViewModel = koinViewModel(key = "album:$albumId") { parametersOf(albumId, remoteId) }
     val songs by viewModel.songs.collectAsStateWithLifecycle()
     val providerSongs by viewModel.providerSongs.collectAsStateWithLifecycle()
@@ -256,6 +289,20 @@ private fun LazyListScope.providerSongItems(songs: List<Song>, currentId: Long?,
 @Composable
 fun ArtistDetailScreen(artistId: Long, name: String, remoteId: String? = null) {
     val viewModel: ArtistDetailViewModel = koinViewModel(key = "artist:$artistId") { parametersOf(artistId, name, remoteId) }
+    val albums by viewModel.albums.collectAsStateWithLifecycle()
+    val imageVersion by viewModel.imageVersion.collectAsStateWithLifecycle()
+    // The artist's image: the server's, or the stored one (checked off the main thread), else their first album's art.
+    val artwork by produceState<Any?>(null, remoteId, imageVersion, albums.firstOrNull()?.id) {
+        value = remoteId?.let { CoverArt(it) }
+                ?: withContext(Dispatchers.IO) { artistImageFile(artistId).takeIf { it.exists() } }
+                ?: albums.firstOrNull()?.let { AlbumArt(it.id) }
+    }
+    // imageVersion: a replaced image file is the same File.
+    ArtworkTint(rememberArtworkSeed(artwork, key = imageVersion)) { ArtistDetailContent(viewModel, artistId, name, remoteId) }
+}
+
+@Composable
+private fun ArtistDetailContent(viewModel: ArtistDetailViewModel, artistId: Long, name: String, remoteId: String?) {
     val songs by viewModel.songs.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     val albums by viewModel.albums.collectAsStateWithLifecycle()
