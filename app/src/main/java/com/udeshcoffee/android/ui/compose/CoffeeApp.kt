@@ -1,9 +1,6 @@
 package com.udeshcoffee.android.ui.compose
 
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.safeDrawingPadding
@@ -23,7 +20,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.runtime.Composable
@@ -74,6 +70,13 @@ import com.udeshcoffee.android.ui.compose.navigation.SearchRoute
 import com.udeshcoffee.android.ui.compose.navigation.SettingsRoute
 import com.udeshcoffee.android.ui.compose.player.MiniPlayer
 import com.udeshcoffee.android.ui.compose.player.PlayerScreen
+import com.udeshcoffee.android.ui.compose.player.PlayerSheetHost
+import com.udeshcoffee.android.ui.compose.player.playerSheetDraggable
+import com.udeshcoffee.android.ui.compose.player.rememberPlayerSheetFling
+import com.udeshcoffee.android.ui.compose.player.rememberPlayerSheetState
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onSizeChanged
+import kotlinx.coroutines.launch
 import com.udeshcoffee.android.ui.compose.search.SearchScreen
 import com.udeshcoffee.android.ui.compose.settings.SettingsScreen
 import com.udeshcoffee.android.ui.compose.theme.CoffeeTheme
@@ -99,14 +102,14 @@ fun CoffeeApp(onDeleteSongs: (List<Song>) -> Unit, playerExpandedRequest: Boolea
         val context = LocalContext.current
         val scope = rememberCoroutineScope()
         val snackbar = remember { SnackbarHostState() }
-        var playerExpanded by rememberSaveable { mutableStateOf(playerExpandedRequest) }
+        val playerSheet = rememberPlayerSheetState(initiallyExpanded = playerExpandedRequest)
         val dataRepository: DataRepository = koinInject()
         val mediaRepository: MediaRepository = koinInject()
         val subsonic: com.udeshcoffee.android.data.subsonic.SubsonicRepository = koinInject()
         val sourceStore: com.udeshcoffee.android.data.source.MusicSourceStore = koinInject()
         val actions = remember(navController) {
-            AppActions(context, sourceStore.isServer, navController, scope, dataRepository, mediaRepository, subsonic, snackbar, onDeleteSongs) {
-                playerExpanded = it
+            AppActions(context, sourceStore.isServer, navController, scope, dataRepository, mediaRepository, subsonic, snackbar, onDeleteSongs) { expand ->
+                scope.launch { if (expand) playerSheet.expand() else playerSheet.collapse() }
             }
         }
         // Until a music source is set up, open Settings (sign-in form) over Home and keep the music screens empty.
@@ -135,8 +138,12 @@ fun CoffeeApp(onDeleteSongs: (List<Song>) -> Unit, playerExpandedRequest: Boolea
         topLevels.indexOfFirst { top -> destination?.hierarchy?.any { it.hasRoute(top.route::class) } == true }
                 .takeIf { it >= 0 }?.let { currentTop = it }
 
+        // Nothing to show: put the player away without animating.
+        LaunchedEffect(playerState.song == null) { if (playerState.song == null && playerState.connected) playerSheet.snapCollapsed() }
+        val sheetFling = rememberPlayerSheetFling(playerSheet)
+
         CompositionLocalProvider(LocalAppActions provides actions) {
-            Box(Modifier.fillMaxSize()) {
+            Box(Modifier.fillMaxSize().onSizeChanged { playerSheet.updateHeight(it.height.toFloat()) }) {
                 NavigationSuiteScaffold(navigationSuiteItems = {
                     topLevels.forEachIndexed { index, top ->
                         item(
@@ -163,12 +170,15 @@ fun CoffeeApp(onDeleteSongs: (List<Song>) -> Unit, playerExpandedRequest: Boolea
                             }
                             SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).padding(8.dp))
                         }
-                        MiniPlayer(onExpand = { playerExpanded = true })
+                        // Drag up to pull the full player out of it; fades as the player covers it.
+                        MiniPlayer(onExpand = { scope.launch { playerSheet.expand() } },
+                                modifier = Modifier
+                                        .graphicsLayer { alpha = 1f - playerSheet.progress }
+                                        .playerSheetDraggable(playerSheet, sheetFling))
                     }
                 }
-                AnimatedVisibility(playerExpanded && playerState.song != null,
-                        enter = slideInVertically { it }, exit = slideOutVertically { it }) {
-                    Surface(color = MaterialTheme.colorScheme.surface) { PlayerScreen(onCollapse = { playerExpanded = false }) }
+                if (playerState.song != null) {
+                    PlayerSheetHost(playerSheet) { PlayerScreen(onCollapse = { scope.launch { playerSheet.collapse() } }) }
                 }
                 OptionsSheetHost(actions)
                 AppDialogHost(actions)

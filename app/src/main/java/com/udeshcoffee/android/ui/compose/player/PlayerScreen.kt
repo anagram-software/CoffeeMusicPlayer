@@ -4,7 +4,6 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -69,7 +68,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.fromHtml
@@ -92,14 +90,18 @@ import org.koin.compose.viewmodel.koinViewModel
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
-/** Full-screen player. [onCollapse] returns to the mini player (also back or dragging down). */
+/**
+ * Full-screen player, shown in [PlayerSheetHost], which handles dragging down and back to collapse.
+ * [onCollapse] returns to the mini player (close button, or when the queue empties).
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlayerScreen(onCollapse: () -> Unit, viewModel: NowPlayingViewModel = koinViewModel()) {
     val state by rememberPlayerState()
     val song = state.song
     var showQueue by remember { mutableStateOf(false) }
-    BackHandler { if (showQueue) showQueue = false else onCollapse() }
+    // Back leaves the queue first; otherwise the sheet's predictive back collapses the player.
+    BackHandler(enabled = showQueue) { showQueue = false }
     // Collapse only when the queue is really gone, not on transient null songs during track changes.
     LaunchedEffect(state.connected, state.queue.isEmpty()) { if (state.connected && state.queue.isEmpty()) onCollapse() }
     song ?: return
@@ -109,7 +111,6 @@ fun PlayerScreen(onCollapse: () -> Unit, viewModel: NowPlayingViewModel = koinVi
 
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface).safeDrawingPadding()) {
         TopAppBar(
-                modifier = Modifier.pointerInput(Unit) { detectVerticalDragGestures { _, drag -> if (drag > 25) onCollapse() } },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
                 navigationIcon = { IconButton(onClick = onCollapse) { Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Close player") } },
                 title = { Text(if (showQueue) "Up next" else "Now playing", style = MaterialTheme.typography.titleMedium) },

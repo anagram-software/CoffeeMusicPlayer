@@ -1,7 +1,6 @@
 package com.udeshcoffee.android.ui.compose.player
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -25,7 +24,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -35,7 +33,7 @@ import com.udeshcoffee.android.ui.compose.components.SongArtwork
 import com.udeshcoffee.android.ui.compose.rememberPlayerState
 import org.koin.compose.koinInject
 
-/** Collapsed player shown above the navigation bar. Tap or swipe up to expand. */
+/** Collapsed player shown above the navigation bar. Tap to expand; the caller adds the drag-up gesture ([playerSheetDraggable]). */
 @Composable
 fun MiniPlayer(onExpand: () -> Unit, modifier: Modifier = Modifier) {
     val state by rememberPlayerState()
@@ -48,8 +46,7 @@ fun MiniPlayer(onExpand: () -> Unit, modifier: Modifier = Modifier) {
             modifier = modifier
                     .fillMaxWidth()
                     .clickable(onClick = onExpand)
-                    .semantics { contentDescription = "Open player" }
-                    .pointerInput(Unit) { detectVerticalDragGestures { _, dragAmount -> if (dragAmount < -20) onExpand() } }) {
+                    .semantics { contentDescription = "Open player" }) {
         Column {
             LinearProgressIndicator(
                     progress = { if (state.duration > 0) (position.toFloat() / state.duration).coerceIn(0f, 1f) else 0f },
