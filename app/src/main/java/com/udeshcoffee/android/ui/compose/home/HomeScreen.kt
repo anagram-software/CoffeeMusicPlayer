@@ -41,6 +41,8 @@ import com.udeshcoffee.android.ui.compose.components.songCount
 import com.udeshcoffee.android.ui.compose.detail.ServerNotice
 import com.udeshcoffee.android.ui.compose.components.PlaylistArtwork
 import com.udeshcoffee.android.ui.compose.components.icon
+import com.udeshcoffee.android.utils.CoverArt
+import com.udeshcoffee.android.utils.artworkData
 import org.koin.compose.viewmodel.koinViewModel
 
 private val CardWidth = 150.dp
@@ -93,7 +95,8 @@ private fun LazyListScope.albumSection(title: String, albums: List<Album>, actio
                 // Just the artist: song counts here would only count the recent / played songs.
                 MediaCard(album.title, album.artist,
                         onClick = { actions.openAlbum(album) }, onLongClick = { actions.albumOptions(album) }, onPlay = { actions.playAlbum(album) },
-                        artwork = { AlbumArtwork(album, it, MaterialTheme.shapes.extraSmall) }, modifier = Modifier.width(CardWidth))
+                        artwork = { AlbumArtwork(album, it, MaterialTheme.shapes.extraSmall) }, modifier = Modifier.width(CardWidth),
+                        tintKey = album.artworkData())
             }
         }
     }
@@ -117,7 +120,7 @@ private fun LazyListScope.playlistSection(playlists: List<Playlist>, actions: Ap
                                 }
                             }
                         },
-                        modifier = Modifier.width(CardWidth))
+                        modifier = Modifier.width(CardWidth), tintKey = playlist.coverArt?.let { CoverArt(it) })
             }
         }
     }

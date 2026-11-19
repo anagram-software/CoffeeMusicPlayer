@@ -28,6 +28,13 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.CardDefaults
+import com.udeshcoffee.android.ui.compose.theme.rememberCardTint
+import com.udeshcoffee.android.utils.CoverArt
+import com.udeshcoffee.android.utils.artistImageFile
+import com.udeshcoffee.android.utils.artworkData
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
@@ -102,7 +109,10 @@ fun ShuffleRow(count: Int, subtitle: String = songCount(count), onClick: () -> U
 @OptIn(ExperimentalFoundationApi::class)
 private fun Modifier.combinedClickableCompat(onClick: () -> Unit) = this.combinedClickable(onClick = onClick)
 
-/** Grid card with square artwork, title, subtitle and a play button. */
+/**
+ * Grid card with square artwork, title, subtitle and a play button. The text area takes the hue of
+ * the artwork at [tintKey] (a Coil model, or a key for [tintLoad], which finds the model off the main thread).
+ */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MediaCard(
@@ -112,9 +122,13 @@ fun MediaCard(
         onLongClick: () -> Unit,
         onPlay: () -> Unit,
         artwork: @Composable (Modifier) -> Unit,
-        modifier: Modifier = Modifier
+        modifier: Modifier = Modifier,
+        tintKey: Any? = null,
+        tintLoad: (suspend () -> Any?)? = null
 ) {
-    Card(modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick)) {
+    val container = rememberCardTint(tintKey, CardDefaults.cardColors().containerColor, tintLoad ?: { tintKey })
+    Card(modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick),
+            colors = CardDefaults.cardColors(containerColor = container, contentColor = MaterialTheme.colorScheme.onSurface)) {
         Box {
             artwork(Modifier.fillMaxWidth().aspectRatio(1f))
             // White with a dark icon whatever the page's accent, so it reads on any artwork.
@@ -134,13 +148,21 @@ fun MediaCard(
 @Composable
 fun AlbumCard(album: Album, onClick: () -> Unit, onLongClick: () -> Unit, onPlay: () -> Unit, modifier: Modifier = Modifier) =
         MediaCard(album.title, "${album.artist} • ${songCount(album.songCount)}", onClick, onLongClick, onPlay,
-                { AlbumArtwork(album, it, MaterialTheme.shapes.extraSmall) }, modifier)
+                { AlbumArtwork(album, it, MaterialTheme.shapes.extraSmall) }, modifier, tintKey = album.artworkData())
 
 @Composable
 fun ArtistCard(artist: Artist, onClick: () -> Unit, onLongClick: () -> Unit, onPlay: () -> Unit, modifier: Modifier = Modifier, collectImage: Boolean = true) =
         // Server artists come with an album count, device artists with a song count.
         MediaCard(artist.name, if (artist.isRemote) albumCount(artist.songCount) else songCount(artist.songCount), onClick, onLongClick, onPlay,
-                { ArtistArtwork(artist, it, MaterialTheme.shapes.extraSmall, collectImage) }, modifier)
+                { ArtistArtwork(artist, it, MaterialTheme.shapes.extraSmall, collectImage) }, modifier,
+                tintKey = artistTintKey(artist), tintLoad = { artistTintModel(artist) })
+
+/** Server artists: their cover art. Device artists: their stored image, if any (checked on IO). */
+private fun artistTintKey(artist: Artist): Any = (artist.coverArt ?: artist.remoteId)?.let { CoverArt(it) } ?: "artist:${artist.id}"
+
+private suspend fun artistTintModel(artist: Artist): Any? =
+        if (artist.isRemote) artistTintKey(artist)
+        else withContext(Dispatchers.IO) { artistImageFile(artist.id).takeIf { it.exists() } }
 
 /** Centered message for empty lists. */
 @Composable

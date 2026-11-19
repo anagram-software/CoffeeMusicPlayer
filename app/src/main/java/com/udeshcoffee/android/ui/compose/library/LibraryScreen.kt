@@ -32,6 +32,7 @@ import com.udeshcoffee.android.data.subsonic.SubsonicRepository
 import com.udeshcoffee.android.model.Album
 import com.udeshcoffee.android.model.Playlist
 import com.udeshcoffee.android.ui.compose.components.MediaCard
+import com.udeshcoffee.android.utils.artworkData
 import com.udeshcoffee.android.ui.compose.components.TopLevelScaffold
 import com.udeshcoffee.android.ui.compose.detail.ServerNotice
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -160,7 +161,7 @@ fun LibraryScreen(viewModel: LibraryOverviewViewModel = koinViewModel()) {
                     // Just the artist: a song count would only count the played songs.
                     MediaCard(album.title, album.artist,
                             onClick = { actions.openAlbum(album) }, onLongClick = { actions.albumOptions(album) }, onPlay = { actions.playAlbum(album) },
-                            artwork = { AlbumArtwork(album, it, MaterialTheme.shapes.extraSmall) })
+                            artwork = { AlbumArtwork(album, it, MaterialTheme.shapes.extraSmall) }, tintKey = album.artworkData())
                 }
             }
         }
