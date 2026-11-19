@@ -1,12 +1,13 @@
 package com.udeshcoffee.android.ui.compose.theme
 
 import android.os.Build
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.material3.ColorScheme
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.compositionLocalOf
 import com.materialkolor.dynamicColorScheme
+import com.materialkolor.ktx.animateColorScheme
+import com.materialkolor.ktx.toColor
+import com.materialkolor.hct.Hct
+import com.materialkolor.palettes.TonalPalette
+import androidx.compose.material3.ColorScheme
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
@@ -82,34 +83,34 @@ fun rememberArtworkSeed(data: Any?, key: Any? = null): Color? {
     return seed
 }
 
-/** The colour [ArtworkTint] washes behind a page's header (transparent outside one, or without artwork). */
-val LocalArtworkWash = compositionLocalOf { Color.Transparent }
-
 /**
- * A hint of the artwork's colour for a page (album, artist): accents (buttons, selection, chips)
- * from a scheme generated from [seed], over the section's neutral surfaces, plus [LocalArtworkWash]
- * for the gradient behind the header. Without a seed (loading, no artwork) the section's colours
- * stay; changes animate.
+ * A page in its artwork's colours (album, artist): the whole colour scheme, surfaces included, is
+ * generated from [seed], as the player's is from the playing song. Without a seed (loading, no
+ * artwork) the section's colours stay; changes animate.
  */
 @Composable
 fun ArtworkTint(seed: Color?, darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
     val base = MaterialTheme.colorScheme
-    val target = remember(seed, darkTheme) { seed?.let { dynamicColorScheme(it, darkTheme) } } ?: base
-    val spec = spring<Color>(stiffness = 400f)
-    @Composable
-    fun animated(pick: (ColorScheme) -> Color): Color = animateColorAsState(pick(target), spec, label = "artworkTint").value
-    val scheme = base.copy(
-            primary = animated { it.primary }, onPrimary = animated { it.onPrimary },
-            primaryContainer = animated { it.primaryContainer }, onPrimaryContainer = animated { it.onPrimaryContainer },
-            secondary = animated { it.secondary }, onSecondary = animated { it.onSecondary },
-            secondaryContainer = animated { it.secondaryContainer }, onSecondaryContainer = animated { it.onSecondaryContainer },
-            tertiary = animated { it.tertiary }, onTertiary = animated { it.onTertiary },
-            tertiaryContainer = animated { it.tertiaryContainer }, onTertiaryContainer = animated { it.onTertiaryContainer },
-            inversePrimary = animated { it.inversePrimary })
-    val wash by animateColorAsState(if (seed == null) Color.Transparent else target.primaryContainer.copy(alpha = WASH_ALPHA), spec, label = "artworkWash")
-    CompositionLocalProvider(LocalArtworkWash provides wash) {
-        MaterialTheme(colorScheme = scheme, typography = AppTypography, content = content)
-    }
+    val target = remember(seed, darkTheme) { seed?.let { artworkColorScheme(it, darkTheme) } } ?: base
+    MaterialTheme(colorScheme = animateColorScheme(target), typography = AppTypography, content = content)
 }
 
-private const val WASH_ALPHA = 0.55f
+/**
+ * A colour scheme from [seed] whose surfaces clearly carry its hue: the default style keeps them
+ * nearly grey (neutral chroma ~6), so the neutral palettes get the seed's hue at a higher chroma.
+ * Light backgrounds (tone 98) can hold almost no colour, so in light mode the page sits at tone 95.
+ */
+internal fun artworkColorScheme(seed: Color, darkTheme: Boolean): ColorScheme {
+    val hue = Hct.fromInt(seed.toArgb()).hue
+    val neutral = TonalPalette.fromHueAndChroma(hue, ARTWORK_NEUTRAL_CHROMA)
+    val scheme = dynamicColorScheme(seed, darkTheme,
+            neutral = neutral.keyColor.toColor(),
+            neutralVariant = Hct.from(hue, ARTWORK_NEUTRAL_VARIANT_CHROMA, 50.0).toColor())
+    if (darkTheme) return scheme
+    val page = Color(neutral.tone(LIGHT_PAGE_TONE))
+    return scheme.copy(background = page, surface = page)
+}
+
+private const val ARTWORK_NEUTRAL_CHROMA = 16.0
+private const val ARTWORK_NEUTRAL_VARIANT_CHROMA = 20.0
+private const val LIGHT_PAGE_TONE = 95

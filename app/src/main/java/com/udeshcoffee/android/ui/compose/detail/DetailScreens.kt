@@ -99,41 +99,24 @@ import com.udeshcoffee.android.utils.CoverArt
 import com.udeshcoffee.android.utils.AlbumArt
 import com.udeshcoffee.android.utils.artistImageFile
 import com.udeshcoffee.android.ui.compose.theme.ArtworkTint
-import com.udeshcoffee.android.ui.compose.theme.LocalArtworkWash
 import com.udeshcoffee.android.ui.compose.theme.rememberArtworkSeed
 import androidx.compose.runtime.produceState
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.koin.core.parameter.parametersOf
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
-/**
- * Collapsing top bar with back navigation; [content] gets the inner padding. Inside an
- * [ArtworkTint], the artwork's colour washes down from behind the top bar and header.
- */
+/** Collapsing top bar with back navigation; [content] gets the inner padding. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailScaffold(title: String, actions: @Composable () -> Unit = {}, content: @Composable (PaddingValues) -> Unit) {
     val appActions = LocalAppActions.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    val wash = LocalArtworkWash.current
-    val background = MaterialTheme.colorScheme.background
     Scaffold(
-            modifier = Modifier
-                    .nestedScroll(scrollBehavior.nestedScrollConnection)
-                    .drawBehind {
-                        drawRect(background)
-                        if (wash.alpha > 0f) drawRect(Brush.verticalGradient(listOf(wash, Color.Transparent), endY = WASH_HEIGHT.toPx()))
-                    },
-            containerColor = Color.Transparent,
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
             topBar = {
                 LargeTopAppBar(
-                        // Transparent until content scrolls under it, so the wash shows through.
-                        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
                         title = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                         navigationIcon = {
                             IconButton(onClick = { appActions.back() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
@@ -143,9 +126,6 @@ fun DetailScaffold(title: String, actions: @Composable () -> Unit = {}, content:
             },
             content = content)
 }
-
-/** How far down the page the artwork wash reaches. */
-private val WASH_HEIGHT = 360.dp
 
 @Composable
 private fun Loading() = Box(Modifier.fillMaxWidth().padding(48.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
