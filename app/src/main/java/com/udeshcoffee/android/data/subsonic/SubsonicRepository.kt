@@ -20,6 +20,7 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
+import okhttp3.Request
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.jsonPrimitive
@@ -38,7 +39,7 @@ data class SubsonicAccount(
     val isSecure: Boolean get() = credentials.url.startsWith("https://", ignoreCase = true)
 }
 
-data class ArtistInfo(val biography: String?, val imageUrl: String?)
+data class ArtistInfo(val biography: String?, val imageUrl: String?, val similarArtists: List<Artist> = emptyList())
 
 data class ServerSearchResults(val songs: List<Song>, val albums: List<Album>, val artists: List<Artist>)
 
@@ -177,23 +178,77 @@ class SubsonicRepository(context: Context) {
                     .sortedBy { it.value.lowercase() }
                     .map { it.toGenre() }
 
-    suspend fun albumSongs(albumId: String): List<Song> =
-            client().get("getAlbum", "album", SubAlbum.serializer(), listOf("id" to albumId)).song.toSongs()
+    // Behind Octo-Fiesta, getAlbum, getArtist and getTopSongs also return streaming-provider items
+    // (see External.kt). The functions below keep the library's apart and play only those.
 
-    suspend fun artistAlbums(artistId: String): List<Album> =
-            client().get("getArtist", "artist", SubArtist.serializer(), listOf("id" to artistId)).album.map { it.toAlbum() }
+    /** An album's library tracks and, behind Octo-Fiesta, the provider tracks the library copy lacks. */
+    suspend fun album(albumId: String): AlbumTracks =
+            splitAlbumTracks(client().get("getAlbum", "album", SubAlbum.serializer(), listOf("id" to albumId)).song.toSongs())
 
-    /** Every song by the artist: the songs of all their albums (a few requests at a time). */
+    /** What playing the album plays: its library tracks (all tracks for a provider album). */
+    suspend fun albumSongs(albumId: String): List<Song> = album(albumId).playable
+
+    private val _addedAlbums = MutableStateFlow<Set<String>>(emptySet())
+    /** Albums asked to be added to the library this session (Octo-Fiesta reports no download progress). */
+    val addedAlbums: StateFlow<Set<String>> = _addedAlbums.asStateFlow()
+
+    /**
+     * Has Octo-Fiesta download an album's [missing] provider tracks into the library. Preferably by
+     * starring the provider album, which Octo-Fiesta turns into a background download of the whole
+     * album (kept permanently, without passing the star on to Navidrome). Without a provider album
+     * ID, starts streaming each missing song and hangs up once it begins: the server finishes the
+     * download anyway. As in the web player (`addToLibrary.ts`).
+     */
+    suspend fun addAlbumToLibrary(albumId: String, missing: List<Song>) {
+        val externalAlbum = externalAlbumId(albumId, missing)
+        if (externalAlbum != null) {
+            client().call("star", listOf("albumId" to externalAlbum))
+        } else {
+            val client = client()
+            withContext(Dispatchers.IO) {
+                for (song in missing) {
+                    val id = song.remoteId ?: continue
+                    // A failed song shouldn't stop the rest.
+                    runCatching { Http.client.newCall(Request.Builder().url(client.url("stream", listOf("id" to id))).build()).execute().close() }
+                }
+            }
+        }
+        _addedAlbums.update { it + albumId }
+    }
+
+    private suspend fun getArtist(artistId: String): SubArtist =
+            client().get("getArtist", "artist", SubArtist.serializer(), listOf("id" to artistId))
+
+    /** The artist's albums, library and provider ones (one request; [groupReleases] separates them). */
+    suspend fun artistAlbums(artistId: String): List<Album> = getArtist(artistId).album.map { it.toAlbum() }
+
+    /**
+     * What playing the artist plays: the songs of their library albums (a few requests at a time),
+     * without provider albums or tracks. A provider artist (or one with nothing in the library)
+     * plays their top songs instead.
+     */
     suspend fun artistSongs(artistId: String): List<Song> = coroutineScope {
+        val artist = getArtist(artistId)
+        val library = artist.album.filter { !isExternalId(it.id) }
+        if (library.isEmpty()) return@coroutineScope topSongs(artistId, artist.name, count = 50)
         val gate = Semaphore(4)
-        artistAlbums(artistId).map { album ->
-            async { gate.withPermit { albumSongs(album.remoteId!!) } }
+        library.map { album ->
+            async { gate.withPermit { album(album.id).library } }
         }.awaitAll().flatten()
     }
 
+    /**
+     * The artist's most popular songs (Navidrome has them when Last.fm is set up). [artistId] is used
+     * by servers with the topSongsByArtistId extension, others match [artistName].
+     */
+    suspend fun topSongs(artistId: String, artistName: String, count: Int = 10): List<Song> =
+            client().get("getTopSongs", "topSongs", SubSongs.serializer(),
+                    listOf("id" to artistId, "artist" to artistName, "count" to count)).song.toSongs()
+
     suspend fun artistInfo(artistId: String): ArtistInfo {
-        val info = client().get("getArtistInfo2", "artistInfo2", SubArtistInfo.serializer(), listOf("id" to artistId, "count" to 0))
-        return ArtistInfo(info.biography?.takeIf { it.isNotBlank() }, info.largeImageUrl ?: info.mediumImageUrl)
+        val info = client().get("getArtistInfo2", "artistInfo2", SubArtistInfo.serializer(), listOf("id" to artistId, "count" to 12))
+        return ArtistInfo(info.biography?.takeIf { it.isNotBlank() }, info.largeImageUrl ?: info.mediumImageUrl,
+                info.similarArtist.map { it.toArtist() })
     }
 
     suspend fun genreSongs(genre: String, offset: Int = 0, count: Int = PAGE_SIZE): List<Song> =

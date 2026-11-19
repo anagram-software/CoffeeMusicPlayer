@@ -41,7 +41,10 @@ import kotlinx.coroutines.flow.flow
 import com.udeshcoffee.android.data.source.MusicSource
 import com.udeshcoffee.android.data.source.MusicSourceStore
 import kotlinx.coroutines.flow.transformLatest
+import com.udeshcoffee.android.data.subsonic.AlbumTracks
+import com.udeshcoffee.android.data.subsonic.ArtistReleases
 import com.udeshcoffee.android.data.subsonic.SubsonicException
+import com.udeshcoffee.android.data.subsonic.groupReleases
 import com.udeshcoffee.android.data.subsonic.SubsonicRepository
 
 private fun <T> Flow<T>.stateIn(vm: ViewModel, initial: T): StateFlow<T> =
@@ -72,16 +75,29 @@ abstract class SourceAwareViewModel : ViewModel() {
 }
 
 class AlbumDetailViewModel(albumId: Long, remoteId: String?, mediaRepository: MediaRepository, subsonic: SubsonicRepository) : SourceAwareViewModel() {
-    private val source: Flow<List<Song>?> =
-            if (remoteId != null) server { subsonic.albumSongs(remoteId) } else mediaRepository.observeAlbumSongs(albumId)
+    private val tracks: Flow<AlbumTracks?> =
+            if (remoteId != null) server { subsonic.album(remoteId) }
+            else mediaRepository.observeAlbumSongs(albumId).map { AlbumTracks(it, emptyList()) }
 
+    /** The album's library songs (all of a streaming-provider album's), sorted. */
     val songs: StateFlow<List<Song>?> =
-            combine(source, SortSettings.albumSongs.state) { s, sort -> s?.sortedSongs(sort) }.stateIn(this, null)
+            combine(tracks, SortSettings.albumSongs.state) { t, sort -> t?.playable?.sortedSongs(sort) }.stateIn(this, null)
+
+    /** Tracks Octo-Fiesta adds from the streaming provider that the library copy lacks, in album order. */
+    val providerSongs: StateFlow<List<Song>> =
+            tracks.map { t -> t?.takeIf { it.library.isNotEmpty() }?.provider?.sortedBy { it.track }.orEmpty() }.stateIn(this, emptyList())
+
+    /** Every streaming-provider track of the album (all of a provider album's): what "Add to library" downloads. */
+    val missingSongs: StateFlow<List<Song>> = tracks.map { it?.provider.orEmpty() }.stateIn(this, emptyList())
+
+    /** "Add to library" was requested for this album this session. */
+    val addedToLibrary: StateFlow<Boolean> =
+            subsonic.addedAlbums.map { remoteId != null && remoteId in it }.stateIn(this, false)
 }
 
 class ArtistDetailViewModel(
         private val artistId: Long,
-        artistName: String,
+        private val artistName: String,
         private val remoteId: String?,
         mediaRepository: MediaRepository,
         dataRepository: DataRepository,
@@ -89,18 +105,36 @@ class ArtistDetailViewModel(
 ) : SourceAwareViewModel() {
     val isRemote = remoteId != null
 
+    /**
+     * Device artists: all their songs. Server artists: their top songs, as loading every album's
+     * songs would cost a request per album (and, behind Octo-Fiesta, a provider search each).
+     */
     private val songSource: Flow<List<Song>?> =
-            if (remoteId != null) server { subsonic.artistSongs(remoteId) } else mediaRepository.observeArtistSongs(artistId)
+            if (remoteId != null) server {
+                // Optional (servers without Last.fm have none): a failure here shouldn't fail the page.
+                try { subsonic.topSongs(remoteId, artistName) } catch (_: SubsonicException) { emptyList() }
+            } else mediaRepository.observeArtistSongs(artistId)
 
     val songs: StateFlow<List<Song>?> =
-            combine(songSource, SortSettings.artistSongs.state) { s, sort -> s?.sortedSongs(sort) }.stateIn(this, null)
+            (if (remoteId != null) songSource
+            else combine(songSource, SortSettings.artistSongs.state) { s, sort -> s?.sortedSongs(sort) }).stateIn(this, null)
 
-    private val albumSource: Flow<List<Album>> =
-            if (remoteId != null) server { subsonic.artistAlbums(remoteId) }.map { it.orEmpty() }
-            else mediaRepository.observeArtistAlbums(artistName)
-
+    /** Device artists' albums (server artists have [releases]). */
     val albums: StateFlow<List<Album>> =
-            combine(albumSource, SortSettings.artistAlbums.state) { a, sort -> a.sortedAlbums(sort) }.stateIn(this, emptyList())
+            (if (remoteId != null) flowOf(emptyList())
+            else combine(mediaRepository.observeArtistAlbums(artistName), SortSettings.artistAlbums.state) { a, sort -> a.sortedAlbums(sort) })
+                    .stateIn(this, emptyList())
+
+    /** Server artists' releases: the library's by kind, then the streaming provider's. Null until loaded or for device artists. */
+    val releases: StateFlow<ArtistReleases?> =
+            (if (remoteId == null) flowOf(null)
+            else combine(server { subsonic.artistAlbums(remoteId) }, SortSettings.artistAlbums.state) { a, sort ->
+                a?.let { groupReleases(it, artistName) { group -> group.sortedAlbums(sort) } }
+            }).stateIn(this, null)
+
+    private val _similar = MutableStateFlow<List<Artist>>(emptyList())
+    /** Similar artists in the server's library (from Last.fm through the server). */
+    val similar: StateFlow<List<Artist>> = _similar.asStateFlow()
 
     private val _bio = MutableStateFlow<Pair<String, List<String>>?>(null)
     /** Bio (may contain links) and tags: from the server for server artists, else Last.fm. Null until loaded or when unavailable. */
@@ -112,7 +146,9 @@ class ArtistDetailViewModel(
     init {
         viewModelScope.launch {
             _bio.value = if (remoteId != null) {
-                runCatching { subsonic.artistInfo(remoteId).biography }.getOrNull()?.let { it to emptyList() }
+                val info = runCatching { subsonic.artistInfo(remoteId) }.getOrNull()
+                _similar.value = info?.similarArtists.orEmpty()
+                info?.biography?.let { it to emptyList() }
             } else {
                 dataRepository.getBio(artistId, artistName)?.let { (bio, tags) -> bio to tags.orEmpty().toList() }
             }

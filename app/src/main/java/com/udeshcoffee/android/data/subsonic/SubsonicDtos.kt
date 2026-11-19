@@ -87,7 +87,8 @@ data class SubSearchResult(
 data class SubArtistInfo(
         val biography: String? = null,
         val mediumImageUrl: String? = null,
-        val largeImageUrl: String? = null
+        val largeImageUrl: String? = null,
+        val similarArtist: List<SubArtist> = emptyList()
 )
 
 /** Classic `getLyrics`. */

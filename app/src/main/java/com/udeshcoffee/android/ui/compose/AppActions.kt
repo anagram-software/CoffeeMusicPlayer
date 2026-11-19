@@ -12,6 +12,8 @@ import com.udeshcoffee.android.data.DataRepository
 import com.udeshcoffee.android.data.MediaRepository
 import com.udeshcoffee.android.data.download.DownloadRepository
 import com.udeshcoffee.android.data.subsonic.SubsonicException
+import com.udeshcoffee.android.data.subsonic.externalProvider
+import com.udeshcoffee.android.ui.compose.components.songCount
 import com.udeshcoffee.android.data.subsonic.SubsonicRepository
 import com.udeshcoffee.android.extensions.connectedPlayer
 import com.udeshcoffee.android.model.Album
@@ -109,6 +111,15 @@ class AppActions(
 
     fun playAlbum(album: Album) = launch { play(albumSongs(album)) }
     fun playArtist(artist: Artist) = launch { play(artistSongs(artist)) }
+    fun shuffleArtist(artist: Artist) = launch { shuffle(artistSongs(artist)) }
+
+    /** Has the server (Octo-Fiesta) download an album's streaming-provider tracks into the library. */
+    fun addAlbumToLibrary(albumId: String, title: String, missing: List<Song>) = launch {
+        if (missing.isEmpty()) return@launch
+        subsonic.addAlbumToLibrary(albumId, missing)
+        val provider = externalProvider(missing.first().remoteId) ?: "the streaming service"
+        message("Adding \"$title\": downloading ${songCount(missing.size)} from $provider")
+    }
     fun albumOptions(album: Album) = launch { sheet = OptionsSheet.ForCollection(album.title, albumSongs(album)) }
     fun artistOptions(artist: Artist) = launch { sheet = OptionsSheet.ForCollection(artist.name, artistSongs(artist)) }
     fun genreOptions(genre: Genre) = launch {

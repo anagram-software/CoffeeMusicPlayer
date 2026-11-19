@@ -3,6 +3,8 @@ package com.udeshcoffee.android.ui.compose.detail
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.filled.LibraryAdd
+import androidx.compose.material.icons.filled.LibraryAddCheck
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -73,6 +75,11 @@ import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.ui.compose.LocalAppActions
 import com.udeshcoffee.android.ui.compose.components.AlbumArtwork
 import com.udeshcoffee.android.ui.compose.components.AlbumCard
+import com.udeshcoffee.android.ui.compose.components.ArtistCard
+import com.udeshcoffee.android.ui.compose.components.albumCount
+import com.udeshcoffee.android.data.subsonic.ArtistReleases
+import com.udeshcoffee.android.data.subsonic.externalProvider
+import com.udeshcoffee.android.data.subsonic.isExternal
 import com.udeshcoffee.android.ui.compose.components.AlbumSortOptions
 import com.udeshcoffee.android.ui.compose.components.ArtistArtwork
 import com.udeshcoffee.android.ui.compose.components.EmptyState
@@ -179,10 +186,14 @@ private fun AlbumsRow(albums: List<Album>) {
 fun AlbumDetailScreen(albumId: Long, title: String, remoteId: String? = null) {
     val viewModel: AlbumDetailViewModel = koinViewModel(key = "album:$albumId") { parametersOf(albumId, remoteId) }
     val songs by viewModel.songs.collectAsStateWithLifecycle()
+    val providerSongs by viewModel.providerSongs.collectAsStateWithLifecycle()
+    val missingSongs by viewModel.missingSongs.collectAsStateWithLifecycle()
+    val addedToLibrary by viewModel.addedToLibrary.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     val sort by SortSettings.albumSongs.state.collectAsStateWithLifecycle()
     val currentId = rememberCurrentSongId()
     DetailScaffold(title, actions = {
+        if (remoteId != null && missingSongs.isNotEmpty()) AddToLibraryButton(remoteId, title, missingSongs, addedToLibrary)
         if (remoteId != null) DownloadButton(songs.orEmpty())
         SortMenu(SortSettings.albumSongs.group(null, SongSortOptions, sort))
         CollectionMenuButton(title, songs.orEmpty())
@@ -204,7 +215,39 @@ fun AlbumDetailScreen(albumId: Long, title: String, remoteId: String? = null) {
                 PlayButtons(songs.orEmpty())
             }
             songsOrState(songs, error, viewModel::retry) { songItems(it, currentId, showArtwork = false) }
+            if (providerSongs.isNotEmpty()) providerSongItems(providerSongs, currentId, showArtwork = false)
         }
+    }
+}
+
+/**
+ * "Add to library" for an album with streaming-provider tracks (Octo-Fiesta): has the server
+ * download them. Shows a check once requested (the server reports no progress).
+ */
+@Composable
+private fun AddToLibraryButton(albumId: String, title: String, missing: List<Song>, added: Boolean) {
+    val actions = LocalAppActions.current
+    IconButton(onClick = { actions.addAlbumToLibrary(albumId, title, missing) }, enabled = !added) {
+        if (added) Icon(Icons.Default.LibraryAddCheck, contentDescription = "Added to library")
+        else Icon(Icons.Default.LibraryAdd, contentDescription = "Add to library")
+    }
+}
+
+/**
+ * Streaming-provider songs (Octo-Fiesta) next to library ones. Tapping one plays only it: playing
+ * makes the server download the song, so queueing its neighbours would download them too.
+ */
+private fun LazyListScope.providerSongItems(songs: List<Song>, currentId: Long?, showArtwork: Boolean = true) {
+    val provider = externalProvider(songs.first().remoteId) ?: "the streaming service"
+    item(key = "provider-header") {
+        SectionHeader("Not in your library")
+        Text("From $provider. Playing a song adds it to your server.", style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 4.dp))
+    }
+    items(songs, key = { "provider-${it.id}" }) { song ->
+        val actions = LocalAppActions.current
+        SongRow(song, onClick = { actions.play(listOf(song)) }, onMore = { actions.songOptions(song) },
+                isCurrent = song.id == currentId, showArtwork = showArtwork)
     }
 }
 
@@ -216,6 +259,8 @@ fun ArtistDetailScreen(artistId: Long, name: String, remoteId: String? = null) {
     val songs by viewModel.songs.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     val albums by viewModel.albums.collectAsStateWithLifecycle()
+    val releases by viewModel.releases.collectAsStateWithLifecycle()
+    val similar by viewModel.similar.collectAsStateWithLifecycle()
     val bio by viewModel.bio.collectAsStateWithLifecycle()
     val imageVersion by viewModel.imageVersion.collectAsStateWithLifecycle()
     val songSort by SortSettings.artistSongs.state.collectAsStateWithLifecycle()
@@ -227,9 +272,12 @@ fun ArtistDetailScreen(artistId: Long, name: String, remoteId: String? = null) {
     }
     var menu by remember { mutableStateOf(false) }
     val actions = LocalAppActions.current
+    val artist = Artist(artistId, name, remoteId)
 
     DetailScaffold(name, actions = {
-        SortMenu(SortSettings.artistAlbums.group("Albums", AlbumSortOptions, albumSort),
+        // Server artists' songs are their top songs, in rank order.
+        if (viewModel.isRemote) SortMenu(SortSettings.artistAlbums.group("Albums", AlbumSortOptions, albumSort))
+        else SortMenu(SortSettings.artistAlbums.group("Albums", AlbumSortOptions, albumSort),
                 SortSettings.artistSongs.group("Songs", SongSortOptions, songSort))
         Box {
             IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, contentDescription = "More options") }
@@ -243,7 +291,8 @@ fun ArtistDetailScreen(artistId: Long, name: String, remoteId: String? = null) {
                     DropdownMenuItem(text = { Text("Remove image") }, onClick = { menu = false; viewModel.removeImage() })
                 }
                 DropdownMenuItem(text = { Text("More options…") }, onClick = {
-                    menu = false; actions.collectionOptions(name, songs.orEmpty())
+                    menu = false
+                    if (viewModel.isRemote) actions.artistOptions(artist) else actions.collectionOptions(name, songs.orEmpty())
                 })
             }
         }
@@ -252,25 +301,100 @@ fun ArtistDetailScreen(artistId: Long, name: String, remoteId: String? = null) {
             item {
                 Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     androidx.compose.runtime.key(imageVersion) {
-                        ArtistArtwork(Artist(artistId, name, remoteId), Modifier.size(120.dp), CircleShape, collect = true)
+                        ArtistArtwork(artist, Modifier.size(120.dp), CircleShape, collect = true)
                     }
                     Spacer(Modifier.width(16.dp))
                     Column {
-                        Text(songCount(songs?.size ?: 0), style = MaterialTheme.typography.titleMedium)
+                        val summary = if (viewModel.isRemote) releases?.let { albumCount(it.libraryCount) } else songCount(songs?.size ?: 0)
+                        Text(summary.orEmpty(), style = MaterialTheme.typography.titleMedium)
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             bio?.second?.take(2)?.forEach { tag -> AssistChip(onClick = {}, label = { Text(tag) }) }
                         }
                     }
                 }
-                PlayButtons(songs.orEmpty())
+                // Server artists: their library songs, loaded when pressed (a request per album).
+                if (viewModel.isRemote) ArtistPlayButtons(artist, enabled = releases != null)
+                else PlayButtons(songs.orEmpty())
                 bio?.first?.let { BioText(it) }
             }
-            if (albums.isNotEmpty()) {
-                item { SectionHeader("Albums") }
-                item { AlbumsRow(albums) }
+            if (viewModel.isRemote) serverArtistItems(releases, songs, similar, error, viewModel::retry, currentId)
+            else {
+                if (albums.isNotEmpty()) {
+                    item { SectionHeader("Albums") }
+                    item { AlbumsRow(albums) }
+                }
+                item { SectionHeader("Songs") }
+                songsOrState(songs, error, viewModel::retry) { songItems(it, currentId) }
             }
-            item { SectionHeader("Songs") }
-            songsOrState(songs, error, viewModel::retry) { songItems(it, currentId) }
+        }
+    }
+}
+
+/**
+ * A server artist, as in the web player: top songs, the library's releases by kind, then the
+ * streaming provider's (Octo-Fiesta), then similar artists.
+ */
+private fun LazyListScope.serverArtistItems(
+        releases: ArtistReleases?, topSongs: List<Song>?, similar: List<Artist>, error: String?, onRetry: () -> Unit, currentId: Long?
+) {
+    if (releases == null) {
+        songsOrState(null, error, onRetry) {}
+        return
+    }
+    val (library, provider) = topSongs.orEmpty().partition { !it.isExternal }
+    if (library.isNotEmpty()) {
+        item(key = "top-header") { SectionHeader("Top songs") }
+        songItems(library, currentId)
+    }
+    listOf("Albums" to releases.albums, "Singles & EPs" to releases.singles, "Appears on" to releases.appearsOn).forEach { (title, list) ->
+        if (list.isNotEmpty()) {
+            item(key = "header-$title") { SectionHeader(title) }
+            item(key = "row-$title") { AlbumsRow(list) }
+        }
+    }
+    if (releases.provider.isNotEmpty()) {
+        item(key = "provider-albums-header") {
+            SectionHeader("On ${releases.providerName ?: "streaming"}")
+            val hidden = if (releases.hiddenCovers > 0) " Covers and karaoke versions are hidden." else ""
+            Text("Not in your library. Playing adds songs to your server.$hidden", style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 4.dp))
+        }
+        item(key = "provider-albums") { AlbumsRow(releases.provider) }
+    }
+    if (provider.isNotEmpty()) providerSongItems(provider, currentId)
+    if (similar.isNotEmpty()) {
+        item(key = "similar-header") { SectionHeader("Similar artists") }
+        item(key = "similar") { ArtistsRow(similar) }
+    }
+    if (releases.libraryCount == 0 && releases.provider.isEmpty() && topSongs.isNullOrEmpty()) {
+        item {
+            Text("No albums on the server", style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(16.dp))
+        }
+    }
+}
+
+/** Play / Shuffle for a server artist, loading their songs when pressed. */
+@Composable
+private fun ArtistPlayButtons(artist: Artist, enabled: Boolean) {
+    val actions = LocalAppActions.current
+    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Button(onClick = { actions.playArtist(artist) }, enabled = enabled, modifier = Modifier.weight(1f)) {
+            Icon(Icons.Default.PlayArrow, contentDescription = null); Spacer(Modifier.width(8.dp)); Text("Play")
+        }
+        OutlinedButton(onClick = { actions.shuffleArtist(artist) }, enabled = enabled, modifier = Modifier.weight(1f)) {
+            Icon(Icons.Default.Shuffle, contentDescription = null); Spacer(Modifier.width(8.dp)); Text("Shuffle")
+        }
+    }
+}
+
+@Composable
+private fun ArtistsRow(artists: List<Artist>) {
+    val actions = LocalAppActions.current
+    LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        items(artists, key = { it.id }) { artist ->
+            ArtistCard(artist, onClick = { actions.openArtist(artist) }, onLongClick = { actions.artistOptions(artist) },
+                    onPlay = { actions.playArtist(artist) }, modifier = Modifier.width(150.dp))
         }
     }
 }
