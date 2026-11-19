@@ -80,24 +80,27 @@ import kotlinx.coroutines.launch
 import com.udeshcoffee.android.ui.compose.search.SearchScreen
 import com.udeshcoffee.android.ui.compose.settings.SettingsScreen
 import com.udeshcoffee.android.ui.compose.theme.CoffeeTheme
+import com.udeshcoffee.android.ui.compose.theme.Section
+import com.udeshcoffee.android.ui.compose.theme.SectionTheme
 import com.udeshcoffee.android.ui.compose.theme.rememberArtworkSeed
 import org.koin.compose.koinInject
 
-private data class TopLevel(val label: String, val icon: ImageVector, val route: Any)
+private data class TopLevel(val label: String, val icon: ImageVector, val route: Any, val section: Section)
 
 private val topLevels = listOf(
-        TopLevel("Home", Icons.Default.Home, HomeRoute),
-        TopLevel("Favorites", Icons.Default.Favorite, FavoritesRoute),
-        TopLevel("Library", Icons.Default.LibraryMusic, LibraryRoute),
-        TopLevel("Search", Icons.Default.Search, SearchRoute))
+        TopLevel("Home", Icons.Default.Home, HomeRoute, Section.HOME),
+        TopLevel("Favorites", Icons.Default.Favorite, FavoritesRoute, Section.FAVORITES),
+        TopLevel("Library", Icons.Default.LibraryMusic, LibraryRoute, Section.LIBRARY),
+        TopLevel("Search", Icons.Default.Search, SearchRoute, Section.SEARCH))
 
 /** Root of the Compose UI. [onDeleteSongs] asks the user to confirm deleting files (activity result). */
 @Composable
 fun CoffeeApp(onDeleteSongs: (List<Song>) -> Unit, playerExpandedRequest: Boolean = false) {
     val playerState by rememberPlayerState()
+    // The artwork's colours theme only the mini player and the full player; pages use their section's accent.
     val seed = rememberArtworkSeed(playerState.song)
 
-    CoffeeTheme(seedColor = seed) {
+    run {
         val navController = rememberNavController()
         val context = LocalContext.current
         val scope = rememberCoroutineScope()
@@ -137,12 +140,19 @@ fun CoffeeApp(onDeleteSongs: (List<Song>) -> Unit, playerExpandedRequest: Boolea
         var currentTop by rememberSaveable { mutableIntStateOf(0) }
         topLevels.indexOfFirst { top -> destination?.hierarchy?.any { it.hasRoute(top.route::class) } == true }
                 .takeIf { it >= 0 }?.let { currentTop = it }
+        // Accent for the page: its own for Settings, the editor and playlists, else the section it was opened from.
+        val section = when {
+            destination?.hasRoute(SettingsRoute::class) == true -> Section.SETTINGS
+            destination?.hasRoute(EditorRoute::class) == true -> Section.EDIT
+            destination?.hasRoute(PlaylistRoute::class) == true || destination?.hasRoute(PlaylistAddSongsRoute::class) == true -> Section.PLAYLISTS
+            else -> topLevels[currentTop].section
+        }
 
         // Nothing to show: put the player away without animating.
         LaunchedEffect(playerState.song == null) { if (playerState.song == null && playerState.connected) playerSheet.snapCollapsed() }
         val sheetFling = rememberPlayerSheetFling(playerSheet)
 
-        CompositionLocalProvider(LocalAppActions provides actions) {
+        SectionTheme(section) { CompositionLocalProvider(LocalAppActions provides actions) {
             Box(Modifier.fillMaxSize().onSizeChanged { playerSheet.updateHeight(it.height.toFloat()) }) {
                 NavigationSuiteScaffold(navigationSuiteItems = {
                     topLevels.forEachIndexed { index, top ->
@@ -171,19 +181,23 @@ fun CoffeeApp(onDeleteSongs: (List<Song>) -> Unit, playerExpandedRequest: Boolea
                             SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).padding(8.dp))
                         }
                         // Drag up to pull the full player out of it; fades as the player covers it.
-                        MiniPlayer(onExpand = { scope.launch { playerSheet.expand() } },
-                                modifier = Modifier
-                                        .graphicsLayer { alpha = 1f - playerSheet.progress }
-                                        .playerSheetDraggable(playerSheet, sheetFling))
+                        CoffeeTheme(seedColor = seed) {
+                            MiniPlayer(onExpand = { scope.launch { playerSheet.expand() } },
+                                    modifier = Modifier
+                                            .graphicsLayer { alpha = 1f - playerSheet.progress }
+                                            .playerSheetDraggable(playerSheet, sheetFling))
+                        }
                     }
                 }
                 if (playerState.song != null) {
-                    PlayerSheetHost(playerSheet) { PlayerScreen(onCollapse = { scope.launch { playerSheet.collapse() } }) }
+                    CoffeeTheme(seedColor = seed) {
+                        PlayerSheetHost(playerSheet) { PlayerScreen(onCollapse = { scope.launch { playerSheet.collapse() } }) }
+                    }
                 }
                 OptionsSheetHost(actions)
                 AppDialogHost(actions)
             }
-        }
+        } }
     }
 }
 

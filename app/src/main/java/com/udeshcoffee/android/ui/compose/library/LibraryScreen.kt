@@ -55,6 +55,7 @@ import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import com.udeshcoffee.android.data.source.MusicSourceStore
+import com.udeshcoffee.android.ui.compose.components.SectionPill
 import com.udeshcoffee.android.ui.compose.components.SettingsButton
 import com.udeshcoffee.android.ui.compose.playlists.PlaylistsTab
 
@@ -86,7 +87,7 @@ internal fun LibraryScaffold(startTab: Int, sortMenu: @Composable (page: Int) ->
     val scope = rememberCoroutineScope()
     Scaffold(topBar = {
         TopAppBar(
-                title = { Text("Library") },
+                title = { SectionPill("Library") },
                 actions = {
                     sortMenu(pager.currentPage)
                     SettingsButton()
