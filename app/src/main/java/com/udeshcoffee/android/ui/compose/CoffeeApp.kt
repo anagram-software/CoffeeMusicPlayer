@@ -21,7 +21,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteDefaults
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
+import androidx.compose.foundation.background
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -97,7 +99,7 @@ private val topLevels = listOf(
 @Composable
 fun CoffeeApp(onDeleteSongs: (List<Song>) -> Unit, playerExpandedRequest: Boolean = false) {
     val playerState by rememberPlayerState()
-    // The artwork's colours theme only the mini player and the full player; pages use their section's accent.
+    // The artwork's colours theme the navigation bar, mini player and full player; pages use their section's accent.
     val seed = rememberArtworkSeed(playerState.song)
 
     run {
@@ -154,7 +156,14 @@ fun CoffeeApp(onDeleteSongs: (List<Song>) -> Unit, playerExpandedRequest: Boolea
 
         SectionTheme(section) { CompositionLocalProvider(LocalAppActions provides actions) {
             Box(Modifier.fillMaxSize().onSizeChanged { playerSheet.updateHeight(it.height.toFloat()) }) {
-                NavigationSuiteScaffold(navigationSuiteItems = {
+                // The navigation bar (down through the system navigation area) and the mini player share the
+                // artwork's colours and one container colour, so they read as one surface; pages keep their section.
+                CoffeeTheme(seedColor = seed) {
+                val barColor = MaterialTheme.colorScheme.surfaceContainer
+                NavigationSuiteScaffold(
+                        navigationSuiteColors = NavigationSuiteDefaults.colors(
+                                navigationBarContainerColor = barColor, navigationRailContainerColor = barColor),
+                        navigationSuiteItems = {
                     topLevels.forEachIndexed { index, top ->
                         item(
                                 selected = index == currentTop,
@@ -164,7 +173,7 @@ fun CoffeeApp(onDeleteSongs: (List<Song>) -> Unit, playerExpandedRequest: Boolea
                     }
                 }) {
                     Column(Modifier.fillMaxSize()) {
-                        Box(Modifier.weight(1f)) {
+                        Box(Modifier.weight(1f)) { SectionTheme(section) { Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
                             NavHost(navController, startDestination = HomeRoute) {
                                 composable<HomeRoute> { needsSetup { HomeScreen() } }
                                 composable<FavoritesRoute> { needsSetup { FavoritesScreen() } }
@@ -179,15 +188,15 @@ fun CoffeeApp(onDeleteSongs: (List<Song>) -> Unit, playerExpandedRequest: Boolea
                                 composable<EditorRoute> { EditorScreen(it.toRoute<EditorRoute>().songId) }
                             }
                             SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).padding(8.dp))
-                        }
+                        } } }
                         // Drag up to pull the full player out of it; fades as the player covers it.
-                        CoffeeTheme(seedColor = seed) {
-                            MiniPlayer(onExpand = { scope.launch { playerSheet.expand() } },
-                                    modifier = Modifier
-                                            .graphicsLayer { alpha = 1f - playerSheet.progress }
-                                            .playerSheetDraggable(playerSheet, sheetFling))
-                        }
+                        MiniPlayer(onExpand = { scope.launch { playerSheet.expand() } },
+                                containerColor = barColor,
+                                modifier = Modifier
+                                        .graphicsLayer { alpha = 1f - playerSheet.progress }
+                                        .playerSheetDraggable(playerSheet, sheetFling))
                     }
+                }
                 }
                 if (playerState.song != null) {
                     CoffeeTheme(seedColor = seed) {

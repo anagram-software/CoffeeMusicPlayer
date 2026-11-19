@@ -24,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -35,14 +36,15 @@ import org.koin.compose.koinInject
 
 /** Collapsed player shown above the navigation bar. Tap to expand; the caller adds the drag-up gesture ([playerSheetDraggable]). */
 @Composable
-fun MiniPlayer(onExpand: () -> Unit, modifier: Modifier = Modifier) {
+fun MiniPlayer(onExpand: () -> Unit, modifier: Modifier = Modifier, containerColor: Color = MaterialTheme.colorScheme.surfaceContainer) {
     val state by rememberPlayerState()
     val song = state.song ?: return
     val player: PlayerConnection = koinInject()
     val position by remember(song.id, state.isPlaying) { player.progress(500) }.collectAsState(initial = player.currentPosition)
 
+    // A flat colour, the same as the navigation bar below it.
     Surface(
-            tonalElevation = 3.dp,
+            color = containerColor,
             modifier = modifier
                     .fillMaxWidth()
                     .clickable(onClick = onExpand)
