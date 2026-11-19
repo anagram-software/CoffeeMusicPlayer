@@ -65,6 +65,8 @@ import com.udeshcoffee.android.ui.compose.navigation.EditorRoute
 import com.udeshcoffee.android.ui.compose.navigation.FavoritesRoute
 import com.udeshcoffee.android.ui.compose.navigation.GenreRoute
 import com.udeshcoffee.android.ui.compose.navigation.HomeRoute
+import com.udeshcoffee.android.ui.compose.navigation.PageTransitions
+import androidx.compose.ui.platform.LocalDensity
 import com.udeshcoffee.android.ui.compose.navigation.LibraryRoute
 import com.udeshcoffee.android.ui.compose.navigation.PlaylistAddSongsRoute
 import com.udeshcoffee.android.ui.compose.navigation.PlaylistRoute
@@ -153,6 +155,8 @@ fun CoffeeApp(onDeleteSongs: (List<Song>) -> Unit, playerExpandedRequest: Boolea
         // Nothing to show: put the player away without animating.
         LaunchedEffect(playerState.song == null) { if (playerState.song == null && playerState.connected) playerSheet.snapCollapsed() }
         val sheetFling = rememberPlayerSheetFling(playerSheet)
+        val density = LocalDensity.current
+        val transitions = remember(density) { PageTransitions(density) }
 
         SectionTheme(section) { CompositionLocalProvider(LocalAppActions provides actions) {
             Box(Modifier.fillMaxSize().onSizeChanged { playerSheet.updateHeight(it.height.toFloat()) }) {
@@ -174,7 +178,11 @@ fun CoffeeApp(onDeleteSongs: (List<Song>) -> Unit, playerExpandedRequest: Boolea
                 }) {
                     Column(Modifier.fillMaxSize()) {
                         Box(Modifier.weight(1f)) { SectionTheme(section) { Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-                            NavHost(navController, startDestination = HomeRoute) {
+                            NavHost(navController, startDestination = HomeRoute,
+                                    enterTransition = transitions.enter, exitTransition = transitions.exit,
+                                    popEnterTransition = transitions.popEnter, popExitTransition = transitions.popExit,
+                                    predictivePopEnterTransition = transitions.predictivePopEnter,
+                                    predictivePopExitTransition = transitions.predictivePopExit) {
                                 composable<HomeRoute> { needsSetup { HomeScreen() } }
                                 composable<FavoritesRoute> { needsSetup { FavoritesScreen() } }
                                 composable<LibraryRoute> { needsSetup { LibraryScreen() } }
