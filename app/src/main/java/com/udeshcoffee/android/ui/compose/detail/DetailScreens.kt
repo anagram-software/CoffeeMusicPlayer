@@ -1,5 +1,9 @@
 package com.udeshcoffee.android.ui.compose.detail
 
+import com.udeshcoffee.android.ui.compose.OptionsExtra
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.HideImage
+import com.udeshcoffee.android.ui.compose.components.rememberOptionsAnchor
 import com.udeshcoffee.android.ui.compose.components.PageLoadingIndicator
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -61,8 +65,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -291,11 +293,12 @@ private fun PlayButtons(songs: List<Song>) {
     }
 }
 
-/** Overflow button opening the collection options sheet (play next, queue, add to playlist...). */
+/** Overflow button opening the collection options menu (play next, queue, add to playlist...). */
 @Composable
 private fun CollectionMenuButton(title: String, songs: List<Song>) {
     val actions = LocalAppActions.current
-    IconButton(onClick = { actions.collectionOptions(title, songs) }, enabled = songs.isNotEmpty()) {
+    val anchor = rememberOptionsAnchor()
+    IconButton(onClick = anchor.open { actions.collectionOptions(title, songs) }, enabled = songs.isNotEmpty(), modifier = anchor.modifier) {
         Icon(Icons.Default.MoreVert, contentDescription = "More options")
     }
 }
@@ -440,7 +443,6 @@ private fun ArtistDetailContent(viewModel: ArtistDetailViewModel, artistId: Long
         uri?.let { viewModel.setImage(context, it) }
     }
     val starred by viewModel.starred.collectAsStateWithLifecycle()
-    var menu by remember { mutableStateOf(false) }
     val actions = LocalAppActions.current
     val artist = Artist(artistId, name, remoteId)
     val listState = rememberLazyListState()
@@ -450,23 +452,16 @@ private fun ArtistDetailContent(viewModel: ArtistDetailViewModel, artistId: Long
         if (viewModel.isRemote) SortMenu(SortSettings.artistAlbums.group(AlbumSortOptions, albumSort))
         else SortMenu(SortSettings.artistAlbums.group(AlbumSortOptions, albumSort),
                 SortSettings.artistSongs.group(SongSortOptions, songSort))
-        Box {
-            IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, contentDescription = "More options") }
-            DropdownMenu(menu, onDismissRequest = { menu = false }) {
-                // Server artists use the server's image.
-                if (!viewModel.isRemote) {
-                    DropdownMenuItem(text = { Text("Choose image") }, onClick = {
-                        menu = false
+        val anchor = rememberOptionsAnchor()
+        IconButton(modifier = anchor.modifier, onClick = anchor.open {
+            if (viewModel.isRemote) actions.artistOptions(artist)
+            // Device artists also get their image actions (server artists use the server's image).
+            else actions.collectionOptions(name, songs.orEmpty(), extras = listOf(
+                    OptionsExtra(Icons.Default.Image, "Choose image") {
                         pickImage.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                    })
-                    DropdownMenuItem(text = { Text("Remove image") }, onClick = { menu = false; viewModel.removeImage() })
-                }
-                DropdownMenuItem(text = { Text("More options…") }, onClick = {
-                    menu = false
-                    if (viewModel.isRemote) actions.artistOptions(artist) else actions.collectionOptions(name, songs.orEmpty())
-                })
-            }
-        }
+                    },
+                    OptionsExtra(Icons.Default.HideImage, "Remove image") { viewModel.removeImage() }))
+        }) { Icon(Icons.Default.MoreVert, contentDescription = "More options") }
     }) { padding ->
         LazyColumn(Modifier.fillMaxSize(), state = listState, contentPadding = padding) {
             item(key = "header") {
@@ -652,7 +647,6 @@ private fun PlaylistDetailContent(viewModel: PlaylistDetailViewModel, artwork: A
     val playlist = remember(playlistId, type, title) { Playlist(type, playlistId, title, remoteId, readonly) }
     // Editable: device user playlists, and server playlists the server lets us change.
     val isUser = type == Playlist.USER && !readonly
-    var menu by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
 
     HeaderScaffold(title, listState, actions = {
@@ -660,17 +654,9 @@ private fun PlaylistDetailContent(viewModel: PlaylistDetailViewModel, artwork: A
         if (isUser && remoteId == null) IconButton(onClick = { actions.openPlaylistAddSongs(playlist) }) { Icon(Icons.Default.Add, contentDescription = "Add songs") }
         // Server playlists download for offline listening; the Downloads list offers removing them all.
         if (remoteId != null || type == Playlist.DOWNLOADS) DownloadButton(songs.orEmpty())
-        Box {
-            IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, contentDescription = "More options") }
-            DropdownMenu(menu, onDismissRequest = { menu = false }) {
-                DropdownMenuItem(text = { Text("Play next") }, onClick = { menu = false; actions.queue(songs.orEmpty(), true) })
-                DropdownMenuItem(text = { Text("Add to queue") }, onClick = { menu = false; actions.queue(songs.orEmpty(), false) })
-                DropdownMenuItem(text = { Text("Add to another playlist") }, onClick = { menu = false; actions.addToPlaylist(songs.orEmpty(), playlistId) })
-                if (isUser) {
-                    DropdownMenuItem(text = { Text("Rename") }, onClick = { menu = false; actions.renamePlaylist(playlist) })
-                    DropdownMenuItem(text = { Text("Delete") }, onClick = { menu = false; actions.deletePlaylist(playlist, goBack = true) })
-                }
-            }
+        val anchor = rememberOptionsAnchor()
+        IconButton(onClick = anchor.open { actions.playlistPageOptions(playlist, songs.orEmpty()) }, modifier = anchor.modifier) {
+            Icon(Icons.Default.MoreVert, contentDescription = "More options")
         }
     }) { padding ->
         val list = songs

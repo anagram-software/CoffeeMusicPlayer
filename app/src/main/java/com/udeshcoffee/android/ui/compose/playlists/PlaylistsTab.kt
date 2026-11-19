@@ -1,5 +1,6 @@
 package com.udeshcoffee.android.ui.compose.playlists
 
+import com.udeshcoffee.android.ui.compose.components.rememberOptionsAnchor
 import com.udeshcoffee.android.ui.compose.components.PageLoadingIndicator
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
@@ -69,9 +70,12 @@ fun PlaylistsTab(viewModel: PlaylistsViewModel = koinViewModel()) {
         items(list, key = { "${it.type}:${it.id}:${it.remoteId}" }) { playlist ->
             // Separates the smart playlists from the user's (server playlists are all user playlists).
             if (playlist.type == Playlist.USER && playlist != list.first() && list.firstOrNull { it.type == Playlist.USER } == playlist) HorizontalDivider()
+            val rowAnchor = rememberOptionsAnchor()
+            val buttonAnchor = rememberOptionsAnchor()
             ListItem(
                     onClick = { actions.openPlaylist(playlist) },
-                    onLongClick = { actions.playlistOptions(playlist) },
+                    onLongClick = rowAnchor.openAtTouch { actions.playlistOptions(playlist) },
+                    modifier = rowAnchor.modifier,
                     leadingContent = {
                         PlaylistArtwork(playlist, Modifier.size(40.dp)) { modifier ->
                             Icon(playlist.icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary,
@@ -83,7 +87,7 @@ fun PlaylistsTab(viewModel: PlaylistsViewModel = koinViewModel()) {
                         if (details.isNotEmpty()) Text(details.joinToString(" · "))
                     },
                     trailingContent = {
-                        IconButton(onClick = { actions.playlistOptions(playlist) }) { Icon(Icons.Default.MoreVert, contentDescription = "Playlist options") }
+                        IconButton(onClick = buttonAnchor.open { actions.playlistOptions(playlist) }, modifier = buttonAnchor.modifier) { Icon(Icons.Default.MoreVert, contentDescription = "Playlist options") }
                     }) { Text(playlist.title) }
         }
     }

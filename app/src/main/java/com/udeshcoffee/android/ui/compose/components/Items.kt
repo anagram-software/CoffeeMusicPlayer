@@ -66,10 +66,12 @@ fun SongRow(
         leading: (@Composable () -> Unit)? = null,
         trailing: (@Composable () -> Unit)? = null
 ) {
+    val rowAnchor = rememberOptionsAnchor()
+    val buttonAnchor = rememberOptionsAnchor()
     ListItem(
             onClick = onClick,
-            onLongClick = onMore,
-            modifier = modifier,
+            onLongClick = rowAnchor.openAtTouch(onMore),
+            modifier = modifier.then(rowAnchor.modifier),
             colors = if (isCurrent) ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
             else ListItemDefaults.colors(),
             leadingContent = leading ?: if (showArtwork) {
@@ -89,7 +91,9 @@ fun SongRow(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (isCurrent) Icon(Icons.Default.GraphicEq, contentDescription = "Playing", tint = MaterialTheme.colorScheme.primary)
                     trailing?.invoke()
-                    IconButton(onClick = onMore) { Icon(Icons.Default.MoreVert, contentDescription = "Song options") }
+                    IconButton(onClick = buttonAnchor.open(onMore), modifier = buttonAnchor.modifier) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "Song options")
+                    }
                 }
             }) {
                 Text(song.title, maxLines = 1, overflow = TextOverflow.Ellipsis,
@@ -127,7 +131,8 @@ fun MediaCard(
         tintLoad: (suspend () -> Any?)? = null
 ) {
     val container = rememberCardTint(tintKey, CardDefaults.cardColors().containerColor, tintLoad ?: { tintKey })
-    Card(modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick),
+    val anchor = rememberOptionsAnchor()
+    Card(modifier.then(anchor.modifier).combinedClickable(onClick = onClick, onLongClick = anchor.openAtTouch(onLongClick)),
             colors = CardDefaults.cardColors(containerColor = container, contentColor = MaterialTheme.colorScheme.onSurface)) {
         Box {
             artwork(Modifier.fillMaxWidth().aspectRatio(1f))

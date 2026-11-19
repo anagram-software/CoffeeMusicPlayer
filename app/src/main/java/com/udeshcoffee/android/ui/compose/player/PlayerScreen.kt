@@ -1,5 +1,6 @@
 package com.udeshcoffee.android.ui.compose.player
 
+import com.udeshcoffee.android.ui.compose.components.rememberOptionsAnchor
 import androidx.compose.foundation.layout.width
 import com.udeshcoffee.android.R
 import androidx.compose.ui.semantics.semantics
@@ -131,7 +132,10 @@ fun PlayerScreen(onCollapse: () -> Unit, viewModel: NowPlayingViewModel = koinVi
                         val player: PlayerConnection = koinInject()
                         IconButton(onClick = { player.clearQueue() }) { Icon(Icons.Default.ClearAll, contentDescription = "Clear queue") }
                     } else {
-                        IconButton(onClick = { actions.songOptions(song) }) { Icon(Icons.Default.MoreVert, contentDescription = "Song options") }
+                        val anchor = rememberOptionsAnchor()
+                        IconButton(onClick = anchor.open { actions.songOptions(song) }, modifier = anchor.modifier) {
+                            Icon(Icons.Default.MoreVert, contentDescription = "Song options")
+                        }
                     }
                 })
         if (showQueue) {
@@ -287,7 +291,10 @@ private fun QueueList(state: PlayerUiState, modifier: Modifier) {
                             supportingContent = { Text(song.artistName, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                             trailingContent = {
                                 Row {
-                                    IconButton(onClick = { actions.songOptions(song) }) { Icon(Icons.Default.MoreVert, contentDescription = "Song options") }
+                                    val anchor = rememberOptionsAnchor()
+                                    IconButton(onClick = anchor.open { actions.songOptions(song) }, modifier = anchor.modifier) {
+                                        Icon(Icons.Default.MoreVert, contentDescription = "Song options")
+                                    }
                                     Icon(Icons.Default.DragHandle, contentDescription = "Reorder",
                                             modifier = Modifier.padding(12.dp).draggableHandle())
                                 }

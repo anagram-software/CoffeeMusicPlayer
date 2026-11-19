@@ -1,5 +1,6 @@
 package com.udeshcoffee.android.ui.compose.library
 
+import com.udeshcoffee.android.ui.compose.components.rememberOptionsAnchor
 import com.udeshcoffee.android.ui.compose.components.PageLoadingIndicator
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -331,9 +332,11 @@ private fun GenresTab(viewModel: LibraryViewModel) {
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun GenreRow(genre: Genre, onClick: () -> Unit, onLongClick: () -> Unit) {
+    val anchor = rememberOptionsAnchor()
     ListItem(
             onClick = onClick,
-            onLongClick = onLongClick,
+            onLongClick = anchor.openAtTouch(onLongClick),
+            modifier = anchor.modifier,
             supportingContent = { Text(songCount(genre.no ?: 0)) },
             trailingContent = {
                 // Up to three album covers from the genre.

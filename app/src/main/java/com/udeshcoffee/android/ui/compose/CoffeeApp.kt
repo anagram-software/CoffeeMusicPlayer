@@ -54,7 +54,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.ui.compose.components.AppDialogHost
 import com.udeshcoffee.android.ui.compose.components.LocalDownloadedIds
-import com.udeshcoffee.android.ui.compose.components.OptionsSheetHost
+import com.udeshcoffee.android.ui.compose.components.OptionsMenuHost
 import com.udeshcoffee.android.ui.compose.detail.AlbumDetailScreen
 import com.udeshcoffee.android.ui.compose.detail.ArtistDetailScreen
 import com.udeshcoffee.android.ui.compose.detail.FavoritesScreen
@@ -245,7 +245,7 @@ fun CoffeeApp(onDeleteSongs: (List<Song>) -> Unit, playerExpandedRequest: Boolea
                         PlayerSheetHost(playerSheet) { PlayerScreen(onCollapse = { scope.launch { playerSheet.collapse() } }) }
                     }
                 }
-                OptionsSheetHost(actions)
+                OptionsMenuHost(actions)
                 AppDialogHost(actions)
             }
         } }

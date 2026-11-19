@@ -7,6 +7,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.udeshcoffee.android.ui.compose.components.OptionsAnchor
 import androidx.navigation.NavController
 import com.udeshcoffee.android.data.DataRepository
 import com.udeshcoffee.android.data.MediaRepository
@@ -35,11 +38,22 @@ import com.udeshcoffee.android.utils.MediaAccess
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
-/** A bottom sheet of actions, shown by the app scaffold. */
-sealed interface OptionsSheet {
-    data class ForSong(val song: Song, val playlist: Playlist? = null) : OptionsSheet
-    data class ForCollection(val title: String, val songs: List<Song>, val playlist: Playlist? = null) : OptionsSheet
+/** What an options menu is for. */
+sealed interface OptionsTarget {
+    data class ForSong(val song: Song, val playlist: Playlist? = null) : OptionsTarget
+    /**
+     * [playlist]: a user playlist, offering rename and delete ([fromPlaylistPage]: deleting leaves its page).
+     * [extras]: page-specific actions, shown as the menu's last group (an artist's image, for example).
+     */
+    data class ForCollection(val title: String, val songs: List<Song>, val playlist: Playlist? = null,
+                             val extras: List<OptionsExtra> = emptyList(), val fromPlaylistPage: Boolean = false) : OptionsTarget
 }
+
+/** A page-specific entry in an options menu. */
+data class OptionsExtra(val icon: ImageVector, val label: String, val onClick: () -> Unit)
+
+/** An open options menu, shown by the app scaffold at [anchor] (window coordinates; see [OptionsAnchor]). */
+data class OptionsMenu(val target: OptionsTarget, val anchor: Rect)
 
 /** A dialog shown by the app scaffold. */
 sealed interface AppDialog {
@@ -72,7 +86,9 @@ class AppActions(
         /** Expands or collapses the full player. */
         val setPlayerExpanded: (Boolean) -> Unit
 ) {
-    var sheet by mutableStateOf<OptionsSheet?>(null)
+    var menu by mutableStateOf<OptionsMenu?>(null)
+    /** Where the next options menu opens, set by [OptionsAnchor] just before the opening action runs. */
+    internal var menuAnchor: Rect = Rect.Zero
     var dialog by mutableStateOf<AppDialog?>(null)
 
     // Playback
@@ -123,17 +139,23 @@ class AppActions(
         val provider = externalProvider(missing.first().remoteId) ?: "the streaming service"
         message("Adding \"$title\": downloading ${songCount(missing.size)} from $provider")
     }
-    fun albumOptions(album: Album) = launch { sheet = OptionsSheet.ForCollection(album.title, albumSongs(album)) }
-    fun artistOptions(artist: Artist) = launch { sheet = OptionsSheet.ForCollection(artist.name, artistSongs(artist)) }
-    fun genreOptions(genre: Genre) = launch {
-        sheet = OptionsSheet.ForCollection(genre.name, if (genre.remote) subsonic.genreSongs(genre.name) else mediaRepository.loadGenreSongs(genre.id))
+    fun albumOptions(album: Album) = showMenu { OptionsTarget.ForCollection(album.title, albumSongs(album)) }
+    fun artistOptions(artist: Artist) = showMenu { OptionsTarget.ForCollection(artist.name, artistSongs(artist)) }
+    fun genreOptions(genre: Genre) = showMenu {
+        OptionsTarget.ForCollection(genre.name, if (genre.remote) subsonic.genreSongs(genre.name) else mediaRepository.loadGenreSongs(genre.id))
     }
     fun playPlaylist(playlist: Playlist) = launch {
         play(playlistSongs(playlist))
         PlaylistPlays.record(playlist)
     }
-    fun playlistOptions(playlist: Playlist) = launch {
-        sheet = OptionsSheet.ForCollection(playlist.title, playlistSongs(playlist), playlist.takeIf { it.type == Playlist.USER })
+    fun playlistOptions(playlist: Playlist) = showMenu {
+        OptionsTarget.ForCollection(playlist.title, playlistSongs(playlist), playlist.takeIf { it.type == Playlist.USER })
+    }
+
+    /** Opens an options menu at the current [menuAnchor] (captured now, as loading the songs may take a moment). */
+    private fun showMenu(target: suspend () -> OptionsTarget) {
+        val anchor = menuAnchor
+        launch { menu = OptionsMenu(target(), anchor) }
     }
 
     private suspend fun playlistSongs(playlist: Playlist): List<Song> =
@@ -154,9 +176,16 @@ class AppActions(
         }
     }
 
-    // Sheets and dialogs
-    fun songOptions(song: Song, playlist: Playlist? = null) { sheet = OptionsSheet.ForSong(song, playlist) }
-    fun collectionOptions(title: String, songs: List<Song>) { sheet = OptionsSheet.ForCollection(title, songs) }
+    // Menus and dialogs
+    fun songOptions(song: Song, playlist: Playlist? = null) { menu = OptionsMenu(OptionsTarget.ForSong(song, playlist), menuAnchor) }
+    fun collectionOptions(title: String, songs: List<Song>, extras: List<OptionsExtra> = emptyList()) {
+        menu = OptionsMenu(OptionsTarget.ForCollection(title, songs, extras = extras), menuAnchor)
+    }
+    /** Options for the open playlist page (deleting the playlist goes back). */
+    fun playlistPageOptions(playlist: Playlist, songs: List<Song>) {
+        menu = OptionsMenu(OptionsTarget.ForCollection(playlist.title, songs, playlist.takeIf { it.type == Playlist.USER },
+                fromPlaylistPage = true), menuAnchor)
+    }
     fun addToPlaylist(songs: List<Song>, excludePlaylistId: Long? = null) { if (songs.isNotEmpty()) dialog = AppDialog.AddToPlaylist(songs, excludePlaylistId) }
     fun newPlaylist(songs: List<Song> = emptyList()) { dialog = AppDialog.NewPlaylist(songs, onServer = isServer) }
     fun renamePlaylist(playlist: Playlist) { dialog = AppDialog.RenamePlaylist(playlist) }
