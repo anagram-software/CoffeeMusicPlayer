@@ -27,6 +27,8 @@ import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material3.Card
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
@@ -115,7 +117,9 @@ fun MediaCard(
     Card(modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick)) {
         Box {
             artwork(Modifier.fillMaxWidth().aspectRatio(1f))
-            FilledTonalIconButton(onClick = onPlay, modifier = Modifier.align(Alignment.BottomEnd).padding(8.dp)) {
+            // White with a dark icon whatever the page's accent, so it reads on any artwork.
+            FilledTonalIconButton(onClick = onPlay, modifier = Modifier.align(Alignment.BottomEnd).padding(8.dp),
+                    colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = Color.White, contentColor = Color.Black)) {
                 Icon(Icons.Default.PlayArrow, contentDescription = "Play $title")
             }
         }
