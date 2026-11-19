@@ -61,7 +61,8 @@ fun OptionsSheetHost(actions: AppActions) {
     val downloads by downloadRepository.downloads.collectAsStateWithLifecycle()
     fun run(block: () -> Unit) = { dismiss(); block() }
     ModalBottomSheet(onDismissRequest = dismiss) {
-        Column(Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = 8.dp)) {
+        // Space below the last option (above the navigation bar), as pages have (PageBottomPadding).
+        Column(Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = PageBottomPadding)) {
             when (sheet) {
                 is OptionsSheet.ForSong -> {
                     val song = sheet.song
