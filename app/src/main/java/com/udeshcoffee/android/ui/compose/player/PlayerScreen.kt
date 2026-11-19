@@ -1,5 +1,10 @@
 package com.udeshcoffee.android.ui.compose.player
 
+import androidx.compose.foundation.layout.width
+import com.udeshcoffee.android.R
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.res.painterResource
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.activity.compose.BackHandler
@@ -56,7 +61,6 @@ import androidx.compose.material3.SliderState
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
@@ -112,10 +116,16 @@ fun PlayerScreen(onCollapse: () -> Unit, viewModel: NowPlayingViewModel = koinVi
     val actions = LocalAppActions.current
 
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceContainer).safeDrawingPadding()) {
-        TopAppBar(
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+        // One foreground colour for the whole bar: the logo, the close button and the actions.
+        val barContent = MaterialTheme.colorScheme.onSurface
+        CenterAlignedTopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent, titleContentColor = barContent,
+                        navigationIconContentColor = barContent, actionIconContentColor = barContent),
                 navigationIcon = { IconButton(onClick = onCollapse) { Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Close player") } },
-                title = { Text(if (showQueue) "Up next" else "Now playing", style = MaterialTheme.typography.titleMedium) },
+                title = {
+                    if (showQueue) Text("Up next", style = MaterialTheme.typography.titleMedium)
+                    else CoffeeLogo()
+                },
                 actions = {
                     if (showQueue) {
                         IconButton(onClick = { actions.addToPlaylist(state.queue) }) {
@@ -323,5 +333,15 @@ fun LyricsPanel(modifier: Modifier = Modifier, viewModel: LyricsViewModel = koin
                 }
             }
         }
+    }
+}
+
+/** The app's logo: the music-play icon and "Coffee", in the current content colour. */
+@Composable
+private fun CoffeeLogo() {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.semantics(mergeDescendants = true) {}) {
+        Icon(painterResource(R.drawable.ic_music_play), contentDescription = null, modifier = Modifier.size(32.dp))
+        Spacer(Modifier.width(6.dp))
+        Text("Coffee", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium)
     }
 }
