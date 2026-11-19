@@ -41,6 +41,8 @@ import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
+import androidx.navigation.NavController
+import androidx.compose.runtime.DisposableEffect
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
@@ -128,12 +130,12 @@ fun CoffeeApp(onDeleteSongs: (List<Song>) -> Unit, playerExpandedRequest: Boolea
                 actions.openSettings()
             }
         }
-        val navigateTop: (Any) -> Unit = { route ->
-            navController.navigate(route) {
-                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                launchSingleTop = true
-                restoreState = true
-            }
+        val density = LocalDensity.current
+        val transitions = remember(density) { PageTransitions(density) }
+        DisposableEffect(navController, transitions) {
+            val listener = NavController.OnDestinationChangedListener { _, destination, _ -> transitions.onDestinationChanged(destination) }
+            navController.addOnDestinationChangedListener(listener)
+            onDispose { navController.removeOnDestinationChangedListener(listener) }
         }
         val needsSetup: @Composable (@Composable () -> Unit) -> Unit = { screen ->
             if (configured) screen() else SetupNeeded(onOpenSettings = actions::openSettings)
@@ -144,6 +146,31 @@ fun CoffeeApp(onDeleteSongs: (List<Song>) -> Unit, playerExpandedRequest: Boolea
         var currentTop by rememberSaveable { mutableIntStateOf(0) }
         topLevels.indexOfFirst { top -> destination?.hierarchy?.any { it.hasRoute(top.route::class) } == true }
                 .takeIf { it >= 0 }?.let { currentTop = it }
+        /*
+         * Each tab keeps its own back stack. Switching to another tab saves the current tab's pages
+         * (detail pages and Settings included) and restores where the other tab was. Pressing the tab
+         * you're already on goes back to its own page, closing the pages opened over it. Pages keep their
+         * state either way (e.g. the Library's selected tab and scroll position).
+         */
+        val navigateTop: (Int) -> Unit = { index ->
+            val root = topLevels[index].route
+            if (index == currentTop) {
+                // Already on the tab's own page: nothing to do (and no navigation to mark).
+                if (destination?.hasRoute(root::class) != true) {
+                    transitions.onTabPressed()
+                    navController.popBackStack(root, inclusive = false)
+                }
+            } else {
+                transitions.onTabPressed()
+                // The restored page may be a detail page, which doesn't identify its tab: set it here.
+                currentTop = index
+                navController.navigate(root) {
+                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            }
+        }
         // Accent for the page: its own for Settings, the editor and playlists, else the section it was opened from.
         val section = when {
             destination?.hasRoute(SettingsRoute::class) == true -> Section.SETTINGS
@@ -155,8 +182,6 @@ fun CoffeeApp(onDeleteSongs: (List<Song>) -> Unit, playerExpandedRequest: Boolea
         // Nothing to show: put the player away without animating.
         LaunchedEffect(playerState.song == null) { if (playerState.song == null && playerState.connected) playerSheet.snapCollapsed() }
         val sheetFling = rememberPlayerSheetFling(playerSheet)
-        val density = LocalDensity.current
-        val transitions = remember(density) { PageTransitions(density) }
 
         SectionTheme(section) { CompositionLocalProvider(LocalAppActions provides actions) {
             Box(Modifier.fillMaxSize().onSizeChanged { playerSheet.updateHeight(it.height.toFloat()) }) {
@@ -171,7 +196,7 @@ fun CoffeeApp(onDeleteSongs: (List<Song>) -> Unit, playerExpandedRequest: Boolea
                     topLevels.forEachIndexed { index, top ->
                         item(
                                 selected = index == currentTop,
-                                onClick = { navigateTop(top.route) },
+                                onClick = { navigateTop(index) },
                                 icon = { Icon(top.icon, contentDescription = null) },
                                 label = { Text(top.label) })
                     }

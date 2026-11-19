@@ -14,6 +14,7 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavBackStackEntry
+import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hasRoute
 
 /*
@@ -32,7 +33,10 @@ private val SlideDistance = 30.dp
 
 private val topLevelRoutes = listOf(HomeRoute::class, FavoritesRoute::class, LibraryRoute::class, SearchRoute::class)
 
-private fun NavBackStackEntry.isTopLevel() = topLevelRoutes.any { destination.hasRoute(it) }
+/** One of the navigation bar's destinations. */
+fun NavDestination.isTopLevel() = topLevelRoutes.any { hasRoute(it) }
+
+private fun NavBackStackEntry.isTopLevel() = destination.isTopLevel()
 
 private fun AnimatedContentTransitionScope<NavBackStackEntry>.betweenTopLevels() =
         initialState.isTopLevel() && targetState.isTopLevel()
@@ -50,17 +54,40 @@ private fun sharedAxisXOut(forward: Boolean, slidePx: Int): ExitTransition =
 class PageTransitions(density: Density) {
     private val slidePx = with(density) { SlideDistance.roundToPx() }
 
+    /**
+     * Where the latest navigation bar press landed (a tab page, or a detail page restored with the
+     * tab's back stack). Tab presses show their page at once, without the slide that detail pages
+     * otherwise get. Any later navigation clears it (see [onDestinationChanged]).
+     */
+    private var tabTarget: NavDestination? = null
+    private var tabPressPending = false
+
+    /** Call right before navigating for a navigation bar press. */
+    fun onTabPressed() {
+        tabTarget = null
+        tabPressPending = true
+    }
+
+    /** Hook for NavController's OnDestinationChangedListener (called once per navigation). */
+    fun onDestinationChanged(destination: NavDestination) {
+        tabTarget = if (tabPressPending) destination else null
+        tabPressPending = false
+    }
+
+    private fun AnimatedContentTransitionScope<NavBackStackEntry>.instant() =
+            betweenTopLevels() || (tabTarget != null && targetState.destination.id == tabTarget?.id)
+
     val enter: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
-        if (betweenTopLevels()) EnterTransition.None else sharedAxisXIn(forward = true, slidePx)
+        if (instant()) EnterTransition.None else sharedAxisXIn(forward = true, slidePx)
     }
     val exit: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
-        if (betweenTopLevels()) ExitTransition.None else sharedAxisXOut(forward = true, slidePx)
+        if (instant()) ExitTransition.None else sharedAxisXOut(forward = true, slidePx)
     }
     val popEnter: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
-        if (betweenTopLevels()) EnterTransition.None else sharedAxisXIn(forward = false, slidePx)
+        if (instant()) EnterTransition.None else sharedAxisXIn(forward = false, slidePx)
     }
     val popExit: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
-        if (betweenTopLevels()) ExitTransition.None else sharedAxisXOut(forward = false, slidePx)
+        if (instant()) ExitTransition.None else sharedAxisXOut(forward = false, slidePx)
     }
 
     // The back gesture has its own transitions (navigation-compose defaults to scaling the page down);
