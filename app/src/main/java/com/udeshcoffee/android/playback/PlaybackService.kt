@@ -3,6 +3,7 @@ package com.udeshcoffee.android.playback
 import android.app.PendingIntent
 import android.content.Intent
 import android.content.SharedPreferences
+import android.os.SystemClock
 import android.util.Log
 import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
@@ -26,6 +27,7 @@ import com.udeshcoffee.android.data.DataRepository
 import com.udeshcoffee.android.data.MediaRepository
 import com.udeshcoffee.android.data.source.MusicSourceStore
 import com.udeshcoffee.android.data.download.DownloadRepository
+import com.udeshcoffee.android.data.lastfm.LastFmScrobbler
 import com.udeshcoffee.android.data.subsonic.SubsonicRepository
 import com.udeshcoffee.android.ui.MainActivity
 import com.udeshcoffee.android.utils.PreferenceUtil
@@ -44,7 +46,7 @@ import org.koin.android.ext.android.inject
  *
  * Media3 handles the notification, foreground state, media buttons, audio focus, headphone
  * unplugging and playback resumption. This class adds the app's own behaviour: queue
- * persistence, play counts, widget updates, the fade and on-call settings, and a browse tree for Android Auto and other media browsers.
+ * persistence, play counts, Last.fm scrobbling, widget updates, the fade and on-call settings, and a browse tree for Android Auto and other media browsers.
  */
 @OptIn(UnstableApi::class)
 class PlaybackService : MediaLibraryService() {
@@ -55,6 +57,11 @@ class PlaybackService : MediaLibraryService() {
     private val queueStore: QueueStore by inject()
     private val sourceStore: MusicSourceStore by inject()
     private val downloads: DownloadRepository by inject()
+    private val lastFm: LastFmScrobbler by inject()
+
+    /** Listening time of the current play, for Last.fm scrobbles. */
+    private val scrobbles = ScrobbleTracker()
+    private var nowPlayingSent = false
 
     private lateinit var player: ExoPlayer
     private lateinit var prefs: SharedPreferences
@@ -81,6 +88,8 @@ class PlaybackService : MediaLibraryService() {
                 .build()
         player.repeatMode = RepeatModes.fromPreference(prefs.getInt(PreferenceUtil.REPEAT_MODE, RepeatModes.PREF_ALL))
         player.addListener(playerListener)
+        // Send plays queued while offline.
+        lastFm.flush()
 
         val sessionActivity = PendingIntent.getActivity(this, 0,
                 Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
@@ -109,6 +118,7 @@ class PlaybackService : MediaLibraryService() {
     }
 
     override fun onDestroy() {
+        scrobbleIfDue()
         saveQueue()
         updateWidgets(PlaybackEvents.PLAYBACK_STATE_CHANGED)
         session?.run {
@@ -125,6 +135,11 @@ class PlaybackService : MediaLibraryService() {
             if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO || reason == Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT)
                 lastItem?.let { countPlay(it) }
             lastItem = mediaItem
+            // Last.fm: the previous play counts if it was listened to long enough (skips included).
+            scrobbleIfDue()
+            scrobbles.start(mediaItem?.toSong(), player.isPlaying, System.currentTimeMillis(), SystemClock.elapsedRealtime())
+            nowPlayingSent = false
+            if (player.isPlaying) sendNowPlaying()
             // Server songs: tell the server what's playing (scrobbling "now playing").
             mediaItem?.toSong()?.remoteId?.let { id -> scope.launch { subsonic.scrobble(id, submission = false) } }
             saveQueue()
@@ -132,6 +147,8 @@ class PlaybackService : MediaLibraryService() {
         }
 
         override fun onIsPlayingChanged(isPlaying: Boolean) {
+            scrobbles.setPlaying(isPlaying, System.currentTimeMillis(), SystemClock.elapsedRealtime())
+            if (isPlaying) sendNowPlaying() else scrobbleIfDue()
             if (!isPlaying) saveQueue()
             updateWidgets(PlaybackEvents.PLAYBACK_STATE_CHANGED)
         }
@@ -140,6 +157,10 @@ class PlaybackService : MediaLibraryService() {
             if (playbackState == Player.STATE_ENDED) {
                 // End of the queue with repeat off: count the last song and rewind to the start, paused.
                 player.currentMediaItem?.let { countPlay(it) }
+                // Playing it again from the start is a new play (no transition when the queue is one song).
+                scrobbleIfDue()
+                scrobbles.start(player.currentMediaItem?.toSong(), false, System.currentTimeMillis(), SystemClock.elapsedRealtime())
+                nowPlayingSent = false
                 player.playWhenReady = false
                 if (player.mediaItemCount > 0) player.seekTo(0, 0)
             }
@@ -159,6 +180,19 @@ class PlaybackService : MediaLibraryService() {
         override fun onRepeatModeChanged(repeatMode: Int) {
             prefs.edit { putInt(PreferenceUtil.REPEAT_MODE, RepeatModes.toPreference(repeatMode)) }
         }
+    }
+
+    /** Scrobbles the current play to Last.fm once it has been listened to long enough ([ScrobbleTracker]). */
+    private fun scrobbleIfDue() {
+        val play = scrobbles.due(SystemClock.elapsedRealtime()) ?: return
+        lastFm.scrobble(play.song, play.startedAtSec)
+    }
+
+    private fun sendNowPlaying() {
+        if (nowPlayingSent) return
+        val song = player.currentMediaItem?.toSong() ?: return
+        nowPlayingSent = true
+        lastFm.nowPlaying(song)
     }
 
     private fun countPlay(item: MediaItem) {

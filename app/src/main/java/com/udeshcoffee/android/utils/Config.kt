@@ -28,4 +28,7 @@ object PreferenceUtil {
     /** Show the playing track's format (codec, bit depth or bit rate, sample rate) below the player's artwork. */
     const val  PREF_SHOW_QUALITY = "pref_show_quality"
     const val  DEFAULT_SHOW_QUALITY = true
+    /** Scrobble plays to the connected Last.fm account (off when the music server already does). */
+    const val  PREF_LASTFM_SCROBBLE = "pref_lastfm_scrobble"
+    const val  DEFAULT_LASTFM_SCROBBLE = true
 }

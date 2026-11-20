@@ -21,6 +21,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.udeshcoffee.android.data.lastfm.LastFmAccount
 import com.udeshcoffee.android.data.lastfm.LastFmConnectState
+import com.udeshcoffee.android.data.lastfm.LastFmScrobbler
+import com.udeshcoffee.android.data.source.MusicSourceStore
+import androidx.compose.material3.Switch
 import com.udeshcoffee.android.ui.compose.LocalAppActions
 import org.koin.compose.koinInject
 
@@ -37,6 +40,9 @@ fun LastFmSettings() {
     val user by account.user.collectAsStateWithLifecycle()
     val state by account.connectState.collectAsStateWithLifecycle()
     var confirmDisconnect by remember { mutableStateOf(false) }
+    val scrobbler: LastFmScrobbler = koinInject()
+    var scrobble by remember { mutableStateOf(scrobbler.enabled) }
+    val isServer = koinInject<MusicSourceStore>().isServer
 
     fun connect() {
         val uri = account.startSignIn()
@@ -51,9 +57,18 @@ fun LastFmSettings() {
     val current = user
     when {
         !account.isAvailable -> ListItem(enabled = false, supportingContent = { Text("Not available in this build") }) { Text("Connect Last.fm") }
-        current != null -> ListItem(
-                supportingContent = { Text("Connected as ${current.name}") },
-                trailingContent = { TextButton(onClick = { confirmDisconnect = true }) { Text("Disconnect") } }) { Text("Last.fm") }
+        current != null -> {
+            ListItem(
+                    supportingContent = { Text("Connected as ${current.name}") },
+                    trailingContent = { TextButton(onClick = { confirmDisconnect = true }) { Text("Disconnect") } }) { Text("Last.fm") }
+            ListItem(
+                    onClick = { scrobble = !scrobble; scrobbler.enabled = scrobble },
+                    supportingContent = {
+                        Text(if (isServer) "Send the songs you listen to to Last.fm. Turn this off if your music server already scrobbles to Last.fm, or plays will count twice."
+                        else "Send the songs you listen to to Last.fm")
+                    },
+                    trailingContent = { Switch(checked = scrobble, onCheckedChange = { scrobble = it; scrobbler.enabled = it }) }) { Text("Scrobble") }
+        }
         state == LastFmConnectState.Connecting -> ListItem(
                 supportingContent = { Text("Finishing sign-in…") },
                 trailingContent = { LoadingIndicator(Modifier.size(32.dp)) }) { Text("Connecting to Last.fm") }

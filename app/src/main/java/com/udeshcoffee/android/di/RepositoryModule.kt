@@ -8,6 +8,7 @@ import com.udeshcoffee.android.data.download.DownloadRepository
 import com.udeshcoffee.android.ui.MusicSourceSwitcher
 import com.udeshcoffee.android.data.subsonic.SubsonicRepository
 import com.udeshcoffee.android.data.lastfm.LastFmAccount
+import com.udeshcoffee.android.data.lastfm.LastFmScrobbler
 import com.udeshcoffee.android.data.local.LocalDataSource
 import com.udeshcoffee.android.data.local.LocalDatabase
 import com.udeshcoffee.android.data.remote.RemoteDataSource
@@ -41,6 +42,8 @@ val repositoryModule = module {
     single { SubsonicRepository(get()) }
 
     single { LastFmAccount(get()) }
+
+    single { LastFmScrobbler(get(), get(), get()) }
 
     single { MusicSourceStore(get(), get()) }
 
