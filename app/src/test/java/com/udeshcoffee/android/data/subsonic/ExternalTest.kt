@@ -1,6 +1,7 @@
 package com.udeshcoffee.android.data.subsonic
 
 import com.udeshcoffee.android.model.Album
+import com.udeshcoffee.android.model.Artist
 import com.udeshcoffee.android.song
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -91,5 +92,27 @@ class ExternalTest {
         assertEquals("ext-qobuz-album-9", externalAlbumId("al-1", listOf(missing)))
         // Missing tracks without a provider album: no album to star.
         assertNull(externalAlbumId("al-1", listOf(missing.copy(albumRemoteId = "al-1"))))
+    }
+
+    @Test
+    fun `search results group into the library then each provider`() {
+        val libSong = song(1).copy(remoteId = "s1")
+        val qobuzSong = song(2).copy(remoteId = "ext-qobuz-song-2")
+        val deezerSong = song(3).copy(remoteId = "ext-deezer-song-3")
+        val libArtist = Artist(1, "Muse", "ar-1")
+        val qobuzArtist = Artist(2, "Muse", "ext-qobuz-artist-2")
+        val qobuzAlbum = ext("Drones")
+        val groups = groupBySource(listOf(qobuzArtist, libArtist), listOf(qobuzAlbum), listOf(qobuzSong, libSong, deezerSong))
+        assertEquals(listOf(null, "Qobuz", "Deezer"), groups.map { it.provider })
+        assertEquals(SourceResults(null, listOf(libArtist), emptyList(), listOf(libSong)), groups[0])
+        assertEquals(SourceResults("Qobuz", listOf(qobuzArtist), listOf(qobuzAlbum), listOf(qobuzSong)), groups[1])
+        assertEquals(listOf(deezerSong), groups[2].songs)
+    }
+
+    @Test
+    fun `the library group is there even when only providers have results`() {
+        val groups = groupBySource(emptyList(), emptyList(), listOf(song(2).copy(remoteId = "ext-qobuz-song-2")))
+        assertTrue(groups[0].provider == null && groups[0].isEmpty)
+        assertEquals(1, groupBySource(emptyList(), emptyList(), listOf(song(1).copy(remoteId = "s1"))).size)
     }
 }

@@ -1,6 +1,7 @@
 package com.udeshcoffee.android.data.subsonic
 
 import com.udeshcoffee.android.model.Album
+import com.udeshcoffee.android.model.Artist
 import com.udeshcoffee.android.model.Song
 
 /*
@@ -21,6 +22,7 @@ fun isExternalId(id: String?): Boolean = id != null && EXTERNAL_ID.containsMatch
 
 val Song.isExternal: Boolean get() = isExternalId(remoteId)
 val Album.isExternal: Boolean get() = isExternalId(remoteId)
+val Artist.isExternal: Boolean get() = isExternalId(remoteId)
 
 private val providerNames = mapOf("qobuz" to "Qobuz", "deezer" to "Deezer", "tidal" to "Tidal", "yandex" to "Yandex", "squidwtf" to "SquidWTF")
 
@@ -28,6 +30,24 @@ private val providerNames = mapOf("qobuz" to "Qobuz", "deezer" to "Deezer", "tid
 fun externalProvider(id: String?): String? {
     val key = id?.let { EXTERNAL_ID.find(it) }?.groupValues?.get(1)?.lowercase() ?: return null
     return providerNames[key] ?: key.replaceFirstChar { it.uppercase() }
+}
+
+/** Search results from one source: the library ([provider] null) or a streaming provider ("Qobuz"). */
+data class SourceResults(val provider: String?, val artists: List<Artist>, val albums: List<Album>, val songs: List<Song>) {
+    val isEmpty: Boolean get() = artists.isEmpty() && albums.isEmpty() && songs.isEmpty()
+}
+
+/**
+ * Splits search results by source, keeping their order: the library first (always, even if
+ * empty), then each provider in the order it first appears.
+ */
+fun groupBySource(artists: List<Artist>, albums: List<Album>, songs: List<Song>): List<SourceResults> {
+    val providers = (artists.map { externalProvider(it.remoteId) } + albums.map { externalProvider(it.remoteId) } +
+            songs.map { externalProvider(it.remoteId) }).filterNotNull().distinct()
+    return (listOf<String?>(null) + providers).map { p ->
+        SourceResults(p, artists.filter { externalProvider(it.remoteId) == p }, albums.filter { externalProvider(it.remoteId) == p },
+                songs.filter { externalProvider(it.remoteId) == p })
+    }
 }
 
 // ---- Relevance of provider results ----

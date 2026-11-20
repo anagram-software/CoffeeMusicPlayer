@@ -46,6 +46,16 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Alignment
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material.icons.filled.LibraryMusic
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.udeshcoffee.android.data.subsonic.groupBySource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -86,34 +96,70 @@ fun SearchScreen(viewModel: SearchViewModel = koinViewModel()) {
     }
 }
 
+/**
+ * Results grouped by source: the library, then each streaming provider behind Octo-Fiesta
+ * (server only). With provider results, each group gets a heading, and tapping a provider song
+ * plays just that song (streaming it adds it to the library); library songs play as a list.
+ */
 private fun LazyListScope.results(artists: List<Artist>, albums: List<Album>, songs: List<Song>, currentId: Long?, actions: AppActions) {
-    if (artists.isNotEmpty()) {
-        item { SectionHeader("Artists") }
-        item {
-            LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(artists, key = { it.id }) { artist ->
-                    ArtistCard(artist, onClick = { actions.openArtist(artist) }, onLongClick = { actions.artistOptions(artist) },
-                            onPlay = { actions.playArtist(artist) }, modifier = Modifier.width(140.dp), collectImage = false)
+    val groups = groupBySource(artists, albums, songs)
+    val mixed = groups.size > 1
+    groups.forEach { group ->
+        val key = group.provider ?: "library"
+        if (mixed) item(key = "source:$key") {
+            SourceHeader(
+                    title = group.provider?.let { "From $it" } ?: "In your library",
+                    subtitle = when {
+                        group.provider != null -> "Not in your library yet. Playing a song adds it."
+                        group.isEmpty -> "Nothing found in your library"
+                        else -> null
+                    },
+                    icon = if (group.provider != null) Icons.Default.Cloud else Icons.Default.LibraryMusic)
+        }
+        if (group.artists.isNotEmpty()) {
+            item(key = "$key:artists:header") { SectionHeader("Artists") }
+            item(key = "$key:artists") {
+                LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    items(group.artists, key = { it.id }) { artist ->
+                        ArtistCard(artist, onClick = { actions.openArtist(artist) }, onLongClick = { actions.artistOptions(artist) },
+                                onPlay = { actions.playArtist(artist) }, modifier = Modifier.width(140.dp), collectImage = false)
+                    }
                 }
             }
         }
-    }
-    if (albums.isNotEmpty()) {
-        item { SectionHeader("Albums") }
-        item {
-            LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(albums, key = { it.id }) { album ->
-                    AlbumCard(album, onClick = { actions.openAlbum(album) }, onLongClick = { actions.albumOptions(album) },
-                            onPlay = { actions.playAlbum(album) }, modifier = Modifier.width(140.dp))
+        if (group.albums.isNotEmpty()) {
+            item(key = "$key:albums:header") { SectionHeader("Albums") }
+            item(key = "$key:albums") {
+                LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    items(group.albums, key = { it.id }) { album ->
+                        AlbumCard(album, onClick = { actions.openAlbum(album) }, onLongClick = { actions.albumOptions(album) },
+                                onPlay = { actions.playAlbum(album) }, modifier = Modifier.width(140.dp))
+                    }
                 }
             }
         }
+        if (group.songs.isNotEmpty()) {
+            item(key = "$key:songs:header") { SectionHeader("Songs") }
+            items(group.songs, key = { "$key:song:${it.id}" }) { song ->
+                SongRow(song,
+                        onClick = { if (group.provider != null) actions.play(listOf(song)) else actions.play(group.songs, group.songs.indexOf(song)) },
+                        onMore = { actions.songOptions(song) }, isCurrent = song.id == currentId)
+            }
+        }
     }
-    if (songs.isNotEmpty()) {
-        item { SectionHeader("Songs") }
-        items(songs, key = { it.id }) { song ->
-            SongRow(song, onClick = { actions.play(songs, songs.indexOf(song)) }, onMore = { actions.songOptions(song) },
-                    isCurrent = song.id == currentId)
+}
+
+/** A source's heading ("In your library", "From Qobuz") above its artists, albums and songs. */
+@Composable
+private fun SourceHeader(title: String, subtitle: String?, icon: ImageVector) {
+    Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(40.dp).background(MaterialTheme.colorScheme.primaryContainer, CircleShape), contentAlignment = Alignment.Center) {
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer)
+        }
+        Spacer(Modifier.width(12.dp))
+        Column {
+            Text(title, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary)
+            subtitle?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
         }
     }
 }
