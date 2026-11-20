@@ -114,7 +114,7 @@ fun PlayerScreen(onCollapse: () -> Unit, viewModel: NowPlayingViewModel = koinVi
     val actions = LocalAppActions.current
 
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceContainer).safeDrawingPadding()) {
-        // One foreground colour for the whole bar: the logo, the close button and the actions.
+        // One foreground colour for the bar's buttons and the "Up next" title; the logo uses the accent.
         val barContent = MaterialTheme.colorScheme.onSurface
         CenterAlignedTopAppBar(
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent, titleContentColor = barContent,
@@ -305,12 +305,13 @@ private fun QueueList(state: PlayerUiState, modifier: Modifier) {
     }
 }
 
-/** The app's logo: the music-play icon and "Coffee", in the current content colour. */
+/** The app's logo: the music-play icon and "Coffee", in the primary accent (the play button's colour). */
 @Composable
 private fun CoffeeLogo() {
+    val accent = MaterialTheme.colorScheme.primary
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.semantics(mergeDescendants = true) {}) {
-        Icon(painterResource(R.drawable.ic_music_play), contentDescription = null, modifier = Modifier.size(32.dp))
+        Icon(painterResource(R.drawable.ic_music_play), contentDescription = null, tint = accent, modifier = Modifier.size(32.dp))
         Spacer(Modifier.width(6.dp))
-        Text("Coffee", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium)
+        Text("Coffee", color = accent, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium)
     }
 }
