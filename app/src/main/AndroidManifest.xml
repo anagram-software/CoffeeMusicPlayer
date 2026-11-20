@@ -74,15 +74,6 @@
                 <data android:scheme="file" />
                 <data android:mimeType="audio/*" />
             </intent-filter>
-            <!-- Last.fm sign-in: the browser returns here with a token (LastFmAuth.CALLBACK_URL). -->
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-
-                <data android:scheme="coffeeplayer" android:host="lastfm-auth" />
-            </intent-filter>
         </activity>
 
         <!-- Media3 playback service; also exposed to media browsers such as Android Auto. -->

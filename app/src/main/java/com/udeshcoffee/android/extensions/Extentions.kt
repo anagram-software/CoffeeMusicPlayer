@@ -21,10 +21,3 @@ fun Int.getColorWithAlpha(alpha: Int): Int =
 fun Int.getColorWithAlpha(factor: Float): Int =
         Color.argb((Color.alpha(this) * factor).roundToInt(), Color.red(this), Color.green(this), Color.blue(this))
 
-/** Artist name reduced to the main artist (drops "feat.", "[...]" and co-artists) for Last.fm lookups. */
-fun String.toLastFMArtistQuery(): String = lowercase()
-        .split("ft\\.".toRegex())[0]
-        .split("feat\\.".toRegex())[0]
-        .split("\\[".toRegex())[0]
-        .split(",".toRegex())[0]
-        .trim()

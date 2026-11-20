@@ -43,7 +43,6 @@ fun SettingsScreen() {
     val context = LocalContext.current
     val prefs = remember { PreferenceManager.getDefaultSharedPreferences(context) }
     var dialog by remember { mutableStateOf<String?>(null) }
-    var collect by rememberPref(prefs, PreferenceUtil.PREF_COLLECT_CONTENT, true)
     val version = remember { context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "" }
     val isServer = koinInject<MusicSourceStore>().isServer
     val appActions = LocalAppActions.current
@@ -65,18 +64,8 @@ fun SettingsScreen() {
                     "When ${if (isServer) "your server has no lyrics for a song" else "playing a song"}, look them up on lrclib.net. " +
                             "This sends the song's title, artist and album to that service.")
 
-            Header("Last.fm")
-            LastFmSettings()
-
-            // Device library only: server artists use the server's images and bios.
-            if (!isServer) {
-                Header("Online content")
-                ListItem(
-                        onClick = { collect = !collect },
-                        supportingContent = { Text("Artist images and bios from Last.fm") },
-                        trailingContent = { Switch(checked = collect, onCheckedChange = { collect = it }) }) { Text("Download artist info") }
-                SwitchPref(prefs, PreferenceUtil.PREF_WIFI_ONLY, true, "Wi-Fi only", "Download artist images only on Wi-Fi", enabled = collect)
-            }
+            Header("ListenBrainz")
+            ListenBrainzSettings()
 
             Header("About")
             ListItem(onClick = { dialog = "whatsnew" }) { Text("What's new") }
@@ -94,7 +83,7 @@ fun SettingsScreen() {
                     Text("• New Material You design that follows your album art\n" +
                             "• Works with Android Auto and Assistant (\"play … on Coffee Player\")\n" +
                             "• Album art and lyrics work again on recent Android\n" +
-                            "• Tag lookup with Last.fm\n" +
+                            "• Tag lookup with MusicBrainz, stats and listens with ListenBrainz\n" +
                             "• Playlists stored in the app, with drag to reorder\n" +
                             "• Faster, more reliable playback (Media3)")
                 },

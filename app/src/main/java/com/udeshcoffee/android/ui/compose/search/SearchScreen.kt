@@ -122,7 +122,7 @@ private fun LazyListScope.results(artists: List<Artist>, albums: List<Album>, so
                 LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     items(group.artists, key = { it.id }) { artist ->
                         ArtistCard(artist, onClick = { actions.openArtist(artist) }, onLongClick = { actions.artistOptions(artist) },
-                                onPlay = { actions.playArtist(artist) }, modifier = Modifier.width(140.dp), collectImage = false)
+                                onPlay = { actions.playArtist(artist) }, modifier = Modifier.width(140.dp))
                     }
                 }
             }

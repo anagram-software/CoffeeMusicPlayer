@@ -104,7 +104,7 @@ fun MusicSourceSettings() {
                     supportingContent = { Text(formats.firstOrNull { it.first == format }?.second ?: "Original") }) { Text("Streaming format") }
             ListItem(
                     onClick = { scrobble = !scrobble; subsonic.scrobbleEnabled = scrobble },
-                    supportingContent = { Text("Play counts on the server (and Last.fm / ListenBrainz if set up there)") },
+                    supportingContent = { Text("Play counts on the server (and ListenBrainz / Last.fm if set up there)") },
                     trailingContent = { Switch(checked = scrobble, onCheckedChange = { scrobble = it; subsonic.scrobbleEnabled = it }) }) { Text("Report plays") }
             ListItem(
                     onClick = { downloadWifiOnly = !downloadWifiOnly; downloads.wifiOnly = downloadWifiOnly },

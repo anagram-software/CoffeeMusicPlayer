@@ -48,6 +48,7 @@ import kotlinx.coroutines.flow.transformLatest
 import com.udeshcoffee.android.data.subsonic.AlbumTracks
 import com.udeshcoffee.android.data.subsonic.ArtistReleases
 import com.udeshcoffee.android.data.subsonic.ServerAlbumDetails
+import com.udeshcoffee.android.data.subsonic.ServerArtistDetails
 import com.udeshcoffee.android.data.subsonic.SubsonicException
 import com.udeshcoffee.android.data.subsonic.groupReleases
 import com.udeshcoffee.android.data.subsonic.SubsonicRepository
@@ -86,6 +87,9 @@ class AlbumDetailViewModel(albumId: Long, private val remoteId: String?, mediaRe
 
     private val tracks: Flow<AlbumTracks?> = details.map { it?.tracks }
 
+    /** The server's current cover art ID for the album (null until loaded, and for device albums). */
+    val coverArt: StateFlow<String?> = details.map { it?.coverArt }.stateIn(this, null)
+
     /** The server's genre for the album (header pill); null for device albums. */
     val genre: StateFlow<String?> = details.map { it?.genre }.stateIn(this, null)
 
@@ -118,7 +122,6 @@ class ArtistDetailViewModel(
         private val artistName: String,
         private val remoteId: String?,
         mediaRepository: MediaRepository,
-        dataRepository: DataRepository,
         private val subsonic: SubsonicRepository
 ) : SourceAwareViewModel() {
     val isRemote = remoteId != null
@@ -152,32 +155,33 @@ class ArtistDetailViewModel(
     }
 
     /** Server artists' releases: the library's by kind, then the streaming provider's. Null until loaded or for device artists. */
+    private val serverDetails: StateFlow<ServerArtistDetails?> =
+            (if (remoteId == null) flowOf(null) else server { subsonic.artistDetails(remoteId) }).stateIn(this, null)
+
     val releases: StateFlow<ArtistReleases?> =
-            (if (remoteId == null) flowOf(null)
-            else combine(server { subsonic.artistAlbums(remoteId) }, SortSettings.artistAlbums.state) { a, sort ->
-                a?.let { groupReleases(it, artistName) { group -> group.sortedAlbums(sort) } }
-            }).stateIn(this, null)
+            combine(serverDetails, SortSettings.artistAlbums.state) { d, sort ->
+                d?.let { groupReleases(it.albums, artistName) { group -> group.sortedAlbums(sort) } }
+            }.stateIn(this, null)
+
+    /** The server's current cover art ID for the artist (null until loaded, and for device artists). */
+    val coverArt: StateFlow<String?> = serverDetails.map { it?.coverArt }.stateIn(this, null)
 
     private val _similar = MutableStateFlow<List<Artist>>(emptyList())
     /** Similar artists in the server's library (from Last.fm through the server). */
     val similar: StateFlow<List<Artist>> = _similar.asStateFlow()
 
     private val _bio = MutableStateFlow<Pair<String, List<String>>?>(null)
-    /** Bio (may contain links) and tags: from the server for server artists, else Last.fm. Null until loaded or when unavailable. */
+    /** Bio (may contain links): from the server, for server artists. Null until loaded, when unavailable, and for device artists. */
     val bio: StateFlow<Pair<String, List<String>>?> = _bio.asStateFlow()
 
     /** Bumped when the artist image changes so the UI reloads it. */
     val imageVersion = MutableStateFlow(0)
 
     init {
-        viewModelScope.launch {
-            _bio.value = if (remoteId != null) {
-                val info = runCatching { subsonic.artistInfo(remoteId) }.getOrNull()
-                _similar.value = info?.similarArtists.orEmpty()
-                info?.biography?.let { it to emptyList() }
-            } else {
-                dataRepository.getBio(artistId, artistName)?.let { (bio, tags) -> bio to tags.orEmpty().toList() }
-            }
+        if (remoteId != null) viewModelScope.launch {
+            val info = runCatching { subsonic.artistInfo(remoteId) }.getOrNull()
+            _similar.value = info?.similarArtists.orEmpty()
+            _bio.value = info?.biography?.let { it to emptyList() }
         }
     }
 

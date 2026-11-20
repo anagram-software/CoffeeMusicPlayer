@@ -119,7 +119,7 @@ class EditorScreenViewModel(
     fun resetArtwork() = _state.update { it.copy(newArtwork = null) }
     fun consumeMessage() = _state.update { it.copy(message = null) }
 
-    /** Fills fields and artwork from Last.fm (no year there). */
+    /** Fills fields, the year and artwork from MusicBrainz (cover from the Cover Art Archive). */
     fun lookup(title: String, artist: String) = viewModelScope.launch {
         _state.update { it.copy(busy = "Looking up…") }
         val metadata = dataRepository.searchTrackMetadata(title.trim(), artist.trim())
@@ -127,7 +127,8 @@ class EditorScreenViewModel(
             if (metadata == null) s.copy(busy = null, message = "No match found")
             else s.copy(busy = null,
                     fields = s.fields.copy(title = metadata.title, artist = metadata.artist,
-                            album = metadata.album ?: s.fields.album, genre = metadata.genre ?: s.fields.genre),
+                            album = metadata.album ?: s.fields.album, genre = metadata.genre ?: s.fields.genre,
+                            year = metadata.year?.toString() ?: s.fields.year),
                     newArtwork = metadata.artworkUrl ?: s.newArtwork)
         }
     }
@@ -197,7 +198,7 @@ fun EditorScreen(songId: Long) {
                 navigationIcon = { IconButton(onClick = { actions.back() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") } },
                 actions = {
                     IconButton(onClick = { lookupDialog = true }, enabled = state.song != null) {
-                        Icon(Icons.Default.CloudDownload, contentDescription = "Look up on Last.fm")
+                        Icon(Icons.Default.CloudDownload, contentDescription = "Look up on MusicBrainz")
                     }
                     TextButton(enabled = state.song != null && state.busy == null, onClick = {
                         val consent = MediaAccess.writeRequest(context.contentResolver, listOf(viewModel.songUri))
@@ -242,7 +243,7 @@ fun EditorScreen(songId: Long) {
         var artist by remember { mutableStateOf(state.fields.artist) }
         AlertDialog(
                 onDismissRequest = { lookupDialog = false },
-                title = { Text("Look up on Last.fm") },
+                title = { Text("Look up on MusicBrainz") },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedTextField(title, { title = it }, label = { Text("Title") }, singleLine = true)

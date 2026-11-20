@@ -7,11 +7,10 @@ import com.udeshcoffee.android.data.source.MusicSourceStore
 import com.udeshcoffee.android.data.download.DownloadRepository
 import com.udeshcoffee.android.ui.MusicSourceSwitcher
 import com.udeshcoffee.android.data.subsonic.SubsonicRepository
-import com.udeshcoffee.android.data.lastfm.LastFmAccount
-import com.udeshcoffee.android.data.lastfm.LastFmScrobbler
+import com.udeshcoffee.android.data.metabrainz.ListenBrainzAccount
+import com.udeshcoffee.android.data.metabrainz.ListenBrainzScrobbler
 import com.udeshcoffee.android.data.local.LocalDataSource
 import com.udeshcoffee.android.data.local.LocalDatabase
-import com.udeshcoffee.android.data.remote.RemoteDataSource
 import com.udeshcoffee.android.playback.PlayerConnection
 import com.udeshcoffee.android.playback.QueueStore
 import org.koin.dsl.module
@@ -31,8 +30,6 @@ val repositoryModule = module {
 
     factory { get<LocalDatabase>().playlistDao() }
 
-    factory { RemoteDataSource }
-
     single { LocalDataSource(get(), get(), get()) }
 
     single { DataRepository(get(), get()) }
@@ -41,9 +38,9 @@ val repositoryModule = module {
 
     single { SubsonicRepository(get()) }
 
-    single { LastFmAccount(get()) }
+    single { ListenBrainzAccount(get()) }
 
-    single { LastFmScrobbler(get(), get(), get()) }
+    single { ListenBrainzScrobbler(get(), get(), get(), get()) }
 
     single { MusicSourceStore(get(), get()) }
 

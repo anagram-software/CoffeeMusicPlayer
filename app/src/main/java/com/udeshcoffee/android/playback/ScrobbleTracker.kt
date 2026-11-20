@@ -3,7 +3,7 @@ package com.udeshcoffee.android.playback
 import com.udeshcoffee.android.model.Song
 
 /**
- * Tracks how long the current song has actually played, to apply Last.fm's scrobbling rule: a
+ * Tracks how long the current song has actually played, to apply the scrobbling rule (ListenBrainz and Last.fm alike): a
  * track longer than 30 seconds counts once it has played for half its length or 4 minutes,
  * whichever comes first. Pauses and seeks don't count as listening; repeats count again (call
  * [start] for each play). Times are passed in so this is testable: [wallMs] is

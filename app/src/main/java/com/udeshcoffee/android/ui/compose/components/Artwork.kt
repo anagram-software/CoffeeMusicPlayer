@@ -41,7 +41,6 @@ import com.udeshcoffee.android.utils.AlbumArt
 import com.udeshcoffee.android.utils.artistImageFile
 import com.udeshcoffee.android.utils.artworkData
 import com.udeshcoffee.android.utils.CoverArt
-import com.udeshcoffee.android.utils.collectArtistImage
 
 /** Image with a tinted icon placeholder shown until (or instead of) the image. */
 @Composable
@@ -96,18 +95,18 @@ fun AlbumArtwork(album: Album, modifier: Modifier = Modifier, shape: Shape = Mat
         ArtworkImage(album.artworkData(), Icons.Default.Album, modifier, shape)
 
 /**
- * Artist image. Server artists use the server's image; device artists use app storage, downloading
- * from Last.fm first when [collect] is set (and settings allow).
+ * Artist image. Server artists use the server's image; device artists the image the user chose
+ * (stored in app storage), if any.
  */
 @Composable
-fun ArtistArtwork(artist: Artist, modifier: Modifier = Modifier, shape: Shape = MaterialTheme.shapes.small, collect: Boolean = false) {
+fun ArtistArtwork(artist: Artist, modifier: Modifier = Modifier, shape: Shape = MaterialTheme.shapes.small) {
     if (artist.isRemote) {
         ArtworkImage((artist.coverArt ?: artist.remoteId)?.let { CoverArt(it) }, Icons.Default.Person, modifier, shape)
         return
     }
     val context = LocalContext.current
     // File checks run off the main thread; the cache key changes whenever the image file does.
-    val model by produceState<Any?>(null, artist.id, collect) {
+    val model by produceState<Any?>(null, artist.id) {
         suspend fun stored(): Any? = withContext(Dispatchers.IO) {
             val file = artistImageFile(artist.id)
             if (!file.exists()) null
@@ -115,7 +114,6 @@ fun ArtistArtwork(artist: Artist, modifier: Modifier = Modifier, shape: Shape = 
                     .memoryCacheKey("artist:${file.path}:${file.lastModified()}").build()
         }
         value = stored()
-        if (value == null && collect && artist.name != "<unknown>" && collectArtistImage(context, artist.id, artist.name)) value = stored()
     }
     ArtworkImage(model, Icons.Default.Person, modifier, shape)
 }

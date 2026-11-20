@@ -46,7 +46,11 @@ data class SubsonicAccount(
 data class ArtistInfo(val biography: String?, val imageUrl: String?, val similarArtists: List<Artist> = emptyList())
 
 /** A server album page's data: its tracks plus details for the header. */
-data class ServerAlbumDetails(val tracks: AlbumTracks, val genre: String?, val year: Int)
+/** [coverArt]: the album's current cover art ID (changes when the server's artwork does). */
+data class ServerAlbumDetails(val tracks: AlbumTracks, val genre: String?, val year: Int, val coverArt: String? = null)
+
+/** A server artist page's albums, and the artist's current cover art ID. */
+data class ServerArtistDetails(val albums: List<Album>, val coverArt: String?)
 
 data class ServerSearchResults(val songs: List<Song>, val albums: List<Album>, val artists: List<Artist>)
 
@@ -215,7 +219,7 @@ class SubsonicRepository(context: Context) {
     suspend fun albumDetails(albumId: String): ServerAlbumDetails {
         val album = client().get("getAlbum", "album", SubAlbum.serializer(), listOf("id" to albumId))
         if (album.starred != null) _starredAlbumIds.update { it + albumId }
-        return ServerAlbumDetails(splitAlbumTracks(album.song.toSongs()), album.genre?.takeIf { it.isNotBlank() }, album.year)
+        return ServerAlbumDetails(splitAlbumTracks(album.song.toSongs()), album.genre?.takeIf { it.isNotBlank() }, album.year, album.coverArt)
     }
 
     /** An album's library tracks and, behind Octo-Fiesta, the provider tracks the library copy lacks. */
@@ -256,9 +260,9 @@ class SubsonicRepository(context: Context) {
             client().get("getArtist", "artist", SubArtist.serializer(), listOf("id" to artistId))
 
     /** The artist's albums, library and provider ones (one request; [groupReleases] separates them). */
-    suspend fun artistAlbums(artistId: String): List<Album> = getArtist(artistId).also {
+    suspend fun artistDetails(artistId: String): ServerArtistDetails = getArtist(artistId).also {
         if (it.starred != null) _starredArtistIds.update { ids -> ids + artistId }
-    }.album.map { it.toAlbum() }
+    }.let { ServerArtistDetails(it.album.map { a -> a.toAlbum() }, it.coverArt) }
 
     /**
      * What playing the artist plays: the songs of their library albums (a few requests at a time),

@@ -10,7 +10,7 @@ import com.udeshcoffee.android.ui.compose.detail.PlaylistsViewModel
 import com.udeshcoffee.android.ui.compose.detail.SearchViewModel
 import com.udeshcoffee.android.ui.compose.editor.EditorScreenViewModel
 import com.udeshcoffee.android.ui.compose.home.HomeViewModel
-import com.udeshcoffee.android.ui.compose.home.LastFmStatsViewModel
+import com.udeshcoffee.android.ui.compose.home.ListenBrainzStatsViewModel
 import com.udeshcoffee.android.ui.compose.library.LibraryViewModel
 import com.udeshcoffee.android.ui.compose.library.LibraryOverviewViewModel
 import com.udeshcoffee.android.ui.compose.library.ServerLibraryViewModel
@@ -25,12 +25,12 @@ val composeModule = module {
     viewModel { LibraryViewModel(get()) }
     viewModel { LibraryOverviewViewModel(get(), get(), get()) }
     viewModel { HomeViewModel(get(), get(), get()) }
-    viewModel { LastFmStatsViewModel(get(), get(), get(), get()) }
+    viewModel { ListenBrainzStatsViewModel(get(), get(), get(), get()) }
     viewModel { FavoritesViewModel(get(), get(), get()) }
     viewModel { PlaylistsViewModel(get(), get(), get(), get()) }
     viewModel { SearchViewModel(get(), get(), get()) }
     viewModel { (albumId: Long, remoteId: String?) -> AlbumDetailViewModel(albumId, remoteId, get(), get()) }
-    viewModel { (artistId: Long, name: String, remoteId: String?) -> ArtistDetailViewModel(artistId, name, remoteId, get(), get(), get()) }
+    viewModel { (artistId: Long, name: String, remoteId: String?) -> ArtistDetailViewModel(artistId, name, remoteId, get(), get()) }
     viewModel { (genreId: Long, name: String, remote: Boolean) -> GenreDetailViewModel(genreId, name, remote, get(), get()) }
     viewModel { (playlistId: Long, type: Int, remoteId: String?) -> PlaylistDetailViewModel(playlistId, type, remoteId, get(), get(), get()) }
     viewModel { (playlistId: Long) -> PlaylistAddSongsViewModel(playlistId, get()) }

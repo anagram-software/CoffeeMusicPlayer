@@ -45,14 +45,14 @@ import org.koin.compose.viewmodel.koinViewModel
 
 private val CardWidth = 150.dp
 
-/** Home: recently played, playlists, recently added and most played of the current music source, then the user's Last.fm stats if connected. */
+/** Home: recently played, playlists, recently added and most played of the current music source, then the user's ListenBrainz stats if connected. */
 @Composable
-fun HomeScreen(viewModel: HomeViewModel = koinViewModel(), lastFmViewModel: LastFmStatsViewModel = koinViewModel()) {
+fun HomeScreen(viewModel: HomeViewModel = koinViewModel(), statsViewModel: ListenBrainzStatsViewModel = koinViewModel()) {
     val content by viewModel.content.collectAsStateWithLifecycle()
-    val lastFm by lastFmViewModel.state.collectAsStateWithLifecycle()
-    // Fetch the Last.fm stats each time Home is navigated to (not when the app just comes back to
+    val listenStats by statsViewModel.state.collectAsStateWithLifecycle()
+    // Fetch the ListenBrainz stats each time Home is navigated to (not when the app just comes back to
     // the foreground); scrobbles in between update the listen count locally.
-    LaunchedEffect(Unit) { lastFmViewModel.refresh() }
+    LaunchedEffect(Unit) { statsViewModel.refresh() }
     val actions = LocalAppActions.current
     // On the device, the album rows come from the smart playlists, which "See all" opens.
     fun seeAll(type: Int): (() -> Unit)? = if (viewModel.isServer) null else ({ actions.openPlaylist(Playlist(type)) })
@@ -76,7 +76,7 @@ fun HomeScreen(viewModel: HomeViewModel = koinViewModel(), lastFmViewModel: Last
                 playlistSection(c.playlists, actions)
                 albumSection("Recently added", c.recentlyAdded, actions, seeAll(Playlist.RECENTLY_ADDED))
                 albumSection("Most played", c.mostPlayed, actions, seeAll(Playlist.MOST_PLAYED))
-                lastFmSection(lastFm, onRetry = { lastFmViewModel.refresh() })
+                listenBrainzSection(listenStats, onRetry = { statsViewModel.refresh() })
             }
         }
     }

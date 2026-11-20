@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Android 11 and lower. The music server and Last.fm sign-ins (auth tokens) are never backed up, nor are offline
+    Android 11 and lower. The music server and ListenBrainz sign-ins (auth tokens) are never backed up, nor are offline
     downloads (large, and tied to the server sign-in) and their Media3 index.
 -->
 <full-backup-content>
     <exclude domain="sharedpref" path="subsonic.xml" />
-    <exclude domain="sharedpref" path="lastfm.xml" />
+    <exclude domain="sharedpref" path="listenbrainz.xml" />
     <exclude domain="external" path="downloads/" />
     <exclude domain="database" path="exoplayer_internal.db" />
 </full-backup-content>

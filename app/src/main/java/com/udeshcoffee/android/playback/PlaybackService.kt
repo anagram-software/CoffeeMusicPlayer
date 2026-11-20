@@ -27,7 +27,7 @@ import com.udeshcoffee.android.data.DataRepository
 import com.udeshcoffee.android.data.MediaRepository
 import com.udeshcoffee.android.data.source.MusicSourceStore
 import com.udeshcoffee.android.data.download.DownloadRepository
-import com.udeshcoffee.android.data.lastfm.LastFmScrobbler
+import com.udeshcoffee.android.data.metabrainz.ListenBrainzScrobbler
 import com.udeshcoffee.android.data.subsonic.SubsonicRepository
 import com.udeshcoffee.android.ui.MainActivity
 import com.udeshcoffee.android.utils.PreferenceUtil
@@ -46,7 +46,7 @@ import org.koin.android.ext.android.inject
  *
  * Media3 handles the notification, foreground state, media buttons, audio focus, headphone
  * unplugging and playback resumption. This class adds the app's own behaviour: queue
- * persistence, play counts, Last.fm scrobbling, widget updates, the fade and on-call settings, and a browse tree for Android Auto and other media browsers.
+ * persistence, play counts, ListenBrainz listens, widget updates, the fade and on-call settings, and a browse tree for Android Auto and other media browsers.
  */
 @OptIn(UnstableApi::class)
 class PlaybackService : MediaLibraryService() {
@@ -57,9 +57,9 @@ class PlaybackService : MediaLibraryService() {
     private val queueStore: QueueStore by inject()
     private val sourceStore: MusicSourceStore by inject()
     private val downloads: DownloadRepository by inject()
-    private val lastFm: LastFmScrobbler by inject()
+    private val listenBrainz: ListenBrainzScrobbler by inject()
 
-    /** Listening time of the current play, for Last.fm scrobbles. */
+    /** Listening time of the current play, for ListenBrainz listens. */
     private val scrobbles = ScrobbleTracker()
     private var nowPlayingSent = false
 
@@ -89,7 +89,7 @@ class PlaybackService : MediaLibraryService() {
         player.repeatMode = RepeatModes.fromPreference(prefs.getInt(PreferenceUtil.REPEAT_MODE, RepeatModes.PREF_ALL))
         player.addListener(playerListener)
         // Send plays queued while offline.
-        lastFm.flush()
+        listenBrainz.flush()
 
         val sessionActivity = PendingIntent.getActivity(this, 0,
                 Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
@@ -135,7 +135,7 @@ class PlaybackService : MediaLibraryService() {
             if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO || reason == Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT)
                 lastItem?.let { countPlay(it) }
             lastItem = mediaItem
-            // Last.fm: the previous play counts if it was listened to long enough (skips included).
+            // ListenBrainz: the previous play counts if it was listened to long enough (skips included).
             scrobbleIfDue()
             scrobbles.start(mediaItem?.toSong(), player.isPlaying, System.currentTimeMillis(), SystemClock.elapsedRealtime())
             nowPlayingSent = false
@@ -182,22 +182,22 @@ class PlaybackService : MediaLibraryService() {
         }
     }
 
-    /** Scrobbles the current play to Last.fm once it has been listened to long enough ([ScrobbleTracker]). */
+    /** Submits the current play to ListenBrainz once it has been listened to long enough ([ScrobbleTracker]). */
     private fun scrobbleIfDue() {
         val play = scrobbles.due(SystemClock.elapsedRealtime()) ?: return
-        lastFm.scrobble(play.song, play.startedAtSec)
+        listenBrainz.scrobble(play.song, play.startedAtSec)
     }
 
     private fun sendNowPlaying() {
         if (nowPlayingSent) return
         val song = player.currentMediaItem?.toSong() ?: return
         nowPlayingSent = true
-        lastFm.nowPlaying(song)
+        listenBrainz.nowPlaying(song)
     }
 
     private fun countPlay(item: MediaItem) {
         val song = item.toSong()
-        // Server songs are counted by the server (and passed on to Last.fm / ListenBrainz there).
+        // Server songs are counted by the server (and passed on to ListenBrainz / Last.fm there).
         song.remoteId?.let { id -> scope.launch { subsonic.scrobble(id, submission = true) }; return }
         scope.launch {
             try {

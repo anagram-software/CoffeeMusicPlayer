@@ -1,4 +1,4 @@
-# R8 rules for Coffee Music Player. Most libraries (Media3, Room, OkHttp, Retrofit,
+# R8 rules for Coffee Music Player. Most libraries (Media3, Room, OkHttp,
 # kotlinx.serialization, Coil, Koin) ship their own consumer rules.
 
 # Keep line numbers for readable crash reports.
@@ -12,6 +12,3 @@
 -dontwarn java.awt.**
 -dontwarn javax.imageio.**
 -dontwarn javax.swing.**
-
-# Jsoup's optional regex engine.
--dontwarn com.google.re2j.**

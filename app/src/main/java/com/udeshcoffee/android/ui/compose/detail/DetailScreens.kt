@@ -327,14 +327,19 @@ private fun AlbumsRow(albums: List<Album>) {
 // ---------------- Album ----------------
 
 @Composable
-fun AlbumDetailScreen(albumId: Long, title: String, remoteId: String? = null) {
-    val seed = rememberArtworkSeed(remember(albumId, remoteId) { if (remoteId != null) CoverArt(remoteId) else AlbumArt(albumId) })
-    ArtworkTint(seed) { AlbumDetailContent(albumId, title, remoteId) }
+fun AlbumDetailScreen(albumId: Long, title: String, remoteId: String? = null, coverArt: String? = null) {
+    val viewModel: AlbumDetailViewModel = koinViewModel(key = "album:$albumId") { parametersOf(albumId, remoteId) }
+    // Server art: the cover art ID from the server's response (or the list it was opened from), which
+    // changes when the artwork does; the album ID itself would keep showing a cached old image.
+    val serverCoverArt by viewModel.coverArt.collectAsStateWithLifecycle()
+    val artwork = remember(albumId, remoteId, serverCoverArt, coverArt) {
+        if (remoteId != null) CoverArt(serverCoverArt ?: coverArt ?: remoteId) else AlbumArt(albumId)
+    }
+    ArtworkTint(rememberArtworkSeed(artwork)) { AlbumDetailContent(viewModel, artwork, albumId, title, remoteId) }
 }
 
 @Composable
-private fun AlbumDetailContent(albumId: Long, title: String, remoteId: String?) {
-    val viewModel: AlbumDetailViewModel = koinViewModel(key = "album:$albumId") { parametersOf(albumId, remoteId) }
+private fun AlbumDetailContent(viewModel: AlbumDetailViewModel, artwork: Any, albumId: Long, title: String, remoteId: String?) {
     val songs by viewModel.songs.collectAsStateWithLifecycle()
     val providerSongs by viewModel.providerSongs.collectAsStateWithLifecycle()
     val missingSongs by viewModel.missingSongs.collectAsStateWithLifecycle()
@@ -358,7 +363,7 @@ private fun AlbumDetailContent(albumId: Long, title: String, remoteId: String?) 
                 val year = list.firstNotNullOfOrNull { it.year.takeIf { y -> y > 0 } }
                 DetailHeader(
                         artwork = { modifier, shape ->
-                            if (remoteId != null) ArtworkImage(CoverArt(remoteId), Icons.Default.Album, modifier, shape)
+                            if (remoteId != null) ArtworkImage(artwork, Icons.Default.Album, modifier, shape)
                             else AlbumArtwork(albumId, modifier, shape)
                         },
                         kind = "Album",
@@ -412,22 +417,25 @@ private fun LazyListScope.providerSongItems(songs: List<Song>, currentId: Long?,
 // ---------------- Artist ----------------
 
 @Composable
-fun ArtistDetailScreen(artistId: Long, name: String, remoteId: String? = null) {
+fun ArtistDetailScreen(artistId: Long, name: String, remoteId: String? = null, coverArt: String? = null) {
     val viewModel: ArtistDetailViewModel = koinViewModel(key = "artist:$artistId") { parametersOf(artistId, name, remoteId) }
+    // As for albums: the server's current cover art ID, not the artist ID (a stale cached image).
+    val serverCoverArt by viewModel.coverArt.collectAsStateWithLifecycle()
+    val currentCoverArt = serverCoverArt ?: coverArt
     val albums by viewModel.albums.collectAsStateWithLifecycle()
     val imageVersion by viewModel.imageVersion.collectAsStateWithLifecycle()
     // The artist's image: the server's, or the stored one (checked off the main thread), else their first album's art.
-    val artwork by produceState<Any?>(null, remoteId, imageVersion, albums.firstOrNull()?.id) {
-        value = remoteId?.let { CoverArt(it) }
+    val artwork by produceState<Any?>(null, remoteId, currentCoverArt, imageVersion, albums.firstOrNull()?.id) {
+        value = remoteId?.let { CoverArt(currentCoverArt ?: it) }
                 ?: withContext(Dispatchers.IO) { artistImageFile(artistId).takeIf { it.exists() } }
                 ?: albums.firstOrNull()?.let { AlbumArt(it.id) }
     }
     // imageVersion: a replaced image file is the same File.
-    ArtworkTint(rememberArtworkSeed(artwork, key = imageVersion)) { ArtistDetailContent(viewModel, artistId, name, remoteId) }
+    ArtworkTint(rememberArtworkSeed(artwork, key = imageVersion)) { ArtistDetailContent(viewModel, artistId, name, remoteId, currentCoverArt) }
 }
 
 @Composable
-private fun ArtistDetailContent(viewModel: ArtistDetailViewModel, artistId: Long, name: String, remoteId: String?) {
+private fun ArtistDetailContent(viewModel: ArtistDetailViewModel, artistId: Long, name: String, remoteId: String?, coverArt: String?) {
     val songs by viewModel.songs.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     val albums by viewModel.albums.collectAsStateWithLifecycle()
@@ -444,7 +452,7 @@ private fun ArtistDetailContent(viewModel: ArtistDetailViewModel, artistId: Long
     }
     val starred by viewModel.starred.collectAsStateWithLifecycle()
     val actions = LocalAppActions.current
-    val artist = Artist(artistId, name, remoteId)
+    val artist = Artist(artistId, name, remoteId, coverArt)
     val listState = rememberLazyListState()
 
     HeaderScaffold(name, listState, actions = {
@@ -469,7 +477,7 @@ private fun ArtistDetailContent(viewModel: ArtistDetailViewModel, artistId: Long
                 else songs?.let { "${songCount(it.size)} • ${albumCount(albums.size)}" }
                 DetailHeader(
                         artwork = { modifier, shape ->
-                            androidx.compose.runtime.key(imageVersion) { ArtistArtwork(artist, modifier, shape, collect = true) }
+                            androidx.compose.runtime.key(imageVersion) { ArtistArtwork(artist, modifier, shape) }
                         },
                         kind = "Artist",
                         title = name,
@@ -630,11 +638,11 @@ fun FavoritesScreen(viewModel: FavoritesViewModel = koinViewModel()) {
 // ---------------- Playlist ----------------
 
 @Composable
-fun PlaylistDetailScreen(playlistId: Long, type: Int, title: String, remoteId: String? = null, readonly: Boolean = false) {
+fun PlaylistDetailScreen(playlistId: Long, type: Int, title: String, remoteId: String? = null, readonly: Boolean = false, coverArt: String? = null) {
     val viewModel: PlaylistDetailViewModel = koinViewModel(key = "playlist:$type:$playlistId") { parametersOf(playlistId, type, remoteId) }
     val songs by viewModel.songs.collectAsStateWithLifecycle()
-    // Header art: the server playlist's cover, else its first song's artwork.
-    val artwork = remoteId?.let { CoverArt(it) } ?: songs?.firstOrNull()?.artworkData()
+    // Header art: the server playlist's cover (by its cover art ID, which changes with the artwork), else its first song's artwork.
+    val artwork = remoteId?.let { CoverArt(coverArt ?: it) } ?: songs?.firstOrNull()?.artworkData()
     ArtworkTint(rememberArtworkSeed(artwork)) { PlaylistDetailContent(viewModel, artwork, playlistId, type, title, remoteId, readonly) }
 }
 

@@ -197,19 +197,19 @@ class AppActions(
         navController.navigate(route) { launchSingleTop = true }
     }
 
-    fun openAlbum(album: Album) = open(AlbumRoute(album.id, album.title, album.remoteId))
+    fun openAlbum(album: Album) = open(AlbumRoute(album.id, album.title, album.remoteId, album.coverArt))
     fun openAlbum(song: Song) {
         if (song.isRemote && song.albumRemoteId == null) return
         open(AlbumRoute(song.albumId, song.albumName, song.albumRemoteId))
     }
-    fun openArtist(artist: Artist) = open(ArtistRoute(artist.id, artist.name, artist.remoteId))
+    fun openArtist(artist: Artist) = open(ArtistRoute(artist.id, artist.name, artist.remoteId, artist.coverArt))
     fun openArtist(song: Song) {
         if (song.isRemote && song.artistRemoteId == null) return
         open(ArtistRoute(song.artistId, song.artistName, song.artistRemoteId))
     }
     fun openLibraryCategory(category: LibraryCategory) = open(LibraryCategoryRoute(category.name))
     fun openGenre(genre: Genre) = open(GenreRoute(genre.id, genre.name, genre.remote))
-    fun openPlaylist(playlist: Playlist) = open(PlaylistRoute(playlist.id, playlist.type, playlist.title, playlist.remoteId, playlist.readonly))
+    fun openPlaylist(playlist: Playlist) = open(PlaylistRoute(playlist.id, playlist.type, playlist.title, playlist.remoteId, playlist.readonly, playlist.coverArt))
     fun openPlaylistAddSongs(playlist: Playlist) = open(PlaylistAddSongsRoute(playlist.id, playlist.title))
     fun openSettings() = open(SettingsRoute)
     fun openEditor(song: Song) = open(EditorRoute(song.id))

@@ -55,34 +55,29 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import coil3.compose.AsyncImage
-import com.udeshcoffee.android.R
-import androidx.compose.ui.res.painterResource
-import com.udeshcoffee.android.data.lastfm.LastFmStats
-import com.udeshcoffee.android.data.lastfm.TopItem
+import com.udeshcoffee.android.data.metabrainz.ListenBrainzStats
+import com.udeshcoffee.android.data.metabrainz.TopItem
 import com.udeshcoffee.android.ui.compose.components.PageLoadingIndicator
 import java.text.NumberFormat
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 private val CarouselHeight = 220.dp
 /** Space above the carousel, and the same between it and the card below. */
 private val SectionGap = 24.dp
 
 /**
- * The connected Last.fm user's stats: a Material 3 multi-browse carousel (their
+ * The connected ListenBrainz user's stats: a Material 3 multi-browse carousel (their
  * totals, the all-time top artist, and this week's top album and song), then this week's top 5 artists and songs. Nothing when not connected.
  */
-fun LazyListScope.lastFmSection(state: LastFmStatsState, onRetry: () -> Unit) {
-    if (state == LastFmStatsState.Hidden) return
-    item(key = "lastfm") {
+fun LazyListScope.listenBrainzSection(state: ListenBrainzStatsState, onRetry: () -> Unit) {
+    if (state == ListenBrainzStatsState.Hidden) return
+    item(key = "listenbrainz") {
         Box(Modifier.padding(top = SectionGap, bottom = SectionGap)) {
             when (state) {
-                is LastFmStatsState.Loaded -> StatsCarousel(state.stats)
-                is LastFmStatsState.Failed -> Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.large,
+                is ListenBrainzStatsState.Loaded -> StatsCarousel(state.stats)
+                is ListenBrainzStatsState.Failed -> Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.large,
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
                     Row(Modifier.padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text("Couldn't load your Last.fm stats", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f),
+                        Text("Couldn't load your ListenBrainz stats", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
                         TextButton(onClick = onRetry) { Text("Retry") }
                     }
@@ -91,8 +86,8 @@ fun LazyListScope.lastFmSection(state: LastFmStatsState, onRetry: () -> Unit) {
             }
         }
     }
-    val stats = (state as? LastFmStatsState.Loaded)?.stats ?: return
-    item(key = "lastfm:top") {
+    val stats = (state as? ListenBrainzStatsState.Loaded)?.stats ?: return
+    item(key = "listenbrainz:top") {
         Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.extraLarge,
                 modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 8.dp)) {
             Column(Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
@@ -133,7 +128,7 @@ private sealed interface StatsPage {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun StatsCarousel(stats: LastFmStats) {
+private fun StatsCarousel(stats: ListenBrainzStats) {
     val pages = remember(stats) {
         listOfNotNull(StatsPage.Totals,
                 stats.topArtistAllTime?.let {
@@ -169,21 +164,15 @@ private fun StatsCarousel(stats: LastFmStats) {
 
 private fun plays(n: Long) = if (n == 1L) "play" else "plays"
 
-/** Totals: everything listened to (scrobbles), with the Last.fm logo, and the album, artist and track counts. */
+/** Totals: everything listened to, and the album, artist and track counts. */
 @Composable
-private fun CarouselItemScope.TotalsItem(stats: LastFmStats) {
+private fun CarouselItemScope.TotalsItem(stats: ListenBrainzStats) {
     val numbers = remember { NumberFormat.getIntegerInstance() }
     val colors = MaterialTheme.colorScheme
     Column(Modifier.fillMaxSize().maskClip(MaterialTheme.shapes.extraLarge).background(colors.primaryContainer).padding(20.dp)) {
-        Row(verticalAlignment = Alignment.Top) {
-            Column(Modifier.weight(1f)) {
-                Text(numbers.format(stats.scrobbles), style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold,
-                        color = colors.onPrimaryContainer, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text("Listened", style = MaterialTheme.typography.labelLarge, color = colors.onPrimaryContainer.copy(alpha = 0.75f), maxLines = 1)
-            }
-            Icon(painterResource(R.drawable.ic_lastfm), contentDescription = "Last.fm", tint = colors.onPrimaryContainer,
-                    modifier = Modifier.size(32.dp))
-        }
+        Text(numbers.format(stats.listens), style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold,
+                color = colors.onPrimaryContainer, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text("Listened", style = MaterialTheme.typography.labelLarge, color = colors.onPrimaryContainer.copy(alpha = 0.75f), maxLines = 1)
         Spacer(Modifier.weight(1f))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Stat(numbers.format(stats.albums), "Albums", Modifier.weight(1f))
@@ -193,29 +182,22 @@ private fun CarouselItemScope.TotalsItem(stats: LastFmStats) {
     }
 }
 
-/** Since when the user has scrobbled, and their profile picture, which opens their Last.fm profile. */
+/** The user's ListenBrainz name, and an avatar with their initial, which opens their profile. */
 @Composable
-private fun ProfileFooter(stats: LastFmStats) {
+private fun ProfileFooter(stats: ListenBrainzStats) {
     val context = LocalContext.current
+    val openProfile = { runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, stats.profileUrl.toUri())) }; Unit }
     Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(stats.registeredSec?.let { sec -> "Since ${remember(sec) { formatSince(sec) }}" } ?: stats.name,
-                style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-        Avatar(stats.imageUrl, onClick = stats.profileUrl?.let { url ->
-            { runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri())) } }
-        })
-    }
-}
-
-/** The user's Last.fm picture, in a circle; opens their profile. */
-@Composable
-private fun Avatar(url: String?, onClick: (() -> Unit)?) {
-    val modifier = Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary)
-            .then(if (onClick != null) Modifier.clickable(onClickLabel = "Open Last.fm profile", onClick = onClick)
-                    .semantics { contentDescription = "Last.fm profile" } else Modifier)
-    if (url != null) AsyncImage(url, contentDescription = null, contentScale = ContentScale.Crop, modifier = modifier)
-    else Box(modifier, contentAlignment = Alignment.Center) {
-        Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
+        Column(Modifier.weight(1f)) {
+            Text(stats.name, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text("ListenBrainz", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+        }
+        // ListenBrainz has no profile pictures.
+        Box(Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary)
+                .clickable(onClickLabel = "Open ListenBrainz profile", onClick = openProfile)
+                .semantics { contentDescription = "ListenBrainz profile" }, contentAlignment = Alignment.Center) {
+            Text(stats.name.take(1).uppercase(), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onPrimary)
+        }
     }
 }
 
@@ -297,7 +279,3 @@ private fun TopList(title: String, items: List<TopItem>, numbers: NumberFormat) 
         }
     }
 }
-
-/** "March 2015" (month and year, in the device's locale). */
-private fun formatSince(unixSec: Long): String =
-        DateTimeFormatter.ofPattern("MMMM yyyy").withZone(ZoneId.systemDefault()).format(Instant.ofEpochSecond(unixSec))

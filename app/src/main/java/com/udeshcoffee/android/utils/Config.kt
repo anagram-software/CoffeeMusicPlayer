@@ -20,15 +20,12 @@ object PreferenceUtil {
 
     const val  PREF_CALL = "pref_call"
     const val  PREF_FADE = "pref_fade"
-    const val  PREF_COLLECT_CONTENT = "pref_collect_content"
-    const val  PREF_WIFI_ONLY = "pref_wifi_only"
     /** Look up lyrics the server doesn't have (and all device songs' lyrics) on LRCLIB. */
     const val  PREF_LRCLIB = "pref_lrclib"
     const val  DEFAULT_LRCLIB = true
     /** Show the playing track's format (codec, bit depth or bit rate, sample rate) below the player's artwork. */
     const val  PREF_SHOW_QUALITY = "pref_show_quality"
     const val  DEFAULT_SHOW_QUALITY = true
-    /** Scrobble plays to the connected Last.fm account (off when the music server already does). */
-    const val  PREF_LASTFM_SCROBBLE = "pref_lastfm_scrobble"
-    const val  DEFAULT_LASTFM_SCROBBLE = true
+    /** Submit listens to the connected ListenBrainz account (default: off for a music server, which usually does it, on for device music). */
+    const val  PREF_LISTENBRAINZ_SCROBBLE = "pref_listenbrainz_scrobble"
 }

@@ -160,10 +160,10 @@ fun AlbumCard(album: Album, onClick: () -> Unit, onLongClick: () -> Unit, onPlay
                 { AlbumArtwork(album, it, MaterialTheme.shapes.extraSmall) }, modifier, tintKey = album.artworkData())
 
 @Composable
-fun ArtistCard(artist: Artist, onClick: () -> Unit, onLongClick: () -> Unit, onPlay: () -> Unit, modifier: Modifier = Modifier, collectImage: Boolean = true) =
+fun ArtistCard(artist: Artist, onClick: () -> Unit, onLongClick: () -> Unit, onPlay: () -> Unit, modifier: Modifier = Modifier) =
         // Server artists come with an album count, device artists with a song count.
         MediaCard(artist.name, if (artist.isRemote) albumCount(artist.songCount) else songCount(artist.songCount), onClick, onLongClick, onPlay,
-                { ArtistArtwork(artist, it, MaterialTheme.shapes.extraSmall, collectImage) }, modifier,
+                { ArtistArtwork(artist, it, MaterialTheme.shapes.extraSmall) }, modifier,
                 tintKey = artistTintKey(artist), tintLoad = { artistTintModel(artist) })
 
 @Composable

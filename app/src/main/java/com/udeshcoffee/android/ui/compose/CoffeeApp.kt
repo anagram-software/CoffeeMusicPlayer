@@ -222,10 +222,10 @@ fun CoffeeApp(onDeleteSongs: (List<Song>) -> Unit, playerExpandedRequest: Boolea
                                 composable<SearchRoute> { needsSetup { SearchScreen() } }
                                 composable<SettingsRoute> { SettingsScreen() }
                                 composable<LibraryCategoryRoute> { LibraryCategoryScreen(LibraryCategory.valueOf(it.toRoute<LibraryCategoryRoute>().category)) }
-                                composable<AlbumRoute> { val r = it.toRoute<AlbumRoute>(); AlbumDetailScreen(r.albumId, r.title, r.remoteId) }
-                                composable<ArtistRoute> { val r = it.toRoute<ArtistRoute>(); ArtistDetailScreen(r.artistId, r.name, r.remoteId) }
+                                composable<AlbumRoute> { val r = it.toRoute<AlbumRoute>(); AlbumDetailScreen(r.albumId, r.title, r.remoteId, r.coverArt) }
+                                composable<ArtistRoute> { val r = it.toRoute<ArtistRoute>(); ArtistDetailScreen(r.artistId, r.name, r.remoteId, r.coverArt) }
                                 composable<GenreRoute> { val r = it.toRoute<GenreRoute>(); GenreDetailScreen(r.genreId, r.name, r.remote) }
-                                composable<PlaylistRoute> { val r = it.toRoute<PlaylistRoute>(); PlaylistDetailScreen(r.playlistId, r.type, r.title, r.remoteId, r.readonly) }
+                                composable<PlaylistRoute> { val r = it.toRoute<PlaylistRoute>(); PlaylistDetailScreen(r.playlistId, r.type, r.title, r.remoteId, r.readonly, r.coverArt) }
                                 composable<PlaylistAddSongsRoute> { val r = it.toRoute<PlaylistAddSongsRoute>(); PlaylistAddSongsScreen(r.playlistId, r.title) }
                                 composable<EditorRoute> { EditorScreen(it.toRoute<EditorRoute>().songId) }
                             }

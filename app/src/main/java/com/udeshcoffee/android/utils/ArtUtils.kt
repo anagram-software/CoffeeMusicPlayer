@@ -20,8 +20,6 @@ import coil3.request.placeholder
 import coil3.toBitmap
 import com.udeshcoffee.android.App
 import com.udeshcoffee.android.R
-import com.udeshcoffee.android.data.remote.RemoteDataSource
-import com.udeshcoffee.android.extensions.toLastFMArtistQuery
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -72,23 +70,6 @@ private fun artistImageDir(): File = File(App.instance.filesDir, "ArtistImages")
 
 /** Where the artist's downloaded or chosen image is stored. */
 fun artistImageFile(artistId: Long): File = File(artistImageDir(), "$artistId.jpg")
-
-/**
- * Downloads the artist's image from Last.fm when settings allow it (collect content, Wi-Fi only).
- * Returns true if an image was saved.
- */
-suspend fun collectArtistImage(context: Context, id: Long, name: String): Boolean {
-    val allowed = withContext(Dispatchers.IO) {
-        val pref = PreferenceManager.getDefaultSharedPreferences(context)
-        pref.getBoolean(PreferenceUtil.PREF_COLLECT_CONTENT, true) &&
-                isNetworkAvailable(context, pref.getBoolean(PreferenceUtil.PREF_WIFI_ONLY, true))
-    }
-    if (!allowed) return false
-    val url = RemoteDataSource.searchLastFMArtist(name.toLastFMArtistQuery())?.image?.takeIf { it.isNotEmpty() } ?: return false
-    val bitmap = loadBitmap(context, url) ?: return false
-    withContext(Dispatchers.IO) { saveArtistArt(id, bitmap) }
-    return true
-}
 
 /** Saves an image the user picked as the artist's image. */
 suspend fun saveArtistImage(context: Context, id: Long, uri: Uri) = withContext(Dispatchers.IO) {

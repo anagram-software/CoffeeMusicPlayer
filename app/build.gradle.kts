@@ -32,9 +32,6 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
 
-        buildConfigField("String", "LASTFM_API_KEY", secret("lastfm.apiKey"))
-        // Shared secret for signed Last.fm calls (account sign-in and anything done for the user).
-        buildConfigField("String", "LASTFM_API_SECRET", secret("lastfm.apiSecret"))
     }
 
     buildTypes {
@@ -115,11 +112,8 @@ dependencies {
     implementation(libs.kotlinx.coroutines.guava)
 
     // Network
-    implementation(libs.retrofit)
-    implementation(libs.retrofit.converter.kotlinx.serialization)
     implementation(libs.okhttp)
     implementation(libs.kotlinx.serialization.json)
-    implementation(libs.jsoup)
 
     // Media
     implementation(libs.androidx.media3.exoplayer)

@@ -27,10 +27,8 @@ materialkolor = "5.0.1"
 koin = "4.2.2"
 coroutines = "1.11.0"
 serialization = "1.13.0"
-retrofit = "3.0.0"
 okhttp = "5.5.1"
 coil = "3.6.3"
-jsoup = "1.24.1"
 jaudiotagger = "3.0.1"
 
 junit = "4.13.2"
@@ -77,12 +75,9 @@ materialkolor = { module = "com.materialkolor:material-kolor", version.ref = "ma
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 kotlinx-coroutines-guava = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-guava", version.ref = "coroutines" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
-retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
-retrofit-converter-kotlinx-serialization = { module = "com.squareup.retrofit2:converter-kotlinx-serialization", version.ref = "retrofit" }
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
 coil = { module = "io.coil-kt.coil3:coil", version.ref = "coil" }
 coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil" }
-jsoup = { module = "org.jsoup:jsoup", version.ref = "jsoup" }
 jaudiotagger = { module = "net.jthink:jaudiotagger", version.ref = "jaudiotagger" }
 
 junit = { module = "junit:junit", version.ref = "junit" }
