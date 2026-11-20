@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Status-bar icon: the launcher logo as a silhouette (same shapes as ic_launcher_monochrome). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="196" android:viewportHeight="196">
+    <path android:fillColor="#FFFFFFFF" android:fillAlpha="0.45"
+        android:pathData="M22.90,38.22 A20,20 0 0 1 52.49,20.67 L165.10,82.20 A18,18 0 0 1 165.10,113.80 L52.49,175.33 A20,20 0 0 1 22.90,157.78 Z" />
+    <path android:fillColor="#FFFFFFFF"
+        android:pathData="M78.3,36 H151 A8.6,8.6 0 0 1 159.6,44.6 V131 A27.2,27.2 0 1 1 142.7,105.8 V69.3 H87 V131 A27.2,27.2 0 1 1 69.7,105.8 V44.6 A8.6,8.6 0 0 1 78.3,36 Z" />
+</vector>

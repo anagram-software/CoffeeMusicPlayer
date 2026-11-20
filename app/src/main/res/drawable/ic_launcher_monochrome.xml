@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Themed-icon layer (Android 13+). The system tints it; alpha separates the two shapes. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <group android:pivotX="92.8" android:pivotY="97.97"
+        android:scaleX="0.30496" android:scaleY="0.30496"
+        android:translateX="-38.80" android:translateY="-43.97">
+        <path android:name="play" android:fillColor="#FF000000" android:fillAlpha="0.45"
+            android:pathData="M22.90,38.22 A20,20 0 0 1 52.49,20.67 L165.10,82.20 A18,18 0 0 1 165.10,113.80 L52.49,175.33 A20,20 0 0 1 22.90,157.78 Z" />
+        <path android:name="note" android:fillColor="#FF000000"
+            android:pathData="M78.3,36 H151 A8.6,8.6 0 0 1 159.6,44.6 V131 A27.2,27.2 0 1 1 142.7,105.8 V69.3 H87 V131 A27.2,27.2 0 1 1 69.7,105.8 V44.6 A8.6,8.6 0 0 1 78.3,36 Z" />
+    </group>
+</vector>
