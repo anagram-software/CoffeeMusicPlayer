@@ -15,6 +15,12 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 
 /** A play waiting to be sent to Last.fm. */
 @Serializable
@@ -42,6 +48,10 @@ class LastFmScrobbler(context: Context, private val account: LastFmAccount, priv
     private val mutex = Mutex()
     private val json = Json { ignoreUnknownKeys = true }
     private val listSerializer = ListSerializer(PendingScrobble.serializer())
+
+    private val _accepted = MutableSharedFlow<Int>(extraBufferCapacity = 16)
+    /** How many scrobbles Last.fm accepted, each time a batch is sent (so the UI can update its counts). */
+    val accepted: SharedFlow<Int> = _accepted.asSharedFlow()
 
     /** "Scrobble to Last.fm" setting, in the default prefs so it outlives disconnecting. */
     var enabled: Boolean
@@ -84,7 +94,8 @@ class LastFmScrobbler(context: Context, private val account: LastFmAccount, priv
             val batch = synchronized(this) { load() }.take(BATCH_SIZE)
             if (batch.isEmpty()) return
             try {
-                account.api.call("track.scrobble", scrobbleParams(batch), sessionKey, post = true)
+                val response = account.api.call("track.scrobble", scrobbleParams(batch), sessionKey, post = true)
+                acceptedCount(response, batch.size).takeIf { it > 0 }?.let { _accepted.tryEmit(it) }
             } catch (e: LastFmException) {
                 when {
                     e.code == ERROR_INVALID_SESSION -> { account.disconnect(); return }
@@ -137,6 +148,11 @@ class LastFmScrobbler(context: Context, private val account: LastFmAccount, priv
                 p.trackNumber?.let { put("trackNumber", it.toString()) }
             }
         }
+
+        /** The number of scrobbles a track.scrobble response accepted (`scrobbles.@attr.accepted`), else [sent]. */
+        fun acceptedCount(response: JsonObject, sent: Int): Int =
+                (((response["scrobbles"] as? JsonObject)?.get("@attr") as? JsonObject)?.get("accepted") as? JsonPrimitive)
+                        ?.contentOrNull?.toIntOrNull() ?: sent
 
         /** track.scrobble parameters for a batch: artist[0], track[0], timestamp[0], … */
         fun scrobbleParams(batch: List<PendingScrobble>): Map<String, String> = buildMap {

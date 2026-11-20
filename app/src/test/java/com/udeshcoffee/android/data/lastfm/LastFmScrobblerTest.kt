@@ -37,4 +37,12 @@ class LastFmScrobblerTest {
         val params = LastFmScrobbler.trackParams(song(1, title = "T", artist = "A", album = "Al", duration = 120_000))!!
         assertEquals("T", params["track"]); assertEquals("A", params["artist"]); assertEquals("Al", params["album"]); assertEquals("120", params["duration"])
     }
+
+    @Test
+    fun `accepted count comes from the response, else the batch size`() {
+        val json = kotlinx.serialization.json.Json
+        assertEquals(2, LastFmScrobbler.acceptedCount(json.parseToJsonElement(
+                """{"scrobbles":{"@attr":{"accepted":2,"ignored":1}}}""").let { it as kotlinx.serialization.json.JsonObject }, 3))
+        assertEquals(3, LastFmScrobbler.acceptedCount(kotlinx.serialization.json.JsonObject(emptyMap()), 3))
+    }
 }
