@@ -1,8 +1,10 @@
 package com.udeshcoffee.android.playback
 
+import androidx.annotation.OptIn
 import androidx.media3.common.C
 import androidx.media3.common.Format
 import androidx.media3.common.Tracks
+import androidx.media3.common.util.UnstableApi
 import java.util.Locale
 import kotlin.math.roundToInt
 
@@ -66,6 +68,7 @@ data class AudioQuality(
             return if (hz % 1000 == 0) "${hz / 1000} kHz" else String.format(Locale.ROOT, "%.1f kHz", khz)
         }
 
+        @OptIn(UnstableApi::class)
         fun bitDepth(pcmEncoding: Int): Int? = when (pcmEncoding) {
             C.ENCODING_PCM_8BIT -> 8
             C.ENCODING_PCM_16BIT, C.ENCODING_PCM_16BIT_BIG_ENDIAN -> 16
@@ -74,6 +77,7 @@ data class AudioQuality(
             else -> null
         }
 
+        @OptIn(UnstableApi::class)
         fun from(format: Format): AudioQuality = AudioQuality(
                 mimeType = format.sampleMimeType,
                 bitrate = (format.averageBitrate.takeIf { it > 0 } ?: format.peakBitrate.takeIf { it > 0 }),

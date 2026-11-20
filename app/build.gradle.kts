@@ -33,6 +33,8 @@ android {
         vectorDrawables.useSupportLibrary = true
 
         buildConfigField("String", "LASTFM_API_KEY", secret("lastfm.apiKey"))
+        // Shared secret for signed Last.fm calls (account sign-in and anything done for the user).
+        buildConfigField("String", "LASTFM_API_SECRET", secret("lastfm.apiSecret"))
     }
 
     buildTypes {

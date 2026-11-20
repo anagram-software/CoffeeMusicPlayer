@@ -16,6 +16,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.lifecycleScope
 import com.udeshcoffee.android.R
 import com.udeshcoffee.android.data.source.MusicSourceStore
+import com.udeshcoffee.android.data.lastfm.LastFmAccount
+import com.udeshcoffee.android.data.lastfm.LastFmConnectState
+import com.udeshcoffee.android.utils.ProcessLifecycleScope
 import com.udeshcoffee.android.extensions.playbackEvents
 import com.udeshcoffee.android.model.Song
 import com.udeshcoffee.android.playback.PlaybackEvents
@@ -36,6 +39,7 @@ class MainActivity : ComponentActivity() {
 
     private val playerConnection: PlayerConnection by inject()
     private val sourceStore: MusicSourceStore by inject()
+    private val lastFm: LastFmAccount by inject()
     private var isPlayerConnected = false
     private var connectionJob: Job? = null
 
@@ -114,6 +118,7 @@ class MainActivity : ComponentActivity() {
         intent ?: return
         val player = getPlayerConnected()
         when (intent.action) {
+            Intent.ACTION_VIEW if lastFm.isCallback(intent.data) -> finishLastFmSignIn(intent.data!!)
             Intent.ACTION_VIEW -> {
                 if (player == null) pendingUri = intent.data else intent.data?.let { player.playUri(it) }
             }
@@ -126,6 +131,19 @@ class MainActivity : ComponentActivity() {
             }
         }
         setIntent(Intent())
+    }
+
+    /** The browser's return from Last.fm sign-in. Finishes even if the activity goes away; reports with a toast. */
+    private fun finishLastFmSignIn(uri: Uri) {
+        val context = applicationContext
+        ProcessLifecycleScope.launch {
+            lastFm.handleCallback(uri)
+            val message = when (val state = lastFm.connectState.value) {
+                is LastFmConnectState.Failed -> state.message
+                else -> lastFm.user.value?.let { "Connected to Last.fm as ${it.name}" }
+            }
+            message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
+        }
     }
 
     private fun getPlayerConnected(): PlayerConnection? = playerConnection.takeIf { it.isConnected }

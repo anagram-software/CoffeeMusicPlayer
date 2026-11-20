@@ -65,6 +65,9 @@ fun SettingsScreen() {
                     "When ${if (isServer) "your server has no lyrics for a song" else "playing a song"}, look them up on lrclib.net. " +
                             "This sends the song's title, artist and album to that service.")
 
+            Header("Last.fm")
+            LastFmSettings()
+
             // Device library only: server artists use the server's images and bios.
             if (!isServer) {
                 Header("Online content")
