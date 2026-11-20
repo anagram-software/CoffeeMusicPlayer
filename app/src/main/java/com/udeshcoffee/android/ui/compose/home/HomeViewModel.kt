@@ -81,7 +81,8 @@ class HomeViewModel(sourceStore: MusicSourceStore, mediaRepository: MediaReposit
     /** What the server returns, before the playlists played in the app are merged into recently played. */
     private class ServerHome(val added: List<Album>, val played: List<RecentItem.OfAlbum>, val most: List<Album>, val playlists: List<Playlist>)
 
-    private fun serverContent(): Flow<HomeContent> = combine(reload, subsonic.playlistsVersion) { a, b -> a to b }.flatMapLatest {
+    // Reloads after playlist edits and after each play (recently / most played change); the old content stays until then.
+    private fun serverContent(): Flow<HomeContent> = combine(reload, subsonic.playlistsVersion, subsonic.playsVersion) { a, b, c -> Triple(a, b, c) }.flatMapLatest {
         flow {
             val home = try {
                 coroutineScope {

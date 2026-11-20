@@ -47,6 +47,7 @@ import com.udeshcoffee.android.model.Playlist
 import com.udeshcoffee.android.ui.compose.components.TopLevelScaffold
 import com.udeshcoffee.android.ui.compose.detail.ServerNotice
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -135,25 +136,30 @@ class LibraryOverviewViewModel(sourceStore: MusicSourceStore, mediaRepository: M
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     val recentlyPlayed: StateFlow<LoadState<List<RecentItem>>> = (
-            if (isServer) combine(reload, subsonic.playlistsVersion) { a, b -> a to b }.flatMapLatest {
+            if (isServer) reload.flatMapLatest {
                 flow {
+                    // The spinner only on the first load and retries; reloads after plays and playlist edits swap in quietly.
                     emit(LoadState())
-                    val (albums, playlists) = try {
-                        coroutineScope {
-                            val albums = async { subsonic.recentAlbums(RECENT_COUNT) }
-                            val playlists = async { subsonic.playlists() }
-                            albums.await() to playlists.await()
-                        }
-                    } catch (e: SubsonicException) {
-                        emit(LoadState(error = e.message ?: "Couldn't reach the server"))
-                        return@flow
-                    }
-                    // Downloads can be played from too, though it isn't one of the server's playlists.
-                    val playable = listOf(Playlist(Playlist.DOWNLOADS)) + playlists
-                    emitAll(PlaylistPlays.plays.filterNotNull().map { LoadState(mergeRecent(albums, playable, it, RECENT_COUNT)) })
+                    emitAll(combine(subsonic.playlistsVersion, subsonic.playsVersion) { a, b -> a to b }.flatMapLatest { serverRecent(subsonic) })
                 }
             } else mediaRepository.observeRecentlyPlayed(RECENT_COUNT).map { LoadState(it) }
     ).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LoadState())
+
+    private fun serverRecent(subsonic: SubsonicRepository): Flow<LoadState<List<RecentItem>>> = flow {
+        val (albums, playlists) = try {
+            coroutineScope {
+                val albums = async { subsonic.recentAlbums(RECENT_COUNT) }
+                val playlists = async { subsonic.playlists() }
+                albums.await() to playlists.await()
+            }
+        } catch (e: SubsonicException) {
+            emit(LoadState(error = e.message ?: "Couldn't reach the server"))
+            return@flow
+        }
+        // Downloads can be played from too, though it isn't one of the server's playlists.
+        val playable = listOf(Playlist(Playlist.DOWNLOADS)) + playlists
+        emitAll(PlaylistPlays.plays.filterNotNull().map { LoadState(mergeRecent(albums, playable, it, RECENT_COUNT)) })
+    }
 }
 
 /** The Library tab: categories of this device's music or the server's, then recently played albums and playlists. */

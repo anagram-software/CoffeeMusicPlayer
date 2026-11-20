@@ -79,6 +79,9 @@ class SubsonicRepository(context: Context) {
     /** Bumped after playlist edits so playlist screens reload. */
     val playlistsVersion = MutableStateFlow(0)
 
+    /** Bumped after each play is submitted, so lists from the server's play history (recently / most played) reload. */
+    val playsVersion = MutableStateFlow(0)
+
     private val _starredIds = MutableStateFlow<Set<String>>(emptySet())
     /** Starred (favorite) server song IDs, kept up to date by [loadStarred] and [setStarred]. */
     val starredIds: StateFlow<Set<String>> = _starredIds.asStateFlow()
@@ -423,7 +426,7 @@ class SubsonicRepository(context: Context) {
         runCatching {
             client().call("scrobble", listOfNotNull("id" to remoteId, "submission" to submission,
                     ("time" to System.currentTimeMillis()).takeIf { submission }))
-        }
+        }.onSuccess { if (submission) playsVersion.value++ }
     }
 
     /** Full details of songs by ID (used to restore a saved queue if needed). */
