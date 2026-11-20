@@ -138,6 +138,18 @@ private fun LazyListScope.results(artists: List<Artist>, albums: List<Album>, so
                 }
             }
         }
+        // Provider playlists (Octo-Fiesta returns them as albums, which also open them).
+        if (group.playlists.isNotEmpty()) {
+            item(key = "$key:playlists:header") { SectionHeader("Playlists") }
+            item(key = "$key:playlists") {
+                LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    items(group.playlists, key = { it.id }) { playlist ->
+                        AlbumCard(playlist, onClick = { actions.openAlbum(playlist) }, onLongClick = { actions.albumOptions(playlist) },
+                                onPlay = { actions.playAlbum(playlist) }, modifier = Modifier.width(140.dp))
+                    }
+                }
+            }
+        }
         if (group.songs.isNotEmpty()) {
             item(key = "$key:songs:header") { SectionHeader("Songs") }
             items(group.songs, key = { "$key:song:${it.id}" }) { song ->

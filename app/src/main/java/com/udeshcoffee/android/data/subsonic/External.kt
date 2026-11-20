@@ -17,8 +17,17 @@ import com.udeshcoffee.android.model.Song
 
 private val EXTERNAL_ID = Regex("^ext-([a-z0-9]+)-", RegexOption.IGNORE_CASE)
 
-/** True for a streaming-provider item served through Octo-Fiesta (not in the library yet). */
-fun isExternalId(id: String?): Boolean = id != null && EXTERNAL_ID.containsMatchIn(id)
+/**
+ * A provider *playlist*, "pl-<provider>-<id>". search3 has no playlists, so Octo-Fiesta puts them
+ * among the albums, with genre "Playlist" and the artist "🎵 <Provider> <owner>".
+ */
+private val PLAYLIST_ID = Regex("^pl-([a-z0-9]+)-", RegexOption.IGNORE_CASE)
+
+/** True for a streaming-provider item served through Octo-Fiesta (not in the library yet), playlists included. */
+fun isExternalId(id: String?): Boolean = id != null && (EXTERNAL_ID.containsMatchIn(id) || PLAYLIST_ID.containsMatchIn(id))
+
+/** True for a provider playlist that Octo-Fiesta returns as a search3 album. */
+fun isExternalPlaylistId(id: String?): Boolean = id != null && PLAYLIST_ID.containsMatchIn(id)
 
 val Song.isExternal: Boolean get() = isExternalId(remoteId)
 val Album.isExternal: Boolean get() = isExternalId(remoteId)
@@ -28,13 +37,29 @@ private val providerNames = mapOf("qobuz" to "Qobuz", "deezer" to "Deezer", "tid
 
 /** Display name of the provider behind an external ID ("Qobuz"), or null for library items. */
 fun externalProvider(id: String?): String? {
-    val key = id?.let { EXTERNAL_ID.find(it) }?.groupValues?.get(1)?.lowercase() ?: return null
+    val key = id?.let { EXTERNAL_ID.find(it) ?: PLAYLIST_ID.find(it) }?.groupValues?.get(1)?.lowercase() ?: return null
     return providerNames[key] ?: key.replaceFirstChar { it.uppercase() }
 }
 
-/** Search results from one source: the library ([provider] null) or a streaming provider ("Qobuz"). */
-data class SourceResults(val provider: String?, val artists: List<Artist>, val albums: List<Album>, val songs: List<Song>) {
-    val isEmpty: Boolean get() = artists.isEmpty() && albums.isEmpty() && songs.isEmpty()
+/**
+ * Search results from one source: the library ([provider] null) or a streaming provider ("Qobuz").
+ * [playlists] are the provider's playlists (still album objects, as Octo-Fiesta returns them; their
+ * artist is the owner, see [playlistOwner]).
+ */
+data class SourceResults(val provider: String?, val artists: List<Artist>, val albums: List<Album>, val songs: List<Song>,
+                         val playlists: List<Album> = emptyList()) {
+    val isEmpty: Boolean get() = artists.isEmpty() && albums.isEmpty() && songs.isEmpty() && playlists.isEmpty()
+}
+
+/**
+ * Who made a provider playlist, from Octo-Fiesta's "🎵 Qobuz qobuz" artist: the owner after the
+ * emoji and provider name, or the provider itself when the owner is the provider (or missing).
+ */
+fun playlistOwner(album: Album): String {
+    val provider = externalProvider(album.remoteId) ?: return album.artist
+    val owner = album.artist.dropWhile { !it.isLetterOrDigit() }.trim()
+            .removePrefix(provider).trim().ifEmpty { provider }
+    return if (owner.equals(provider, ignoreCase = true)) provider else owner
 }
 
 /**
@@ -45,8 +70,9 @@ fun groupBySource(artists: List<Artist>, albums: List<Album>, songs: List<Song>)
     val providers = (artists.map { externalProvider(it.remoteId) } + albums.map { externalProvider(it.remoteId) } +
             songs.map { externalProvider(it.remoteId) }).filterNotNull().distinct()
     return (listOf<String?>(null) + providers).map { p ->
-        SourceResults(p, artists.filter { externalProvider(it.remoteId) == p }, albums.filter { externalProvider(it.remoteId) == p },
-                songs.filter { externalProvider(it.remoteId) == p })
+        val (playlists, sourceAlbums) = albums.filter { externalProvider(it.remoteId) == p }.partition { isExternalPlaylistId(it.remoteId) }
+        SourceResults(p, artists.filter { externalProvider(it.remoteId) == p }, sourceAlbums, songs.filter { externalProvider(it.remoteId) == p },
+                playlists.map { pl -> pl.copy(artist = playlistOwner(pl)).also { it.songCount = pl.songCount } })
     }
 }
 
@@ -145,4 +171,4 @@ fun splitAlbumTracks(songs: List<Song>): AlbumTracks {
  * else the provider album its missing tracks come from. Null if neither is known.
  */
 fun externalAlbumId(albumId: String, missing: List<Song>): String? =
-        albumId.takeIf { isExternalId(it) } ?: missing.firstNotNullOfOrNull { it.albumRemoteId?.takeIf(::isExternalId) }
+        albumId.takeIf { isExternalId(it) && !isExternalPlaylistId(it) } ?: missing.firstNotNullOfOrNull { it.albumRemoteId?.takeIf(::isExternalId) }

@@ -115,4 +115,20 @@ class ExternalTest {
         assertTrue(groups[0].provider == null && groups[0].isEmpty)
         assertEquals(1, groupBySource(emptyList(), emptyList(), listOf(song(1).copy(remoteId = "s1"))).size)
     }
+
+    @Test
+    fun `provider playlists (pl- ids) group under the provider, with their owner as artist`() {
+        val libAlbum = album("Drones")
+        val qobuzPlaylist = Album(500, "Chill Mix", "\uD83C\uDFB5 Qobuz qobuz", 0, 0, remoteId = "pl-qobuz-789").also { it.songCount = 40 }
+        val curated = Album(501, "Rock Gems", "\uD83C\uDFB5 Qobuz Jane Doe", 0, 0, remoteId = "pl-qobuz-790")
+        val groups = groupBySource(emptyList(), listOf(libAlbum, qobuzPlaylist, curated), emptyList())
+        assertEquals(listOf(null, "Qobuz"), groups.map { it.provider })
+        assertEquals(listOf(libAlbum), groups[0].albums)
+        assertTrue(groups[1].albums.isEmpty())
+        assertEquals(listOf("Qobuz", "Jane Doe"), groups[1].playlists.map { it.artist })
+        assertEquals(40, groups[1].playlists[0].songCount)
+        assertTrue(isExternalId("pl-qobuz-789") && isExternalPlaylistId("pl-qobuz-789") && !isExternalPlaylistId("ext-qobuz-album-1"))
+        // Not something "Add to library" can star.
+        assertNull(externalAlbumId("pl-qobuz-789", emptyList()))
+    }
 }
