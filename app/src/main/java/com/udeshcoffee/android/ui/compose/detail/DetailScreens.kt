@@ -108,6 +108,7 @@ import com.udeshcoffee.android.ui.compose.components.ArtistArtwork
 import com.udeshcoffee.android.ui.compose.components.EmptyState
 import com.udeshcoffee.android.ui.compose.components.SectionHeader
 import com.udeshcoffee.android.ui.compose.components.SongRow
+import com.udeshcoffee.android.ui.compose.components.SongArtwork
 import com.udeshcoffee.android.ui.compose.components.SongSortOptions
 import com.udeshcoffee.android.ui.compose.components.SortMenu
 import com.udeshcoffee.android.ui.compose.components.SortSettings
@@ -732,15 +733,19 @@ private fun ReorderablePlaylist(songs: List<Song>, playlist: Playlist, viewModel
                         onClick = { actions.play(items.toList(), items.indexOf(song)); PlaylistPlays.record(playlist) },
                         onMore = { actions.songOptions(song, playlist) },
                         isCurrent = song.id == currentId,
-                        trailing = {
-                            IconButton(onClick = {}, modifier = Modifier.draggableHandle(
-                                    onDragStarted = { dragFrom = items.indexOf(song) },
-                                    onDragStopped = {
-                                        val to = items.indexOf(song)
-                                        if (dragFrom >= 0 && to != dragFrom) viewModel.move(dragFrom, to)
-                                        dragFrom = -1
-                                    })) {
-                                Icon(Icons.Default.DragHandle, contentDescription = "Reorder")
+                        // The handle is on the left, away from the options button and the right-hand scrolling thumb.
+                        leading = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                IconButton(onClick = {}, modifier = Modifier.draggableHandle(
+                                        onDragStarted = { dragFrom = items.indexOf(song) },
+                                        onDragStopped = {
+                                            val to = items.indexOf(song)
+                                            if (dragFrom >= 0 && to != dragFrom) viewModel.move(dragFrom, to)
+                                            dragFrom = -1
+                                        })) {
+                                    Icon(Icons.Default.DragHandle, contentDescription = "Reorder")
+                                }
+                                SongArtwork(song, Modifier.size(48.dp))
                             }
                         })
             }

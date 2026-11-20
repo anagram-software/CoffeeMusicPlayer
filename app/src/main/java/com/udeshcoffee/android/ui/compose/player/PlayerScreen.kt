@@ -310,16 +310,19 @@ private fun QueueList(state: PlayerUiState, modifier: Modifier) {
                             colors = if (index == state.index) ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
                             // Opaque (the swipe-to-remove background is behind it), in the player's colour.
                             else ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                            leadingContent = { SongArtwork(song, Modifier.size(44.dp)) },
+                            // The handle is on the left, away from the options button and the right-hand scrolling thumb.
+                            leadingContent = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.DragHandle, contentDescription = "Reorder",
+                                            modifier = Modifier.draggableHandle().padding(start = 4.dp, end = 12.dp, top = 12.dp, bottom = 12.dp))
+                                    SongArtwork(song, Modifier.size(44.dp))
+                                }
+                            },
                             supportingContent = { Text(song.artistName, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                             trailingContent = {
-                                Row {
-                                    val anchor = rememberOptionsAnchor()
-                                    IconButton(onClick = anchor.open { actions.songOptions(song) }, modifier = anchor.modifier) {
-                                        Icon(Icons.Default.MoreVert, contentDescription = "Song options")
-                                    }
-                                    Icon(Icons.Default.DragHandle, contentDescription = "Reorder",
-                                            modifier = Modifier.padding(12.dp).draggableHandle())
+                                val anchor = rememberOptionsAnchor()
+                                IconButton(onClick = anchor.open { actions.songOptions(song) }, modifier = anchor.modifier) {
+                                    Icon(Icons.Default.MoreVert, contentDescription = "Song options")
                                 }
                             }) { Text(song.title, maxLines = 1, overflow = TextOverflow.Ellipsis) }
                 }
