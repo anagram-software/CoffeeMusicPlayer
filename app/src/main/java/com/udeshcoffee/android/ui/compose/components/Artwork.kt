@@ -27,7 +27,13 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import android.content.Context
+import coil3.SingletonImageLoader
 import coil3.compose.AsyncImage
+import coil3.memory.MemoryCache
+import coil3.request.CachePolicy
+import coil3.request.ImageRequest
+import com.udeshcoffee.android.utils.CoverArtCache
 import com.udeshcoffee.android.model.Album
 import com.udeshcoffee.android.model.Artist
 import com.udeshcoffee.android.model.Playlist
@@ -42,23 +48,67 @@ import com.udeshcoffee.android.utils.artistImageFile
 import com.udeshcoffee.android.utils.artworkData
 import com.udeshcoffee.android.utils.CoverArt
 
-/** Image with a tinted icon placeholder shown until (or instead of) the image. */
+/**
+ * Image with a tinted icon placeholder shown until (or instead of) the image. Server artwork
+ * ([CoverArt]) first shows the newest cached picture of the item, possibly out of date, while the
+ * current one loads (see [CoverArtCache]).
+ */
 @Composable
 fun ArtworkImage(model: Any?, fallback: ImageVector, modifier: Modifier = Modifier, shape: Shape = MaterialTheme.shapes.small) {
     var loaded by remember(model) { mutableStateOf(false) }
+    val context = LocalContext.current
+    val requests = remember(model) { (model as? CoverArt)?.let { coverArtRequests(context, it) } }
     Box(modifier.clip(shape).background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
         if (!loaded) {
             Icon(fallback, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.fillMaxSize().padding(12.dp))
+            requests?.cached?.let {
+                AsyncImage(model = it, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+            }
         }
         AsyncImage(
-                model = model,
+                model = requests?.current ?: model,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
-                onSuccess = { loaded = true },
-                onError = { loaded = false },
+                onSuccess = {
+                    loaded = true
+                    if (requests?.revalidating == true) CoverArtCache.markRevalidated(model as CoverArt)
+                },
+                onError = {
+                    loaded = false
+                    if (requests?.revalidating == true) CoverArtCache.markRevalidated(model as CoverArt)
+                },
                 modifier = Modifier.fillMaxSize())
     }
+}
+
+/**
+ * [current] loads [data] (from the server first when it [CoverArtCache.needsRevalidation]);
+ * [cached] is the newest picture of the item on disk, shown under it until it loads (null when
+ * [current] is already in memory, so it shows at once).
+ */
+private class CoverArtRequests(val current: ImageRequest, val cached: ImageRequest?, val revalidating: Boolean)
+
+private fun coverArtRequests(context: Context, data: CoverArt): CoverArtRequests {
+    val revalidating = CoverArtCache.needsRevalidation(data)
+    val current = ImageRequest.Builder(context).data(data)
+            .apply {
+                if (revalidating) {
+                    memoryCachePolicy(CachePolicy.WRITE_ONLY)
+                    diskCachePolicy(CachePolicy.WRITE_ONLY)
+                }
+            }
+            .build()
+    val inMemory = SingletonImageLoader.get(context).memoryCache?.get(MemoryCache.Key(CoverArtCache.key(data))) != null
+    val cached = if (inMemory && !revalidating) null else ImageRequest.Builder(context).data(data)
+            .diskCacheKey(CoverArtCache.latestKey(data))
+            .memoryCacheKey(CoverArtCache.latestKey(data))
+            // Only a placeholder: read from disk, and don't hold a second copy in memory.
+            .memoryCachePolicy(CachePolicy.DISABLED)
+            .diskCachePolicy(CachePolicy.READ_ONLY)
+            .networkCachePolicy(CachePolicy.DISABLED)
+            .build()
+    return CoverArtRequests(current, cached, revalidating)
 }
 
 /** Icon for a playlist: the smart playlists have their own, user playlists a generic one. */
