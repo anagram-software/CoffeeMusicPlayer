@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -177,8 +178,14 @@ private fun Controls(state: PlayerUiState, song: Song, viewModel: NowPlayingView
     var seekValue by remember { mutableFloatStateOf(0f) }
     val duration = state.duration.coerceAtLeast(1)
 
+    val showQuality by viewModel.showQuality.collectAsStateWithLifecycle()
+
     Column(Modifier.fillMaxWidth()) {
-        Spacer(Modifier.height(16.dp))
+        if (showQuality) {
+            Spacer(Modifier.height(12.dp))
+            TrackQuality(state.audioQuality?.label(), Modifier.align(Alignment.CenterHorizontally))
+            Spacer(Modifier.height(16.dp))
+        } else Spacer(Modifier.height(16.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(song.title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold,
@@ -249,6 +256,22 @@ private fun Controls(state: PlayerUiState, song: Song, viewModel: NowPlayingView
                 Icon(com.udeshcoffee.android.ui.compose.components.QueueIcon, contentDescription = null); Spacer(Modifier.size(8.dp))
                 Text("Up next")
             }
+        }
+    }
+}
+
+/**
+ * The playing track's format in a small pill. Keeps its height while the format is unknown (between
+ * songs, before the stream is read) so the controls don't jump.
+ */
+@Composable
+private fun TrackQuality(label: String?, modifier: Modifier = Modifier) {
+    Box(modifier.height(24.dp), contentAlignment = Alignment.Center) {
+        Crossfade(label, label = "quality") { text ->
+            // Muted: secondary information, so no fill and a faded label.
+            if (text != null) Text(text, style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }

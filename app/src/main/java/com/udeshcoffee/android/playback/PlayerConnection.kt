@@ -117,7 +117,8 @@ class PlayerConnection(
                 queue = queueFlow.value,
                 index = c.currentMediaItemIndex,
                 repeatMode = RepeatModes.toPreference(c.repeatMode),
-                shuffle = c.shuffleModeEnabled)
+                shuffle = c.shuffleModeEnabled,
+                audioQuality = if (c.isCommandAvailable(Player.COMMAND_GET_TRACKS)) AudioQuality.from(c.currentTracks) else null)
     }
 
     private fun refreshQueue() {
@@ -272,5 +273,7 @@ data class PlayerUiState(
         val queue: List<Song> = emptyList(),
         val index: Int = 0,
         val repeatMode: Int = RepeatModes.PREF_ALL,
-        val shuffle: Boolean = false
+        val shuffle: Boolean = false,
+        /** The current song's decoded audio format; null until the player has read the stream. */
+        val audioQuality: AudioQuality? = null
 )

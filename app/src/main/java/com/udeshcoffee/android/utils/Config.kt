@@ -25,4 +25,7 @@ object PreferenceUtil {
     /** Look up lyrics the server doesn't have (and all device songs' lyrics) on LRCLIB. */
     const val  PREF_LRCLIB = "pref_lrclib"
     const val  DEFAULT_LRCLIB = true
+    /** Show the playing track's format (codec, bit depth or bit rate, sample rate) below the player's artwork. */
+    const val  PREF_SHOW_QUALITY = "pref_show_quality"
+    const val  DEFAULT_SHOW_QUALITY = true
 }

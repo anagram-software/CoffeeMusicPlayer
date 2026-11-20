@@ -56,6 +56,10 @@ class NowPlayingViewModel(
     val lrclibEnabled: StateFlow<Boolean> = prefs.booleanFlow(PreferenceUtil.PREF_LRCLIB, PreferenceUtil.DEFAULT_LRCLIB)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), prefs.getBoolean(PreferenceUtil.PREF_LRCLIB, PreferenceUtil.DEFAULT_LRCLIB))
 
+    /** Whether the track quality is shown below the artwork. */
+    val showQuality: StateFlow<Boolean> = prefs.booleanFlow(PreferenceUtil.PREF_SHOW_QUALITY, PreferenceUtil.DEFAULT_SHOW_QUALITY)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), prefs.getBoolean(PreferenceUtil.PREF_SHOW_QUALITY, PreferenceUtil.DEFAULT_SHOW_QUALITY))
+
     private val _showLyrics = MutableStateFlow(prefs.getBoolean(PreferenceUtil.LYRICS, PreferenceUtil.DEFAULT_LYRICS))
     /** Lyrics shown instead of the artwork. */
     val showLyrics: StateFlow<Boolean> = _showLyrics.asStateFlow()

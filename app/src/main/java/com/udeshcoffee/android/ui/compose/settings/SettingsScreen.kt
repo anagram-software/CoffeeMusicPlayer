@@ -57,6 +57,8 @@ fun SettingsScreen() {
             SwitchPref(prefs, PreferenceUtil.PREF_CALL, false, "Stay paused after interruptions",
                     "Don't resume after a call or another app's sound")
             SwitchPref(prefs, PreferenceUtil.PREF_FADE, true, "Fade on play/pause", "Smoothly fade audio in and out")
+            SwitchPref(prefs, PreferenceUtil.PREF_SHOW_QUALITY, PreferenceUtil.DEFAULT_SHOW_QUALITY, "Show track quality",
+                    "Format, bit depth or bit rate, and sample rate below the artwork in the player")
 
             Header("Lyrics")
             SwitchPref(prefs, PreferenceUtil.PREF_LRCLIB, PreferenceUtil.DEFAULT_LRCLIB, "Find missing lyrics online",
