@@ -50,6 +50,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.filled.DownloadDone
 import com.udeshcoffee.android.model.Album
+import com.udeshcoffee.android.model.Playlist
+import com.udeshcoffee.android.data.RecentItem
+import com.udeshcoffee.android.ui.compose.AppActions
+import androidx.compose.foundation.background
 import com.udeshcoffee.android.model.Artist
 import com.udeshcoffee.android.model.Song
 
@@ -161,6 +165,36 @@ fun ArtistCard(artist: Artist, onClick: () -> Unit, onLongClick: () -> Unit, onP
         MediaCard(artist.name, if (artist.isRemote) albumCount(artist.songCount) else songCount(artist.songCount), onClick, onLongClick, onPlay,
                 { ArtistArtwork(artist, it, MaterialTheme.shapes.extraSmall, collectImage) }, modifier,
                 tintKey = artistTintKey(artist), tintLoad = { artistTintModel(artist) })
+
+@Composable
+fun PlaylistCard(playlist: Playlist, onClick: () -> Unit, onLongClick: () -> Unit, onPlay: () -> Unit, modifier: Modifier = Modifier) =
+        MediaCard(playlist.title, playlist.songCount?.let { songCount(it) } ?: "Playlist", onClick, onLongClick, onPlay,
+                artwork = { m ->
+                    PlaylistArtwork(playlist, m, MaterialTheme.shapes.extraSmall) { fallback ->
+                        Box(fallback.fillMaxWidth().aspectRatio(1f).background(MaterialTheme.colorScheme.secondaryContainer),
+                                contentAlignment = Alignment.Center) {
+                            Icon(playlist.icon, contentDescription = null, modifier = Modifier.size(48.dp),
+                                    tint = MaterialTheme.colorScheme.onSecondaryContainer)
+                        }
+                    }
+                },
+                modifier = modifier, tintKey = playlist.coverArt?.let { CoverArt(it) })
+
+/** A "Recently played" card: an album (just its artist: a song count would only count the played songs) or a playlist. */
+@Composable
+fun RecentCard(item: RecentItem, actions: AppActions, modifier: Modifier = Modifier) = when (item) {
+    is RecentItem.OfAlbum -> {
+        val album = item.album
+        MediaCard(album.title, album.artist,
+                onClick = { actions.openAlbum(album) }, onLongClick = { actions.albumOptions(album) }, onPlay = { actions.playAlbum(album) },
+                artwork = { AlbumArtwork(album, it, MaterialTheme.shapes.extraSmall) }, modifier = modifier, tintKey = album.artworkData())
+    }
+    is RecentItem.OfPlaylist -> {
+        val playlist = item.playlist
+        PlaylistCard(playlist, onClick = { actions.openPlaylist(playlist) }, onLongClick = { actions.playlistOptions(playlist) },
+                onPlay = { actions.playPlaylist(playlist) }, modifier = modifier)
+    }
+}
 
 /** Server artists: their cover art. Device artists: their stored image, if any (checked on IO). */
 private fun artistTintKey(artist: Artist): Any = (artist.coverArt ?: artist.remoteId)?.let { CoverArt(it) } ?: "artist:${artist.id}"

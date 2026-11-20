@@ -6,6 +6,7 @@ import com.udeshcoffee.android.model.Genre
 import com.udeshcoffee.android.model.Playlist
 import com.udeshcoffee.android.model.Song
 import java.time.Instant
+import java.time.OffsetDateTime
 
 private const val UNKNOWN = "<unknown>"
 
@@ -29,6 +30,10 @@ fun SubSong.toSong(): Song = Song(
         coverArt = coverArt,
         albumRemoteId = albumId,
         artistRemoteId = artistId)
+
+/** When the album was last played (epoch millis), or 0 if the server doesn't say. */
+fun SubAlbum.playedAt(): Long =
+        played?.let { runCatching { OffsetDateTime.parse(it).toInstant().toEpochMilli() }.getOrNull() } ?: 0
 
 fun SubAlbum.toAlbum(): Album =
         Album(RemoteIds.album(id), name, artist ?: UNKNOWN, year, 0, remoteId = id, coverArt = coverArt)

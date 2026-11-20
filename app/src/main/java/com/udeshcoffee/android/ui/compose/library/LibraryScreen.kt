@@ -28,14 +28,22 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.udeshcoffee.android.data.MediaRepository
-import com.udeshcoffee.android.data.media.songsToAlbums
-import com.udeshcoffee.android.data.subsonic.ServerAlbumSort
+import com.udeshcoffee.android.data.RecentItem
+import com.udeshcoffee.android.data.mergeRecent
+import com.udeshcoffee.android.data.observeRecentlyPlayed
+import com.udeshcoffee.android.ui.compose.components.RecentCard
+import com.udeshcoffee.android.utils.PlaylistPlays
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.filterNotNull
 import com.udeshcoffee.android.data.subsonic.SubsonicException
 import com.udeshcoffee.android.data.subsonic.SubsonicRepository
 import com.udeshcoffee.android.model.Album
 import com.udeshcoffee.android.model.Playlist
-import com.udeshcoffee.android.ui.compose.components.MediaCard
-import com.udeshcoffee.android.utils.artworkData
 import com.udeshcoffee.android.ui.compose.components.TopLevelScaffold
 import com.udeshcoffee.android.ui.compose.detail.ServerNotice
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -110,30 +118,45 @@ private const val RECENT_COUNT = 12
 
 /**
  * The Library page for the current music source: the categories as a grouped list, then recently
- * played albums. Nothing else loads until a category is opened (on a server, each list is network calls).
+ * played albums and playlists. Nothing else loads until a category is opened (on a server, each list is network calls).
  */
 class LibraryOverviewViewModel(sourceStore: MusicSourceStore, mediaRepository: MediaRepository, subsonic: SubsonicRepository) : ViewModel() {
     val isServer = sourceStore.isServer
     private val reload = MutableStateFlow(0)
     fun retry() { reload.value++ }
 
-    /** Device: albums of the recently played songs (the app's play stats). Server: getAlbumList2 recent. */
+    init {
+        viewModelScope.launch(Dispatchers.IO) { PlaylistPlays.load() }
+    }
+
+    /**
+     * Albums (device: of the recently played songs, from the app's play stats; server: getAlbumList2
+     * recent) and the playlists played in this app, most recent first.
+     */
     @OptIn(ExperimentalCoroutinesApi::class)
-    val recentlyPlayed: StateFlow<LoadState<List<Album>>> = (
-            if (isServer) reload.flatMapLatest {
+    val recentlyPlayed: StateFlow<LoadState<List<RecentItem>>> = (
+            if (isServer) combine(reload, subsonic.playlistsVersion) { a, b -> a to b }.flatMapLatest {
                 flow {
                     emit(LoadState())
-                    emit(try {
-                        LoadState(subsonic.albums(ServerAlbumSort.RECENT, offset = 0, count = RECENT_COUNT))
+                    val (albums, playlists) = try {
+                        coroutineScope {
+                            val albums = async { subsonic.recentAlbums(RECENT_COUNT) }
+                            val playlists = async { subsonic.playlists() }
+                            albums.await() to playlists.await()
+                        }
                     } catch (e: SubsonicException) {
-                        LoadState(error = e.message ?: "Couldn't reach the server")
-                    })
+                        emit(LoadState(error = e.message ?: "Couldn't reach the server"))
+                        return@flow
+                    }
+                    // Downloads can be played from too, though it isn't one of the server's playlists.
+                    val playable = listOf(Playlist(Playlist.DOWNLOADS)) + playlists
+                    emitAll(PlaylistPlays.plays.filterNotNull().map { LoadState(mergeRecent(albums, playable, it, RECENT_COUNT)) })
                 }
-            } else mediaRepository.observePlaylistSongs(0, Playlist.RECENTLY_PLAYED).map { LoadState(songsToAlbums(it).take(RECENT_COUNT)) }
+            } else mediaRepository.observeRecentlyPlayed(RECENT_COUNT).map { LoadState(it) }
     ).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LoadState())
 }
 
-/** The Library tab: categories of this device's music or the server's, then recently played albums. */
+/** The Library tab: categories of this device's music or the server's, then recently played albums and playlists. */
 @Composable
 fun LibraryScreen(viewModel: LibraryOverviewViewModel = koinViewModel()) {
     val recent by viewModel.recentlyPlayed.collectAsStateWithLifecycle()
@@ -152,24 +175,19 @@ fun LibraryScreen(viewModel: LibraryOverviewViewModel = koinViewModel()) {
                     }
                 }
             }
-            val albums = recent.data
+            val played = recent.data
             when {
                 recent.error != null -> item(key = "recent-error", span = { GridItemSpan(maxLineSpan) }) {
                     ServerNotice("Couldn't load: ${recent.error}", viewModel::retry)
                 }
-                albums == null -> item(key = "recent-loading", span = { GridItemSpan(maxLineSpan) }) {
+                played == null -> item(key = "recent-loading", span = { GridItemSpan(maxLineSpan) }) {
                     Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) { PageLoadingIndicator() }
                 }
-                albums.isEmpty() -> item(key = "recent-empty", span = { GridItemSpan(maxLineSpan) }) {
-                    Text("Albums you play show up here", style = MaterialTheme.typography.bodyMedium,
+                played.isEmpty() -> item(key = "recent-empty", span = { GridItemSpan(maxLineSpan) }) {
+                    Text("Albums and playlists you play show up here", style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                else -> items(albums, key = { it.id }) { album ->
-                    // Just the artist: a song count would only count the played songs.
-                    MediaCard(album.title, album.artist,
-                            onClick = { actions.openAlbum(album) }, onLongClick = { actions.albumOptions(album) }, onPlay = { actions.playAlbum(album) },
-                            artwork = { AlbumArtwork(album, it, MaterialTheme.shapes.extraSmall) }, tintKey = album.artworkData())
-                }
+                else -> items(played, key = { it.key }) { RecentCard(it, actions) }
             }
         }
     }

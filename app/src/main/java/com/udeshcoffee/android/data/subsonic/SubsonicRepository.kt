@@ -2,6 +2,7 @@ package com.udeshcoffee.android.data.subsonic
 
 import android.content.Context
 import androidx.core.content.edit
+import com.udeshcoffee.android.data.RecentItem
 import com.udeshcoffee.android.data.lyrics.Lyrics
 import com.udeshcoffee.android.data.lyrics.fromStructured
 import com.udeshcoffee.android.data.lyrics.parseLrc
@@ -188,6 +189,12 @@ class SubsonicRepository(context: Context) {
         if (sort == ServerAlbumSort.YEAR) params += listOf("fromYear" to 9999, "toYear" to 0)
         return client().get("getAlbumList2", "albumList2", SubAlbumList.serializer(), params).album.map { it.toAlbum() }
     }
+
+    /** Recently played albums (getAlbumList2 recent), with when each was last played where the server says. */
+    suspend fun recentAlbums(count: Int): List<RecentItem.OfAlbum> =
+            client().get("getAlbumList2", "albumList2", SubAlbumList.serializer(),
+                    listOf("type" to ServerAlbumSort.RECENT.type, "size" to count, "offset" to 0))
+                    .album.map { RecentItem.OfAlbum(it.toAlbum(), it.playedAt()) }
 
     suspend fun artists(): List<Artist> =
             client().get("getArtists", "artists", SubArtists.serializer()).index.flatMap { it.artist }.map { it.toArtist() }

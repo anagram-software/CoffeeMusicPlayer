@@ -41,6 +41,8 @@ data class SubAlbum(
         val genre: String? = null,
         val created: String? = null,
         val starred: String? = null,
+        /** When the user last played it (OpenSubsonic, e.g. Navidrome). */
+        val played: String? = null,
         val song: List<SubSong> = emptyList()
 )
 
