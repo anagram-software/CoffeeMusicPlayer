@@ -2,7 +2,6 @@ package com.udeshcoffee.android.ui.compose.home
 
 import android.content.Intent
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,7 +18,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.HorizontalDivider
 import androidx.graphics.shapes.RoundedPolygon
@@ -30,6 +28,9 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -48,8 +49,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -182,7 +181,7 @@ private fun CarouselItemScope.TotalsItem(stats: ListenBrainzStats) {
     }
 }
 
-/** The user's ListenBrainz name, and an avatar with their initial, which opens their profile. */
+/** The user's ListenBrainz name, and a button that opens their profile. */
 @Composable
 private fun ProfileFooter(stats: ListenBrainzStats) {
     val context = LocalContext.current
@@ -192,11 +191,8 @@ private fun ProfileFooter(stats: ListenBrainzStats) {
             Text(stats.name, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text("ListenBrainz", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
         }
-        // ListenBrainz has no profile pictures.
-        Box(Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary)
-                .clickable(onClickLabel = "Open ListenBrainz profile", onClick = openProfile)
-                .semantics { contentDescription = "ListenBrainz profile" }, contentAlignment = Alignment.Center) {
-            Text(stats.name.take(1).uppercase(), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onPrimary)
+        IconButton(onClick = openProfile, shapes = IconButtonDefaults.shapes()) {
+            Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = "Open ListenBrainz profile")
         }
     }
 }
